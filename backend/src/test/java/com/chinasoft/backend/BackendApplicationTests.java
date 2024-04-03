@@ -2,8 +2,10 @@ package com.chinasoft.backend;
 
 import com.chinasoft.backend.model.entity.AmusementFacility;
 import com.chinasoft.backend.model.entity.BaseFacility;
+import com.chinasoft.backend.model.entity.RestaurantFacility;
 import com.chinasoft.backend.service.AmusementFacilityService;
 import com.chinasoft.backend.service.BaseFacilityService;
+import com.chinasoft.backend.service.RestaurantFacilityService;
 import com.chinasoft.backend.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +24,9 @@ class BackendApplicationTests {
 
     @Autowired
     BaseFacilityService baseFacilityService;
+
+    @Autowired
+    RestaurantFacilityService restaurantFacilityService;
 
     @Test
     void contextLoads() {
@@ -43,6 +48,12 @@ class BackendApplicationTests {
     @Test
     void testBaseFacility() {
         List<BaseFacility> list = baseFacilityService.list();
+        System.out.println(list);
+    }
+
+    @Test
+    void testRestaurantFacility() {
+        List<RestaurantFacility> list = restaurantFacilityService.list();
         System.out.println(list);
     }
 }
