@@ -5,25 +5,25 @@
 <mapper namespace="com.chinasoft.backend.mapper.AmusementFacilityMapper">
 
     <resultMap id="BaseResultMap" type="com.chinasoft.backend.model.entity.AmusementFacility">
-            <id property="id" column="id" jdbcType="BIGINT"/>
-            <result property="name" column="name" jdbcType="VARCHAR"/>
-            <result property="introduction" column="introduction" jdbcType="VARCHAR"/>
-            <result property="longitude" column="longitude" jdbcType="VARCHAR"/>
-            <result property="latitude" column="latitude" jdbcType="VARCHAR"/>
-            <result property="per_user_count" column="per_user_count" jdbcType="INTEGER"/>
-            <result property="expect_time" column="expect_time" jdbcType="INTEGER"/>
-            <result property="type" column="type" jdbcType="VARCHAR"/>
-            <result property="crowd_type" column="crowd_type" jdbcType="VARCHAR"/>
-            <result property="image_url" column="image_url" jdbcType="VARCHAR"/>
-            <result property="start_time" column="start_time" jdbcType="TIME"/>
-            <result property="close_time" column="close_time" jdbcType="TIME"/>
-            <result property="status" column="status" jdbcType="INTEGER"/>
-            <result property="create_time" column="create_time" jdbcType="TIMESTAMP"/>
-            <result property="update_time" column="update_time" jdbcType="TIMESTAMP"/>
-            <result property="is_deleted" column="is_deleted" jdbcType="INTEGER"/>
-            <result property="instruction" column="instruction" jdbcType="VARCHAR"/>
-            <result property="height_low" column="height_low" jdbcType="INTEGER"/>
-            <result property="height_up" column="height_up" jdbcType="INTEGER"/>
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="name" column="name" jdbcType="VARCHAR"/>
+        <result property="introduction" column="introduction" jdbcType="VARCHAR"/>
+        <result property="longitude" column="longitude" jdbcType="VARCHAR"/>
+        <result property="latitude" column="latitude" jdbcType="VARCHAR"/>
+        <result property="perUserCount" column="per_user_count" jdbcType="INTEGER"/>
+        <result property="expectTime" column="expect_time" jdbcType="INTEGER"/>
+        <result property="type" column="type" jdbcType="VARCHAR"/>
+        <result property="crowdType" column="crowd_type" jdbcType="VARCHAR"/>
+        <result property="imageUrl" column="image_url" jdbcType="VARCHAR"/>
+        <result property="startTime" column="start_time" jdbcType="TIME"/>
+        <result property="closeTime" column="close_time" jdbcType="TIME"/>
+        <result property="status" column="status" jdbcType="INTEGER"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+        <result property="isDeleted" column="is_deleted" jdbcType="INTEGER"/>
+        <result property="instruction" column="instruction" jdbcType="VARCHAR"/>
+        <result property="heightLow" column="height_low" jdbcType="INTEGER"/>
+        <result property="heightUp" column="height_up" jdbcType="INTEGER"/>
     </resultMap>
 
     <sql id="Base_Column_List">

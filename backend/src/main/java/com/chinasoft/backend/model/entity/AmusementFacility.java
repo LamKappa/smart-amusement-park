@@ -1,20 +1,19 @@
 package com.chinasoft.backend.model.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import lombok.Data;
 
 import java.io.Serializable;
 import java.util.Date;
-import lombok.Data;
 
 /**
- * 
  * @TableName amusement_facility
  */
-@TableName(value ="amusement_facility")
+@TableName(value = "amusement_facility")
 @Data
 public class AmusementFacility implements Serializable {
     /**
-     * 设施ID
+     *
      */
     @TableId(type = IdType.AUTO)
     private Long id;
@@ -41,14 +40,13 @@ public class AmusementFacility implements Serializable {
 
     /**
      * 一次游玩的人数
-
      */
-    private Integer per_user_count;
+    private Integer perUserCount;
 
     /**
      * 预计游玩时间（以分钟为单位）
      */
-    private Integer expect_time;
+    private Integer expectTime;
 
     /**
      * 项目类型 可多选（过山车、轨道、失重、水上、室内、旋转、鬼屋）
@@ -58,43 +56,27 @@ public class AmusementFacility implements Serializable {
     /**
      * 适合人群（成人、老少皆宜、家长监护）
      */
-    private String crowd_type;
+    private String crowdType;
 
     /**
      * 设施照片
      */
-    private String image_url;
+    private String imageUrl;
 
     /**
      * 开放时间
      */
-    private Date start_time;
+    private Date startTime;
 
     /**
      * 关闭时间
      */
-    private Date close_time;
+    private Date closeTime;
 
     /**
      * 状态 0-正常 1-异常（如果是在检修的时候status为1，注意夜晚闭馆未开放的时候status为0）
      */
     private Integer status;
-
-    /**
-     * 添加时间
-     */
-    private Date create_time;
-
-    /**
-     * 修改时间
-     */
-    private Date update_time;
-
-    /**
-     * 逻辑删除(0-未删除，1-已删除)
-     */
-    @TableLogic
-    private Integer is_deleted;
 
     /**
      * 游玩须知
@@ -104,14 +86,31 @@ public class AmusementFacility implements Serializable {
     /**
      * 身高下限
      */
-    private Integer height_low;
+    private Integer heightLow;
 
     /**
      * 身高上限
      */
-    private Integer height_up;
+    private Integer heightUp;
+
+
+    /**
+     * 添加时间
+     */
+    private Date createTime;
+
+    /**
+     * 修改时间
+     */
+    private Date updateTime;
+
+    /**
+     * 逻辑删除(0-未删除，1-已删除)
+     */
+    @TableLogic
+    private Integer isDeleted;
+
 
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
-
 }

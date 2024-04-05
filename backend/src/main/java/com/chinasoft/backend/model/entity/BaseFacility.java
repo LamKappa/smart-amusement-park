@@ -1,16 +1,17 @@
 package com.chinasoft.backend.model.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import lombok.Data;
 
 import java.io.Serializable;
 import java.util.Date;
-import lombok.Data;
 
 /**
  * 基础设施表
+ *
  * @TableName base_facility
  */
-@TableName(value ="base_facility")
+@TableName(value = "base_facility")
 @Data
 public class BaseFacility implements Serializable {
     /**
@@ -37,17 +38,17 @@ public class BaseFacility implements Serializable {
     /**
      * 照片URL
      */
-    private String image_url;
+    private String imageUrl;
 
     /**
      * 开放开始时间
      */
-    private Date start_time;
+    private Date startTime;
 
     /**
      * 开放结束时间
      */
-    private Date close_time;
+    private Date closeTime;
 
     /**
      * 状态（0-正常，1-异常）
@@ -57,18 +58,18 @@ public class BaseFacility implements Serializable {
     /**
      * 添加时间
      */
-    private Date create_time;
+    private Date createTime;
 
     /**
      * 修改时间
      */
-    private Date update_time;
+    private Date updateTime;
 
     /**
      * 逻辑删除标志（0-未删除，1-已删除）
      */
     @TableLogic
-    private Integer is_deleted;
+    private Integer isDeleted;
 
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
