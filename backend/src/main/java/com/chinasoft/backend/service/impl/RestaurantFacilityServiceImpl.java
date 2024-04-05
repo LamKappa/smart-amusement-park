@@ -44,7 +44,7 @@ public class RestaurantFacilityServiceImpl extends ServiceImpl<RestaurantFacilit
             return this.baseMapper.selectList(queryWrapper);
         } else {
             // 如果type非空，则添加查询条件
-            queryWrapper.eq("type", type);
+            queryWrapper.like("type", type);
             return this.baseMapper.selectList(queryWrapper);
         }
     }

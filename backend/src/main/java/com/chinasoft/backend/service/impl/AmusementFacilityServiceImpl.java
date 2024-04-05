@@ -43,7 +43,7 @@ public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityM
             return this.baseMapper.selectList(queryWrapper);
         } else {
             // 如果type非空，则添加查询条件
-            queryWrapper.eq("type", type);
+            queryWrapper.like("type", type);
             return this.baseMapper.selectList(queryWrapper);
         }
     }
@@ -55,26 +55,25 @@ public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityM
         if (height == null) {
             // 如果height为null，则不添加查询条件，返回所有数据
             return this.baseMapper.selectList(queryWrapper);
+        }else{
+            queryWrapper.le("height_low", height) // height_low <= height
+                    .ge("height_up", height);  //  height_up >= height
+
+            // 执行查询并返回结果
+            return this.baseMapper.selectList(queryWrapper);
         }
-
-        queryWrapper.ge("height_low", height) // height >= height_low
-                .le("height_up", height);  // height <= height_up
-
-        // 执行查询并返回结果
-        return this.baseMapper.selectList(queryWrapper);
     }
 
     @Override
     public List<AmusementFacility> getAmusementCrowd(String crowd) {
         QueryWrapper<AmusementFacility> queryWrapper = new QueryWrapper<>();
 
-        // 检查crowd是否为空或空字符串
+        // 如果crowd为空或空字符串，则返回所有数据
         if (crowd == null || crowd.isEmpty()) {
-            // 如果为空，则返回所有数据，不添加查询条件
             return this.baseMapper.selectList(queryWrapper);
         } else {
-            // 如果crowd非空，则添加查询条件
-            queryWrapper.eq("crowd", crowd);
+            // 对crowd进行模糊搜索，使用LIKE语句
+            queryWrapper.like("crowd_type", crowd);
             return this.baseMapper.selectList(queryWrapper);
         }
     }
