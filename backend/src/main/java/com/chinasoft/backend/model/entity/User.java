@@ -13,7 +13,7 @@ import java.util.Date;
 @Data
 public class User implements Serializable {
     /**
-     * 用户id
+     * 用户ID
      */
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
