@@ -1,7 +1,9 @@
 package com.chinasoft.backend.controller;
 
 import com.chinasoft.backend.common.BaseResponse;
+import com.chinasoft.backend.common.ErrorCode;
 import com.chinasoft.backend.common.ResultUtils;
+import com.chinasoft.backend.exception.BusinessException;
 import com.chinasoft.backend.model.request.AmusementFilterRequest;
 import com.chinasoft.backend.model.request.BaseFilterRequest;
 import com.chinasoft.backend.model.request.RestaurantFilterRequest;
@@ -38,6 +40,11 @@ public class FilterController {
      */
     @PostMapping("/amusement")
     public BaseResponse<List<AmusementFacilityVO>> filterAmusement(@RequestBody AmusementFilterRequest amusementFilterRequest) {
+        // 异常处理
+        if (amusementFilterRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+
         // 查询数据库
         List<AmusementFacilityVO> data = amusementFacilityService.getAmusementFacility(amusementFilterRequest);
 
@@ -51,6 +58,11 @@ public class FilterController {
 
     @PostMapping("/restaurant")
     public BaseResponse<List<RestaurantFacilityVO>> filterRestaurant(@RequestBody RestaurantFilterRequest restaurantFilterRequest) {
+        // 异常处理
+        if (restaurantFilterRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+
         // 查询数据库
         List<RestaurantFacilityVO> data = restaurantFacilityService.getRestaurantFacility(restaurantFilterRequest);
 
@@ -64,6 +76,11 @@ public class FilterController {
 
     @PostMapping("/base")
     public BaseResponse<List<BaseFacilityVO>> filterBase(@RequestBody BaseFilterRequest baseFilterRequest) {
+        // 异常处理
+        if (baseFilterRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+
         // 查询数据库
         List<BaseFacilityVO> data = baseFacilityService.getBaseFacility(baseFilterRequest);
 
