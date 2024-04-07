@@ -90,10 +90,9 @@ public class FilterController {
         return ResultUtils.success(data);
     }
 
-     /*
-    基础设施（卫生间）筛选
-     */
-
+    /*
+   基础设施（卫生间）筛选
+    */
     @GetMapping("/base/name")
     public BaseResponse<List<BaseFacility>> filterBaseName(@Param("name") String name) {
         // 查询数据库
@@ -102,5 +101,4 @@ public class FilterController {
         // 返回响应
         return ResultUtils.success(data);
     }
-    
 }

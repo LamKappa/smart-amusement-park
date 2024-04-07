@@ -24,11 +24,6 @@ public class User implements Serializable {
     private String username;
 
     /**
-     * 账号
-     */
-    private String account;
-
-    /**
      * 密码
      */
     private String password;
@@ -37,11 +32,6 @@ public class User implements Serializable {
      * 手机号
      */
     private String phone;
-
-    /**
-     * 性别（“男”，“女”）
-     */
-    private String gender;
 
     /**
      * 用户头像
