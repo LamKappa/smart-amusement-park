@@ -1,0 +1,94 @@
+From be541628552ccc3a8dcd3c6ad6e5a1aed07c4928 Mon Sep 17 00:00:00 2001
+From: wuchangsheng <wuchangsheng2@huawei.com>
+Date: Sat, 3 Dec 2022 20:35:34 +0800
+Subject: [PATCH 2/2] fix app thread write fail
+
+---
+ src/core/tcp_out.c      |  2 +-
+ src/include/lwip/pbuf.h |  3 +++
+ src/include/lwipsock.h  | 33 +++++++++++++++++++++++----------
+ 3 files changed, 27 insertions(+), 11 deletions(-)
+
+diff --git a/src/core/tcp_out.c b/src/core/tcp_out.c
+index ee6f40b..f53750b 100644
+--- a/src/core/tcp_out.c
++++ b/src/core/tcp_out.c
+@@ -763,7 +763,7 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
+ 
+     pos += seglen;
+ #if USE_LIBOS
+-    write_lwip_over((struct lwip_sock*)arg, 1);
++    write_lwip_over((struct lwip_sock*)arg);
+ #endif
+   }
+ 
+diff --git a/src/include/lwip/pbuf.h b/src/include/lwip/pbuf.h
+index ef879da..10e2af9 100644
+--- a/src/include/lwip/pbuf.h
++++ b/src/include/lwip/pbuf.h
+@@ -231,6 +231,9 @@ struct pbuf {
+   u64_t l4_len:8;
+   u16_t header_off;
+   u8_t rexmit;
++  u8_t in_write;
++  u8_t head;
++  struct pbuf *last;
+ #endif /* USE_LIBOS CHECKSUM_OFFLOAD_SWITCH */
+ 
+   /** In case the user needs to store data custom data on a pbuf */
+diff --git a/src/include/lwipsock.h b/src/include/lwipsock.h
+index 2ffb077..f919330 100644
+--- a/src/include/lwipsock.h
++++ b/src/include/lwipsock.h
+@@ -93,17 +93,30 @@ struct lwip_sock {
+ #endif
+ 
+ #if USE_LIBOS
+-  struct pbuf *send_lastdata;
+-  uint16_t send_datalen;
+-  volatile uint32_t events __rte_cache_aligned; /* available events */
+-  struct pbuf *recv_lastdata __rte_cache_aligned; /* unread data in one pbuf */
+-  struct list_node recv_list __rte_cache_aligned;
+-  struct list_node event_list __rte_cache_aligned;
+-  struct list_node send_list __rte_cache_aligned;
+-  uint32_t in_send __rte_cache_aligned; /* avoid sock too much send rpc msg*/
++  char pad0 __rte_cache_aligned;
++  /* app thread use */
++  struct pbuf *recv_lastdata; /* unread data in one pbuf */
++  uint16_t remain_len;
+   uint32_t epoll_events; /* registered events, EPOLLONESHOT write frequently */
+-  char pad __rte_cache_aligned;
++  volatile uint32_t events; /* available events */
++  struct list_node event_list;
++
++  char pad1 __rte_cache_aligned;
++  /* app and stack thread all use */
++  uint32_t in_send; /* avoid sock too much send rpc msg*/
++  pthread_spinlock_t sock_lock;
++
++  char pad2 __rte_cache_aligned;
++  /* stack thread all use */
++  struct list_node recv_list;
++  struct list_node send_list;
++  struct pbuf *send_lastdata;
++  struct pbuf *send_pre_del;
++  uint64_t recv_all;
++  uint64_t send_all;
+ 
++  char pad3 __rte_cache_aligned;
++  /* nerver change */
+   struct wakeup_poll *wakeup;
+   epoll_data_t ep_data;
+   struct lwip_sock *listen_next; /* listenfd list */
+@@ -131,7 +144,7 @@ extern ssize_t read_lwip_data(struct lwip_sock *sock, int32_t flags, u8_t apifla
+ extern struct pbuf *write_lwip_data(struct lwip_sock *sock, uint16_t remain_size, uint8_t *apiflags);
+ extern void gazelle_init_sock(int32_t fd);
+ extern void gazelle_clean_sock(int32_t fd);
+-extern void write_lwip_over(struct lwip_sock *sock, uint32_t n);
++extern void write_lwip_over(struct lwip_sock *sock);
+ #endif /* USE_LIBOS */
+ 
+ struct lwip_sock *get_socket(int s);
+-- 
+2.8.4.windows.1
+

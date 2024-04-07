@@ -1,0 +1,143 @@
+From 95aba99f41333ad430496eab2596bc8b489ae731 Mon Sep 17 00:00:00 2001
+From: Dirk Ziegelmeier <dirk@ziegelmeier.net>
+Date: Fri, 19 Oct 2018 22:30:17 +0200
+Subject: [PATCH] Implement task #11620: Add outgoing VLAN PCP support for
+ Ethernet level QoS
+
+Apply rebased patch from Timmy Brolin
+---
+ src/core/tcp.c           | 29 ++++++++++++++++-------------
+ src/core/tcp_in.c        |  3 +++
+ src/include/lwip/netif.h | 22 ++++++++++++++--------
+ src/include/lwip/opt.h   | 34 +++++++++++++++++++++++-----------
+ src/netif/ethernet.c     | 12 ++++++++++--
+ 5 files changed, 66 insertions(+), 34 deletions(-)
+
+diff --git a/src/core/tcp.c b/src/core/tcp.c
+index ce03c8161..1f91d24ba 100644
+--- a/src/core/tcp.c
++++ b/src/core/tcp.c
+@@ -892,6 +892,9 @@ tcp_listen_with_backlog_and_err(struct tcp_pcb *pcb, u8_t backlog, err_t *err)
+   lpcb->ttl = pcb->ttl;
+   lpcb->tos = pcb->tos;
+
++#if LWIP_VLAN_PCP
++  lpcb->netif_hints.tci = pcb->netif_hints.tci;
++#endif /* LWIP_VLAN_PCP */
+ #if GAZELLE_TCP_REUSE_IPPORT
+   lpcb->connect_num = 0;
+   lpcb->next_same_port_pcb = NULL;
+index 428a6f48d..d1fe067a4 100644
+--- a/src/core/tcp_in.c
++++ b/src/core/tcp_in.c
+@@ -690,6 +690,9 @@ tcp_listen_input(struct tcp_pcb_listen *pcb)
+ #if LWIP_CALLBACK_API || TCP_LISTEN_BACKLOG
+     npcb->listener = pcb;
+ #endif /* LWIP_CALLBACK_API || TCP_LISTEN_BACKLOG */
++#if LWIP_VLAN_PCP
++    npcb->netif_hints.tci = pcb->netif_hints.tci;
++#endif /* LWIP_VLAN_PCP */
+     /* inherit socket options */
+     npcb->so_options = pcb->so_options & SOF_INHERITED;
+     npcb->netif_idx = pcb->netif_idx;
+diff --git a/src/include/lwip/netif.h b/src/include/lwip/netif.h
+index 9e2007a64..013a69b5a 100644
+--- a/src/include/lwip/netif.h
++++ b/src/include/lwip/netif.h
+@@ -248,14 +248,20 @@ typedef u8_t netif_addr_idx_t;
+ #define NETIF_ADDR_IDX_MAX 0x7F
+ #endif
+ 
++#if LWIP_NETIF_HWADDRHINT || LWIP_VLAN_PCP
++ #define LWIP_NETIF_USE_HINTS              1
++ struct netif_hint {
+ #if LWIP_NETIF_HWADDRHINT
+-#define LWIP_NETIF_USE_HINTS              1
+-struct netif_hint {
+-  netif_addr_idx_t addr_hint;
+-};
+-#else /* LWIP_NETIF_HWADDRHINT */
+-#define LWIP_NETIF_USE_HINTS              0
+-#endif /* LWIP_NETIF_HWADDRHINT */
++   u8_t addr_hint;
++#endif
++#if LWIP_VLAN_PCP
++  /** VLAN hader is set if this is >= 0 (but must be <= 0xFFFF) */
++  s32_t tci;
++#endif
++ };
++#else /* LWIP_NETIF_HWADDRHINT || LWIP_VLAN_PCP */
++ #define LWIP_NETIF_USE_HINTS              0
++#endif /* LWIP_NETIF_HWADDRHINT || LWIP_VLAN_PCP*/
+ 
+ /** Generic data structure used for all lwIP network interfaces.
+  *  The following fields should be filled in by the initialization
+ #if LWIP_IPV6_AUTOCONFIG
+diff --git a/src/include/lwip/opt.h b/src/include/lwip/opt.h
+index 90fce4f05..fb4b10c8b 100644
+--- a/src/include/lwip/opt.h
++++ b/src/include/lwip/opt.h
+@@ -677,6 +677,18 @@
+ #define ETHARP_SUPPORT_VLAN             0
+ #endif
+ 
++/**
++ * LWIP_VLAN_PCP==1: Enable outgoing VLAN taggning of frames on a per-PCB basis
++ * for QoS purposes. With this feature enabled, each PCB has a new variable: "tci".
++ * (Tag Control Identifier). The TCI contains three fields: VID, CFI and PCP.
++ * VID is the VLAN ID, which should be set to zero.
++ * The "CFI" bit is used to enable or disable VLAN tags for the PCB.
++ * PCP (Priority Code Point) is a 3 bit field used for Ethernet level QoS.
++ */
++#ifndef LWIP_VLAN_PCP
++#define LWIP_VLAN_PCP                   0
++#endif
++
+ /** LWIP_ETHERNET==1: enable ethernet support even though ARP might be disabled
+  */
+ #if !defined LWIP_ETHERNET || defined __DOXYGEN__
+@@ -1548,13 +1560,13 @@
+  * link level header. The default is 14, the standard value for
+  * Ethernet.
+  */
+-#if !defined PBUF_LINK_HLEN || defined __DOXYGEN__
+-#if defined LWIP_HOOK_VLAN_SET && !defined __DOXYGEN__
+-#define PBUF_LINK_HLEN                  (18 + ETH_PAD_SIZE)
+-#else /* LWIP_HOOK_VLAN_SET */
+-#define PBUF_LINK_HLEN                  (14 + ETH_PAD_SIZE)
+-#endif /* LWIP_HOOK_VLAN_SET */
+-#endif
++ #if !defined PBUF_LINK_HLEN || defined __DOXYGEN__
++#if (defined LWIP_HOOK_VLAN_SET || LWIP_VLAN_PCP) && !defined __DOXYGEN__
++ #define PBUF_LINK_HLEN                  (18 + ETH_PAD_SIZE)
++#else /* LWIP_HOOK_VLAN_SET || LWIP_VLAN_PCP */
++ #define PBUF_LINK_HLEN                  (14 + ETH_PAD_SIZE)
++#endif /* LWIP_HOOK_VLAN_SET || LWIP_VLAN_PCP */
++ #endif
+ 
+ /**
+  * PBUF_LINK_ENCAPSULATION_HLEN: the number of bytes that should be allocated
+diff --git a/src/netif/ethernet.c b/src/netif/ethernet.c
+index dd171e280..9e367f8cc 100644
+--- a/src/netif/ethernet.c
++++ b/src/netif/ethernet.c
+@@ -273,8 +273,16 @@ ethernet_output(struct netif * netif, struct pbuf * p,
+   struct eth_hdr *ethhdr;
+   u16_t eth_type_be = lwip_htons(eth_type);
+ 
+-#if ETHARP_SUPPORT_VLAN && defined(LWIP_HOOK_VLAN_SET)
+-  s32_t vlan_prio_vid = LWIP_HOOK_VLAN_SET(netif, p, src, dst, eth_type);
++#if ETHARP_SUPPORT_VLAN
++  s32_t vlan_prio_vid;
++#ifdef LWIP_HOOK_VLAN_SET
++  vlan_prio_vid = LWIP_HOOK_VLAN_SET(netif, p, src, dst, eth_type);
++#elif LWIP_VLAN_PCP
++  vlan_prio_vid = -1;
++  if (netif->hints && (netif->hints->tci >= 0)) {
++    vlan_prio_vid = (u16_t)netif->hints->tci;
++  }
++#endif
+   if (vlan_prio_vid >= 0) {
+     struct eth_vlan_hdr *vlanhdr;
+ 
+

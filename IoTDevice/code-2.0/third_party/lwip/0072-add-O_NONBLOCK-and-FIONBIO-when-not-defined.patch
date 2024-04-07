@@ -1,0 +1,18 @@
+diff --git a/src/include/lwipopts.h b/src/include/lwipopts.h
+index 5ba123f..baf739e 100644
+--- a/src/include/lwipopts.h
++++ b/src/include/lwipopts.h
+@@ -244,9 +244,13 @@
+ 
+ #define SO_REUSE 1
+ 
++#ifndef FIONBIO
+ #define FIONBIO 0x5421 /* same as define in asm-generic/ioctls.h */
++#endif
+ 
++#ifndef O_NONBLOCK
+ #define O_NONBLOCK 04000 /* same as define in bits/fcntl-linux.h */
++#endif
+ 
+ #define SIOCSHIWAT 1
+ 

@@ -1,0 +1,71 @@
+From 87166f699e0febd36b81d914713b770119ead471 Mon Sep 17 00:00:00 2001
+From: wuchangsheng <wuchangsheng2@huawei.com>
+Date: Thu, 6 Oct 2022 20:16:06 +0800
+Subject: [PATCH] refactor add event, limit send pkts num
+
+---
+ src/api/sockets.c       | 4 ++--
+ src/core/tcp_out.c      | 8 ++++++++
+ src/include/eventpoll.h | 3 ++-
+ 3 files changed, 12 insertions(+), 3 deletions(-)
+
+diff --git a/src/api/sockets.c b/src/api/sockets.c
+index 4d4cea1..d5b69eb 100644
+--- a/src/api/sockets.c
++++ b/src/api/sockets.c
+@@ -2665,7 +2665,7 @@ event_callback(struct netconn *conn, enum netconn_evt evt, u16_t len)
+       }
+ #if USE_LIBOS
+       if (conn->acceptmbox != NULL && !sys_mbox_empty(conn->acceptmbox)) {
+-        add_epoll_event(conn, POLLIN);
++        add_sock_event(sock, POLLIN);
+       }
+ #endif
+       break;
+@@ -2686,7 +2686,7 @@ event_callback(struct netconn *conn, enum netconn_evt evt, u16_t len)
+     case NETCONN_EVT_ERROR:
+       sock->errevent = 1;
+ #if USE_LIBOS
+-      add_epoll_event(conn, EPOLLERR);
++      add_sock_event(sock, EPOLLERR);
+ #endif
+       break;
+     default:
+diff --git a/src/core/tcp_out.c b/src/core/tcp_out.c
+index 1b0af8d..dd780d3 100644
+--- a/src/core/tcp_out.c
++++ b/src/core/tcp_out.c
+@@ -1358,8 +1358,16 @@ tcp_output(struct tcp_pcb *pcb)
+     for (; useg->next != NULL; useg = useg->next);
+   }
+   /* data available and window allows it to be sent? */
++#if USE_LIBOS
++  /* avoid send cose too much time, limit send pkts num max 10 */
++  uint16_t send_pkt = 0;
++  while (seg != NULL && send_pkt < 10 &&
++         lwip_ntohl(seg->tcphdr->seqno) - pcb->lastack + seg->len <= wnd) {
++    send_pkt++;
++#else
+   while (seg != NULL &&
+          lwip_ntohl(seg->tcphdr->seqno) - pcb->lastack + seg->len <= wnd) {
++#endif
+     LWIP_ASSERT("RST not expected here!",
+                 (TCPH_FLAGS(seg->tcphdr) & TCP_RST) == 0);
+     /* Stop sending if the nagle algorithm would prevent it
+diff --git a/src/include/eventpoll.h b/src/include/eventpoll.h
+index aacc1d2..a10c84b 100644
+--- a/src/include/eventpoll.h
++++ b/src/include/eventpoll.h
+@@ -63,7 +63,8 @@ struct libos_epoll {
+     int efd; /* eventfd */
+ };
+ 
+-extern void add_epoll_event(struct netconn*, uint32_t);
++struct lwip_sock;
++extern void add_sock_event(struct lwip_sock *sock, uint32_t event);
+ extern int32_t lstack_epoll_close(int32_t);
+ 
+ #endif /* __EVENTPOLL_H__ */
+-- 
+2.27.0
+

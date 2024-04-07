@@ -1,0 +1,93 @@
+{
+  "parts": {
+    "appexecfwk_standard": {
+      "inner_kits": [
+        {
+          "header": {
+            "header_base": "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_base/include",
+            "header_files": [
+              "ability_info.h",
+              "appexecfwk_errors.h",
+              "application_info.h",
+              "element_name.h",
+              "bundle_info.h"
+            ]
+          },
+          "name": "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_base:appexecfwk_base"
+        },
+        {
+          "header": {
+            "header_base": "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core/include",
+            "header_files": [
+              "appmgr/app_mgr_client.h",
+              "appmgr/iapp_state_callback.h",
+              "appmgr/app_state_callback_host.h",
+              "appmgr/app_mgr_constants.h",
+              "bundlemgr/bundle_installer_interface.h",
+              "bundlemgr/bundle_mgr_interface.h",
+              "bundlemgr/bundle_status_callback_interface.h",
+              "bundlemgr/clean_cache_callback_interface.h",
+              "bundlemgr/status_receiver_interface.h",
+              "appmgr/app_process_data.h"
+            ]
+          },
+          "name": "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core:appexecfwk_core"
+        },
+        {
+          "header": {
+            "header_base": "//foundation/appexecfwk/standard/interfaces/innerkits/libeventhandler/include",
+            "header_files": [
+              "event_handler_errors.h",
+              "event_handler.h",
+              "event_queue.h",
+              "event_runner.h",
+              "inner_event.h",
+              "file_descriptor_listener.h",
+              "native_implement_eventhandler.h"
+            ]
+          },
+          "name": "//foundation/appexecfwk/standard/interfaces/innerkits/libeventhandler:libeventhandler"
+        },
+        {
+          "header": {
+            "header_base": "//foundation/appexecfwk/standard/interfaces/innerkits/eventhandler_native/eventhandler",
+            "header_files": [
+              "native_interface_eventhandler.h"
+            ]
+          },
+          "name": "//foundation/appexecfwk/standard/interfaces/innerkits/eventhandler_native:eventhandler_native"
+        }
+      ],
+      "module_list": [
+        "//foundation/appexecfwk/standard/common:common_target",
+        "//foundation/appexecfwk/standard/services:services_target",
+        "//foundation/appexecfwk/standard/tools:tools_target",
+        "//foundation/appexecfwk/standard/interfaces/innerkits:innerkits_target",
+        "//foundation/appexecfwk/standard/kits:appkit_native",
+        "//foundation/appexecfwk/standard/kits:appexec",
+        "//foundation/appexecfwk/standard/sa_profile:appexecfwk_sa_profile",
+        "//foundation/appexecfwk/standard/sa_profile:foundation.rc",
+        "//foundation/appexecfwk/standard/test/resource/amssystemtestability/abilitySrc:ams_system_test_app",
+        "//foundation/appexecfwk/standard/kits/appkit/napi:napi_packages"
+      ],
+      "test_list": [
+        "//foundation/appexecfwk/standard/kits/appkit/native/test:unittest",
+        "//foundation/appexecfwk/standard/kits/appkit/test:moduletest",
+        "//foundation/appexecfwk/standard/services/test:moduletest",
+        "//foundation/appexecfwk/standard/services/bundlemgr/test:unittest",
+        "//foundation/appexecfwk/standard/services/appmgr/test:unittest",
+        "//foundation/appexecfwk/standard/test/systemtest:systemtest",
+        "//foundation/appexecfwk/standard/tools/test:moduletest",
+        "//foundation/appexecfwk/standard/tools/test:unittest",
+        "//foundation/appexecfwk/standard/libs/libeventhandler/test:unittest",
+        "//foundation/appexecfwk/standard/libs/test:moduletest"
+      ],
+
+      "variants": [
+        "phone",
+        "ivi"
+      ]
+    }
+  },
+  "subsystem": "appexecfwk"
+}

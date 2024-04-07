@@ -1,0 +1,4 @@
+[compile exit status]:1
+[compile console output]:
+Error: ./17_broken_node_ei/case.hcs:7
+	syntax error, unexpected $end, expecting '}'

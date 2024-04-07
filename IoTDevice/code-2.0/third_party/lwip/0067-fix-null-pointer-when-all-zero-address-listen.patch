@@ -1,0 +1,100 @@
+From b4a2b2799c199fb2955ecaae72e7b7dbe79e593b Mon Sep 17 00:00:00 2001
+From: jiangheng <jiangheng14@huawei.com>
+Date: Thu, 15 Jun 2023 21:42:04 +0800
+Subject: [PATCH] fix null pointer when all zero address listen
+
+---
+ src/core/tcp_in.c | 58 ++++++++++++++++++++++++++++-------------------
+ 1 file changed, 35 insertions(+), 23 deletions(-)
+
+diff --git a/src/core/tcp_in.c b/src/core/tcp_in.c
+index 0abee30..c20c9b5 100644
+--- a/src/core/tcp_in.c
++++ b/src/core/tcp_in.c
+@@ -114,6 +114,36 @@ static void tcp_remove_sacks_gt(struct tcp_pcb *pcb, u32_t seq);
+ #endif /* TCP_OOSEQ_BYTES_LIMIT || TCP_OOSEQ_PBUFS_LIMIT */
+ #endif /* LWIP_TCP_SACK_OUT */
+ 
++#if GAZELLE_TCP_REUSE_IPPORT
++struct tcp_pcb_listen *min_cnts_lpcb_get(struct tcp_pcb_listen *lpcb)
++{
++  struct tcp_pcb_listen *min_cnts_lpcb;
++  struct tcp_pcb_listen *tmp_lpcb = lpcb;
++  u16_t min_conn_num = GAZELLE_TCP_MAX_CONN_PER_THREAD;
++  u8_t have_master_fd = 0;
++
++  while (tmp_lpcb != NULL) {
++    if (tmp_lpcb->master_lpcb) {
++      have_master_fd = 1;
++    }
++    tmp_lpcb = tmp_lpcb->next_same_port_pcb;
++  }
++
++  tmp_lpcb = lpcb;
++  min_cnts_lpcb = lpcb;
++  while (tmp_lpcb != NULL) {
++    if (!have_master_fd || tmp_lpcb->master_lpcb) {
++      if (tmp_lpcb->connect_num < min_conn_num) {
++        min_cnts_lpcb = tmp_lpcb;
++        min_conn_num = tmp_lpcb->connect_num;
++      }
++      tmp_lpcb = tmp_lpcb->next_same_port_pcb;
++    }
++  }
++  return min_cnts_lpcb;
++}
++#endif
++
+ /**
+  * The initial input processing of TCP. It verifies the TCP header, demultiplexes
+  * the segment between the PCBs and passes it on to tcp_process(), which implements
+@@ -384,33 +414,15 @@ tcp_input(struct pbuf *p, struct netif *inp)
+           if (ip_addr_cmp(&lpcb->local_ip, ip_current_dest_addr())) {
+             /* found an exact match */
+ #if GAZELLE_TCP_REUSE_IPPORT
+-            // check master fd
+-            struct tcp_pcb_listen *tmp_lpcb = lpcb;
+-            u8_t have_master_fd = 0;
+-            while (tmp_lpcb != NULL) {
+-              if (tmp_lpcb->master_lpcb) {
+-	        have_master_fd = 1;
+-	      }
+-              tmp_lpcb = tmp_lpcb->next_same_port_pcb;
+-	    }
+-
+-            tmp_lpcb = lpcb;
+-            min_cnts_lpcb = lpcb;
+-            u16_t min_conn_num = GAZELLE_TCP_MAX_CONN_PER_THREAD;
+-            while (tmp_lpcb != NULL) {
+-              if (!have_master_fd || tmp_lpcb->master_lpcb) {
+-                if (tmp_lpcb->connect_num < min_conn_num) {
+-                  min_cnts_lpcb = tmp_lpcb;
+-		  min_conn_num = tmp_lpcb->connect_num;
+-	        }
+-	      }
+-              tmp_lpcb = tmp_lpcb->next_same_port_pcb;
+-	    }
++            min_cnts_lpcb = min_cnts_lpcb_get(lpcb);
+ #endif
+             break;
+           } else if (ip_addr_isany(&lpcb->local_ip)) {
+             /* found an ANY-match */
+ #if SO_REUSE
++#if GAZELLE_TCP_REUSE_IPPORT
++            min_cnts_lpcb = min_cnts_lpcb_get(lpcb);
++#endif
+             lpcb_any = lpcb;
+             lpcb_prev = prev;
+ #else /* SO_REUSE */
+@@ -458,7 +470,7 @@ tcp_input(struct pbuf *p, struct netif *inp)
+       {
+ #if GAZELLE_TCP_REUSE_IPPORT
+         tcp_listen_input(min_cnts_lpcb);
+-	min_cnts_lpcb->connect_num++;
++        min_cnts_lpcb->connect_num++;
+ #else
+         tcp_listen_input(lpcb);
+ #endif
+-- 
+2.27.0
+

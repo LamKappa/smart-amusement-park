@@ -1,0 +1,354 @@
+diff -Nur lwip-ipv6/src/core/ipv6/ip6.c lwip-ipv6-hdr/src/core/ipv6/ip6.c
+--- lwip-ipv6/src/core/ipv6/ip6.c	2023-11-15 19:48:02.864481010 +0800
++++ lwip-ipv6-hdr/src/core/ipv6/ip6.c	2023-11-15 20:05:30.388481010 +0800
+@@ -367,7 +367,7 @@
+  * @param inp the netif on which this packet was received
+  */
+ static void
+-ip6_forward(struct pbuf *p, struct ip6_hdr *iphdr, struct netif *inp)
++ip6_forward(struct pbuf *p, struct ip6hdr *iphdr, struct netif *inp)
+ {
+   struct netif *netif;
+ 
+@@ -512,7 +512,7 @@
+ err_t
+ ip6_input(struct pbuf *p, struct netif *inp)
+ {
+-  struct ip6_hdr *ip6hdr;
++  struct ip6hdr *ip6hdr;
+   struct netif *netif;
+   const u8_t *nexth;
+   u16_t hlen, hlen_tot; /* the current header length */
+@@ -531,7 +531,7 @@
+   IP6_STATS_INC(ip6.recv);
+ 
+   /* identify the IP header */
+-  ip6hdr = (struct ip6_hdr *)p->payload;
++  ip6hdr = (struct ip6hdr *)p->payload;
+   if (IP6H_V(ip6hdr) != 6) {
+     LWIP_DEBUGF(IP6_DEBUG | LWIP_DBG_LEVEL_WARNING, ("IPv6 packet dropped due to bad version number %"U32_F"\n",
+         IP6H_V(ip6hdr)));
+@@ -1015,7 +1015,7 @@
+ 
+         /* Returned p point to IPv6 header.
+          * Update all our variables and pointers and continue. */
+-        ip6hdr = (struct ip6_hdr *)p->payload;
++        ip6hdr = (struct ip6hdr *)p->payload;
+         nexth = &IP6H_NEXTH(ip6hdr);
+         hlen = hlen_tot = IP6_HLEN;
+         pbuf_remove_header(p, IP6_HLEN);
+@@ -1188,7 +1188,7 @@
+              u8_t hl, u8_t tc,
+              u8_t nexth, struct netif *netif)
+ {
+-  struct ip6_hdr *ip6hdr;
++  struct ip6hdr *ip6hdr;
+   ip6_addr_t dest_addr;
+ 
+   LWIP_ASSERT_CORE_LOCKED();
+@@ -1217,9 +1217,9 @@
+       return ERR_BUF;
+     }
+ 
+-    ip6hdr = (struct ip6_hdr *)p->payload;
+-    LWIP_ASSERT("check that first pbuf can hold struct ip6_hdr",
+-               (p->len >= sizeof(struct ip6_hdr)));
++    ip6hdr = (struct ip6hdr *)p->payload;
++    LWIP_ASSERT("check that first pbuf can hold struct ip6hdr",
++               (p->len >= sizeof(struct ip6hdr)));
+ 
+     IP6H_HOPLIM_SET(ip6hdr, hl);
+     IP6H_NEXTH_SET(ip6hdr, nexth);
+@@ -1242,7 +1242,7 @@
+ 
+   } else {
+     /* IP header already included in p */
+-    ip6hdr = (struct ip6_hdr *)p->payload;
++    ip6hdr = (struct ip6hdr *)p->payload;
+     ip6_addr_copy_from_packed(dest_addr, ip6hdr->dest);
+     ip6_addr_assign_zone(&dest_addr, IP6_UNKNOWN, netif);
+     dest = &dest_addr;
+@@ -1316,7 +1316,7 @@
+           u8_t hl, u8_t tc, u8_t nexth)
+ {
+   struct netif *netif;
+-  struct ip6_hdr *ip6hdr;
++  struct ip6hdr *ip6hdr;
+   ip6_addr_t src_addr, dest_addr;
+ 
+   LWIP_IP_CHECK_PBUF_REF_COUNT_FOR_TX(p);
+@@ -1325,7 +1325,7 @@
+     netif = ip6_route(src, dest);
+   } else {
+     /* IP header included in p, read addresses. */
+-    ip6hdr = (struct ip6_hdr *)p->payload;
++    ip6hdr = (struct ip6hdr *)p->payload;
+     ip6_addr_copy_from_packed(src_addr, ip6hdr->src);
+     ip6_addr_copy_from_packed(dest_addr, ip6hdr->dest);
+     netif = ip6_route(&src_addr, &dest_addr);
+@@ -1375,7 +1375,7 @@
+           u8_t hl, u8_t tc, u8_t nexth, struct netif_hint *netif_hint)
+ {
+   struct netif *netif;
+-  struct ip6_hdr *ip6hdr;
++  struct ip6hdr *ip6hdr;
+   ip6_addr_t src_addr, dest_addr;
+   err_t err;
+ 
+@@ -1385,7 +1385,7 @@
+     netif = ip6_route(src, dest);
+   } else {
+     /* IP header included in p, read addresses. */
+-    ip6hdr = (struct ip6_hdr *)p->payload;
++    ip6hdr = (struct ip6hdr *)p->payload;
+     ip6_addr_copy_from_packed(src_addr, ip6hdr->src);
+     ip6_addr_copy_from_packed(dest_addr, ip6hdr->dest);
+     netif = ip6_route(&src_addr, &dest_addr);
+@@ -1476,7 +1476,7 @@
+ void
+ ip6_debug_print(struct pbuf *p)
+ {
+-  struct ip6_hdr *ip6hdr = (struct ip6_hdr *)p->payload;
++  struct ip6hdr *ip6hdr = (struct ip6hdr *)p->payload;
+ 
+   LWIP_DEBUGF(IP6_DEBUG, ("IPv6 header:\n"));
+   LWIP_DEBUGF(IP6_DEBUG, ("+-------------------------------+\n"));
+diff -Nur lwip-ipv6/src/core/ipv6/ip6_frag.c lwip-ipv6-hdr/src/core/ipv6/ip6_frag.c
+--- lwip-ipv6/src/core/ipv6/ip6_frag.c	2023-11-15 19:48:02.864481010 +0800
++++ lwip-ipv6-hdr/src/core/ipv6/ip6_frag.c	2023-11-15 20:01:41.668481010 +0800
+@@ -551,7 +551,7 @@
+ 
+   if (valid) {
+     /* All fragments have been received */
+-    struct ip6_hdr* iphdr_ptr;
++    struct ip6hdr* iphdr_ptr;
+ 
+     /* chain together the pbufs contained within the ip6_reassdata list. */
+     iprh = (struct ip6_reass_helper*) ipr->p->payload;
+@@ -565,7 +565,7 @@
+         pbuf_remove_header(next_pbuf, IP6_FRAG_HLEN);
+ #if IPV6_FRAG_COPYHEADER
+         if (IPV6_FRAG_REQROOM > 0) {
+-          /* hide the extra bytes borrowed from ip6_hdr for struct ip6_reass_helper */
++          /* hide the extra bytes borrowed from ip6hdr for struct ip6_reass_helper */
+           u8_t hdrerr = pbuf_remove_header(next_pbuf, IPV6_FRAG_REQROOM);
+           LWIP_UNUSED_ARG(hdrerr); /* in case of LWIP_NOASSERT */
+           LWIP_ASSERT("no room for struct ip6_reass_helper", hdrerr == 0);
+@@ -610,7 +610,7 @@
+       (size_t)((u8_t*)p->payload - (u8_t*)ipr->iphdr));
+ 
+     /* This is where the IPv6 header is now. */
+-    iphdr_ptr = (struct ip6_hdr*)((u8_t*)ipr->iphdr +
++    iphdr_ptr = (struct ip6hdr*)((u8_t*)ipr->iphdr +
+       sizeof(struct ip6_frag_hdr));
+ 
+     /* Adjust datagram length by adding header lengths. */
+@@ -721,8 +721,8 @@
+ err_t
+ ip6_frag(struct pbuf *p, struct netif *netif, const ip6_addr_t *dest)
+ {
+-  struct ip6_hdr *original_ip6hdr;
+-  struct ip6_hdr *ip6hdr;
++  struct ip6hdr *original_ip6hdr;
++  struct ip6hdr *ip6hdr;
+   struct ip6_frag_hdr *frag_hdr;
+   struct pbuf *rambuf;
+ #if !LWIP_NETIF_TX_SINGLE_PBUF
+@@ -740,7 +740,7 @@
+ 
+   identification++;
+ 
+-  original_ip6hdr = (struct ip6_hdr *)p->payload;
++  original_ip6hdr = (struct ip6hdr *)p->payload;
+ 
+   /* @todo we assume there are no options in the unfragmentable part (IPv6 header). */
+   LWIP_ASSERT("p->tot_len >= IP6_HLEN", p->tot_len >= IP6_HLEN);
+@@ -769,7 +769,7 @@
+     }
+     /* fill in the IP header */
+     SMEMCPY(rambuf->payload, original_ip6hdr, IP6_HLEN);
+-    ip6hdr = (struct ip6_hdr *)rambuf->payload;
++    ip6hdr = (struct ip6hdr *)rambuf->payload;
+     frag_hdr = (struct ip6_frag_hdr *)((u8_t*)rambuf->payload + IP6_HLEN);
+ #else
+     /* When not using a static buffer, create a chain of pbufs.
+@@ -785,7 +785,7 @@
+     LWIP_ASSERT("this needs a pbuf in one piece!",
+                 (rambuf->len >= (IP6_HLEN)));
+     SMEMCPY(rambuf->payload, original_ip6hdr, IP6_HLEN);
+-    ip6hdr = (struct ip6_hdr *)rambuf->payload;
++    ip6hdr = (struct ip6hdr *)rambuf->payload;
+     frag_hdr = (struct ip6_frag_hdr *)((u8_t*)rambuf->payload + IP6_HLEN);
+ 
+     /* Can just adjust p directly for needed offset. */
+diff -Nur lwip-ipv6/src/core/ipv6/nd6.c lwip-ipv6-hdr/src/core/ipv6/nd6.c
+--- lwip-ipv6/src/core/ipv6/nd6.c	2023-11-15 19:48:02.864481010 +0800
++++ lwip-ipv6-hdr/src/core/ipv6/nd6.c	2023-11-15 20:06:47.036481010 +0800
+@@ -895,7 +895,7 @@
+   case ICMP6_TYPE_PTB: /* Packet too big */
+   {
+     struct icmp6_hdr *icmp6hdr; /* Packet too big message */
+-    struct ip6_hdr *ip6hdr; /* IPv6 header of the packet which caused the error */
++    struct ip6hdr *ip6hdr; /* IPv6 header of the packet which caused the error */
+     u32_t pmtu;
+     ip6_addr_t destination_address;
+ 
+@@ -909,7 +909,7 @@
+     }
+ 
+     icmp6hdr = (struct icmp6_hdr *)p->payload;
+-    ip6hdr = (struct ip6_hdr *)((u8_t*)p->payload + sizeof(struct icmp6_hdr));
++    ip6hdr = (struct ip6hdr *)((u8_t*)p->payload + sizeof(struct icmp6_hdr));
+ 
+     /* Create an aligned, zoned copy of the destination address. */
+     ip6_addr_copy_from_packed(destination_address, ip6hdr->dest);
+@@ -2187,7 +2187,7 @@
+ static void
+ nd6_send_q(s8_t i)
+ {
+-  struct ip6_hdr *ip6hdr;
++  struct ip6hdr *ip6hdr;
+   ip6_addr_t dest;
+ #if LWIP_ND6_QUEUEING
+   struct nd6_q_entry *q;
+@@ -2204,7 +2204,7 @@
+     /* pop first item off the queue */
+     neighbor_cache[i].q = q->next;
+     /* Get ipv6 header. */
+-    ip6hdr = (struct ip6_hdr *)(q->p->payload);
++    ip6hdr = (struct ip6hdr *)(q->p->payload);
+     /* Create an aligned copy. */
+     ip6_addr_copy_from_packed(dest, ip6hdr->dest);
+     /* Restore the zone, if applicable. */
+@@ -2219,7 +2219,7 @@
+ #else /* LWIP_ND6_QUEUEING */
+   if (neighbor_cache[i].q != NULL) {
+     /* Get ipv6 header. */
+-    ip6hdr = (struct ip6_hdr *)(neighbor_cache[i].q->payload);
++    ip6hdr = (struct ip6hdr *)(neighbor_cache[i].q->payload);
+     /* Create an aligned copy. */
+     ip6_addr_copy_from_packed(dest, ip6hdr->dest);
+     /* Restore the zone, if applicable. */
+diff -Nur lwip-ipv6/src/core/raw.c lwip-ipv6-hdr/src/core/raw.c
+--- lwip-ipv6/src/core/raw.c	2023-11-15 19:48:02.860481010 +0800
++++ lwip-ipv6-hdr/src/core/raw.c	2023-11-15 19:49:53.468481010 +0800
+@@ -146,7 +146,7 @@
+   if (IP_HDR_GET_VERSION(p->payload) == 6)
+ #endif /* LWIP_IPV4 */
+   {
+-    struct ip6_hdr *ip6hdr = (struct ip6_hdr *)p->payload;
++    struct ip6hdr *ip6hdr = (struct ip6hdr *)p->payload;
+     proto = IP6H_NEXTH(ip6hdr);
+   }
+ #if LWIP_IPV4
+diff -Nur lwip-ipv6/src/include/lwip/ip6_frag.h lwip-ipv6-hdr/src/include/lwip/ip6_frag.h
+--- lwip-ipv6/src/include/lwip/ip6_frag.h	2023-11-15 19:48:02.864481010 +0800
++++ lwip-ipv6-hdr/src/include/lwip/ip6_frag.h	2023-11-15 20:13:40.008481010 +0800
+@@ -90,7 +90,7 @@
+ struct ip6_reassdata {
+   struct ip6_reassdata *next;
+   struct pbuf *p;
+-  struct ip6_hdr *iphdr; /* pointer to the first (original) IPv6 header */
++  struct ip6hdr *iphdr; /* pointer to the first (original) IPv6 header */
+ #if IPV6_FRAG_COPYHEADER
+   ip6_addr_p_t src; /* copy of the source address in the IP header */
+   ip6_addr_p_t dest; /* copy of the destination address in the IP header */
+diff -Nur lwip-ipv6/src/include/lwip/ip.h lwip-ipv6-hdr/src/include/lwip/ip.h
+--- lwip-ipv6/src/include/lwip/ip.h	2023-11-15 19:48:02.864481010 +0800
++++ lwip-ipv6-hdr/src/include/lwip/ip.h	2023-11-15 20:12:42.796481010 +0800
+@@ -123,7 +123,7 @@
+ #endif /* LWIP_IPV4 */
+ #if LWIP_IPV6
+   /** Header of the input IPv6 packet currently being processed. */
+-  struct ip6_hdr *current_ip6_header;
++  struct ip6hdr *current_ip6_header;
+ #endif /* LWIP_IPV6 */
+   /** Total header length of current_ip4/6_header (i.e. after this, the UDP/TCP header starts) */
+   u16_t current_ip_header_tot_len;
+@@ -159,7 +159,7 @@
+ /** Get the IPv6 header of the current packet.
+  * This function must only be called from a receive callback (udp_recv,
+  * raw_recv, tcp_accept). It will return NULL otherwise. */
+-#define ip6_current_header()      ((const struct ip6_hdr*)(ip_data.current_ip6_header))
++#define ip6_current_header()      ((const struct ip6hdr*)(ip_data.current_ip6_header))
+ /** Returns TRUE if the current IP input packet is IPv6, FALSE if it is IPv4 */
+ #define ip_current_is_v6()        (ip6_current_header() != NULL)
+ /** Source IPv6 address of current_header */
+@@ -201,7 +201,7 @@
+ /** Get the IPv6 header of the current packet.
+  * This function must only be called from a receive callback (udp_recv,
+  * raw_recv, tcp_accept). It will return NULL otherwise. */
+-#define ip6_current_header()      ((const struct ip6_hdr*)(ip_data.current_ip6_header))
++#define ip6_current_header()      ((const struct ip6hdr*)(ip_data.current_ip6_header))
+ /** Always returns TRUE when only supporting IPv6 only */
+ #define ip_current_is_v6()        1
+ /** Get the transport layer protocol */
+diff -Nur lwip-ipv6/src/include/lwip/prot/ip6.h lwip-ipv6-hdr/src/include/lwip/prot/ip6.h
+--- lwip-ipv6/src/include/lwip/prot/ip6.h	2023-11-15 19:48:02.868481010 +0800
++++ lwip-ipv6-hdr/src/include/lwip/prot/ip6.h	2023-11-17 13:24:56.832481010 +0800
+@@ -79,7 +79,7 @@
+ #  include "arch/bpstruct.h"
+ #endif
+ PACK_STRUCT_BEGIN
+-struct ip6_hdr {
++struct ip6hdr {
+   /** version / traffic class / flow label */
+   PACK_STRUCT_FIELD(u32_t _v_tc_fl);
+   /** payload length */
+diff -Nur lwip-ipv6/src/netif/lowpan6.c lwip-ipv6-hdr/src/netif/lowpan6.c
+--- lwip-ipv6/src/netif/lowpan6.c	2023-11-15 19:48:02.868481010 +0800
++++ lwip-ipv6-hdr/src/netif/lowpan6.c	2023-11-15 20:16:23.836481010 +0800
+@@ -570,12 +570,12 @@
+   struct lowpan6_link_addr src, dest;
+ #if LWIP_6LOWPAN_INFER_SHORT_ADDRESS
+   ip6_addr_t ip6_src;
+-  struct ip6_hdr *ip6_hdr;
++  struct ip6hdr *ip6_hdr;
+ #endif /* LWIP_6LOWPAN_INFER_SHORT_ADDRESS */
+ 
+ #if LWIP_6LOWPAN_INFER_SHORT_ADDRESS
+   /* Check if we can compress source address (use aligned copy) */
+-  ip6_hdr = (struct ip6_hdr *)q->payload;
++  ip6_hdr = (struct ip6hdr *)q->payload;
+   ip6_addr_copy_from_packed(ip6_src, ip6_hdr->src);
+   ip6_addr_assign_zone(&ip6_src, IP6_UNICAST, netif);
+   if (lowpan6_get_address_mode(&ip6_src, &short_mac_addr) == 3) {
+diff -Nur lwip-ipv6/src/netif/lowpan6_common.c lwip-ipv6-hdr/src/netif/lowpan6_common.c
+--- lwip-ipv6/src/netif/lowpan6_common.c	2023-11-15 19:48:02.868481010 +0800
++++ lwip-ipv6-hdr/src/netif/lowpan6_common.c	2023-11-15 20:15:44.460481010 +0800
+@@ -137,7 +137,7 @@
+   u8_t lowpan6_header_len;
+   u8_t hidden_header_len = 0;
+   s8_t i;
+-  struct ip6_hdr *ip6hdr;
++  struct ip6hdr *ip6hdr;
+   ip_addr_t ip6src, ip6dst;
+ 
+   LWIP_ASSERT("netif != NULL", netif != NULL);
+@@ -160,7 +160,7 @@
+   }
+ 
+   /* Point to ip6 header and align copies of src/dest addresses. */
+-  ip6hdr = (struct ip6_hdr *)inptr;
++  ip6hdr = (struct ip6hdr *)inptr;
+   ip_addr_copy_from_ip6_packed(ip6dst, ip6hdr->dest);
+   ip6_addr_assign_zone(ip_2_ip6(&ip6dst), IP6_UNKNOWN, netif);
+   ip_addr_copy_from_ip6_packed(ip6src, ip6hdr->src);
+@@ -396,7 +396,7 @@
+                        struct lowpan6_link_addr *src, struct lowpan6_link_addr *dest)
+ {
+   u16_t lowpan6_offset;
+-  struct ip6_hdr *ip6hdr;
++  struct ip6hdr *ip6hdr;
+   s8_t i;
+   u32_t header_temp;
+   u16_t ip6_offset = IP6_HLEN;
+@@ -408,7 +408,7 @@
+   LWIP_ASSERT("hdr_size_comp != NULL", hdr_size_comp != NULL);
+   LWIP_ASSERT("dehdr_size_decompst != NULL", hdr_size_decomp != NULL);
+ 
+-  ip6hdr = (struct ip6_hdr *)decomp_buffer;
++  ip6hdr = (struct ip6hdr *)decomp_buffer;
+   if (decomp_bufsize < IP6_HLEN) {
+     return ERR_MEM;
+   }

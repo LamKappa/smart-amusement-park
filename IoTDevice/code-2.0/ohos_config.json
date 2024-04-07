@@ -1,0 +1,9 @@
+{
+  "root_path": "/home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0",
+  "board": "hispark_pegasus",
+  "kernel": "liteos_m",
+  "product": "wifiiot_hilink_3861_PIR_mqtt_server",
+  "product_path": "/home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0/vendor/chinasoftinc/hilink_3861_PIRMqttServer",
+  "device_path": "/home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0/device/hisilicon/hispark_pegasus/sdk_liteos",
+  "patch_cache": null
+}

@@ -1,0 +1,37 @@
+From 189022c0a2438f099caa6cbfcac1a7ca76cf1e71 Mon Sep 17 00:00:00 2001
+From: yangchen <yangchen145@huawei.com>
+Date: Fri, 3 Nov 2023 14:55:15 +0800
+Subject: [PATCH] posix_api: support select
+
+---
+ src/api/posix_api.c     | 1 +
+ src/include/posix_api.h | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/src/api/posix_api.c b/src/api/posix_api.c
+index b7334da..0dc6ad1 100644
+--- a/src/api/posix_api.c
++++ b/src/api/posix_api.c
+@@ -114,6 +114,7 @@ int posix_api_init(void)
+     CHECK_DLSYM_RET_RETURN(posix_api->sigaction_fn = dlsym(handle, "sigaction"));
+     CHECK_DLSYM_RET_RETURN(posix_api->poll_fn = dlsym(handle, "poll"));
+     CHECK_DLSYM_RET_RETURN(posix_api->ioctl_fn = dlsym(handle, "ioctl"));
++    CHECK_DLSYM_RET_RETURN(posix_api->select_fn = dlsym(handle, "select"));
+ 
+     /* lstack helper api */
+     posix_api->get_socket = get_socket;
+diff --git a/src/include/posix_api.h b/src/include/posix_api.h
+index a73e2ec..cde37e3 100644
+--- a/src/include/posix_api.h
++++ b/src/include/posix_api.h
+@@ -78,6 +78,7 @@ typedef struct {
+     int (*sigaction_fn)(int signum, const struct sigaction *act, struct sigaction *oldact);
+     int (*poll_fn)(struct pollfd *fds, nfds_t nfds, int timeout);
+     int (*ioctl_fn)(int fd, int cmd, ...);
++    int (*select_fn)(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
+ 
+     int ues_posix;
+ } posix_api_t;
+-- 
+2.23.0
+

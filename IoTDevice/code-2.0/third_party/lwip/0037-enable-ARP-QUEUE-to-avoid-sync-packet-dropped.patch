@@ -1,0 +1,27 @@
+From 2acba8aecef2140045a8ae50b05f9f36f5dc865f Mon Sep 17 00:00:00 2001
+From: jiangheng <jiangheng14@huawei.com>
+Date: Wed, 23 Nov 2022 09:37:34 +0800
+Subject: [PATCH] enable ARP QUEUE to avoid sync packet dropped
+
+---
+ src/include/lwipopts.h | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/include/lwipopts.h b/src/include/lwipopts.h
+index 7459991..a5add21 100644
+--- a/src/include/lwipopts.h
++++ b/src/include/lwipopts.h
+@@ -169,6 +169,10 @@
+ 
+ #define ARP_TABLE_SIZE 512
+ 
++#define ARP_QUEUEING 1
++
++#define ARP_QUEUE_LEN 32
++
+ /*  ---------------------------------------
+  *  -------      NIC offloads      --------
+  *  ---------------------------------------
+-- 
+2.23.0
+

@@ -1,0 +1,14 @@
+{
+  "subsystem": "distributeddatamgr",
+  "parts": {
+    "distributedfilejs": {
+      "variants": [
+        "wearable",
+        "phone"
+      ],
+      "module_list": [
+        "//foundation/distributeddatamgr/distributedfile/interfaces/kits/js:build_kits_js"
+      ]
+    }
+  }
+}

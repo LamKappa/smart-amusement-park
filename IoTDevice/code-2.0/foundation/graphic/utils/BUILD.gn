@@ -1,0 +1,97 @@
+# Copyright (c) 2020-2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/lite/config/component/lite_component.gni")
+import("//build/lite/config/subsystem/graphic/config.gni")
+import("//build/lite/ndk/ndk.gni")
+
+lite_component("lite_graphic_utils") {
+  features = [ ":graphic_utils" ]
+  public_deps = features
+}
+
+ndk_lib("lite_graphic_utils_ndk") {
+  lib_extension = ".so"
+  deps = [ ":graphic_utils" ]
+  head_files = [ "interfaces/kits" ]
+}
+
+lite_component("lite_graphic_hals") {
+  features = [ ":graphic_hals" ]
+  public_deps = features
+}
+
+ndk_lib("lite_graphic_hals_ndk") {
+  lib_extension = ".so"
+  deps = [ ":graphic_hals" ]
+  head_files = []
+}
+
+shared_library("graphic_utils") {
+  if (enable_graphic_dualcore == true) {
+    defines = [ "HAL_CPU_NUM = 2" ]
+  }
+
+  sources = [
+    "frameworks/color.cpp",
+    "frameworks/geometry2d.cpp",
+    "frameworks/graphic_math.cpp",
+    "frameworks/graphic_performance.cpp",
+    "frameworks/hal_cpu.cpp",
+    "frameworks/hal_tick.cpp",
+    "frameworks/mem_api.cpp",
+    "frameworks/pixel_format_utils.cpp",
+    "frameworks/queue.c",
+    "frameworks/style.cpp",
+    "frameworks/transform.cpp",
+    "frameworks/version.cpp",
+  ]
+  include_dirs = [ "frameworks" ]
+  public_configs = [ ":graphic_utils_public_config" ]
+  deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+  public_deps =
+      [ "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared" ]
+  cflags = [ "-fPIC" ]
+  cflags += [ "-Wall" ]
+  cflags_cc = cflags
+}
+
+config("graphic_utils_public_config") {
+  include_dirs = [
+    "interfaces/innerkits",
+    "interfaces/kits",
+  ]
+}
+
+shared_library("graphic_hals") {
+  sources = [
+    "frameworks/hals/gfx_engines.cpp",
+    "frameworks/hals/hi_fbdev.cpp",
+  ]
+  include_dirs = [ "//foundation/graphic/wms/interfaces/innerkits" ]
+  deps = [
+    ":lite_graphic_utils",
+    "//drivers/peripheral/display/hal:hdi_display",
+  ]
+  public_configs = [ ":graphic_hals_public_config" ]
+  ldflags = [
+    "-ldisplay_gfx",
+    "-ldisplay_gralloc",
+    "-ldisplay_layer",
+  ]
+}
+
+config("graphic_hals_public_config") {
+  include_dirs = [
+    "interfaces/innerkits",
+    "//drivers/peripheral/display/interfaces_lite/include",
+  ]
+}

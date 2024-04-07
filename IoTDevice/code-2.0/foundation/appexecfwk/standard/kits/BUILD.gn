@@ -1,0 +1,137 @@
+# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+SUBSYSTEM_DIR = "//foundation/appexecfwk/standard"
+
+config("appkit_config") {
+  defines = [
+    "APP_LOG_TAG = \"AppkitNative\"",
+    "LOG_DOMAIN = 0xD001150",
+  ]
+
+  include_dirs = [
+    "//foundation/aafwk/standard/interfaces/innerkits/intent/include",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core/include/bundlemgr",
+    "//foundation/aafwk/standard/interfaces/innerkits/want/include",
+    "//utils/system/safwk/native/include",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core/include/appmgr",
+    "//foundation/aafwk/standard/frameworks/kits/ability/native/include",
+    "//foundation/aafwk/standard/interfaces/innerkits/want/include/ohos/aafwk/content",
+    "//base/global/resmgr_standard/interfaces/innerkits/include",
+  ]
+}
+
+config("appkit_public_config") {
+  visibility = [ ":*" ]
+  include_dirs =
+      [ "//base/global/resmgr_standard/interfaces/innerkits/include" ]
+}
+
+#build bin
+ohos_executable("appexec") {
+  include_dirs = [
+    "$SUBSYSTEM_DIR/common/log/include",
+    "$SUBSYSTEM_DIR/interfaces/innerkits/appexecfwk_core/include/appmgr",
+    "$SUBSYSTEM_DIR/interfaces/innerkits/appexecfwk_base/include",
+    "$SUBSYSTEM_DIR/interfaces/innerkits/libeventhandler/include",
+    "//foundation/aafwk/standard/frameworks/kits/ability/native/include",
+    "//foundation/aafwk/standard/interfaces/innerkits/base/include",
+    "//foundation/aafwk/standard/interfaces/innerkits/ability_manager/include",
+    "//foundation/aafwk/standard/services/abilitymgr/include",
+    "//foundation/appexecfwk/standard/kits/appkit/native/app/include",
+    "//utils/native/base/include",
+    "//foundation/distributedschedule/dmsfwk/services/dtbschedmgr/include",
+    "//foundation/distributedschedule/samgr/interfaces/innerkits/samgr_proxy/include",
+  ]
+
+  configs = [ ":appkit_config" ]
+
+  sources = [ "$SUBSYSTEM_DIR/kits/appkit/native/app/src/main.cpp" ]
+
+  deps = [
+    "$SUBSYSTEM_DIR/kits:appkit_native",
+    "//foundation/aafwk/standard/frameworks/kits/ability/native:abilitykit_native",
+  ]
+
+  external_deps = [
+    "hiviewdfx_hilog_native:libhilog",
+    "ipc:ipc_core",
+  ]
+
+  install_enable = true
+  part_name = "appexecfwk_standard"
+}
+
+# build so
+ohos_shared_library("appkit_native") {
+  include_dirs = [
+    "$SUBSYSTEM_DIR/common/log/include",
+    "//foundation/distributedschedule/samgr/interfaces/innerkits/samgr_proxy/include",
+    "$SUBSYSTEM_DIR/interfaces/innerkits/appexecfwk_base/include",
+    "$SUBSYSTEM_DIR/interfaces/innerkits/appexecfwk_core/include/appmgr",
+    "$SUBSYSTEM_DIR/interfaces/innerkits/libeventhandler/include",
+    "$SUBSYSTEM_DIR/kits/appkit/native/app/include",
+    "//foundation/aafwk/standard/frameworks/kits/ability/native/include",
+    "//foundation/aafwk/standard/interfaces/innerkits/ability_manager/include",
+    "//foundation/aafwk/standard/services/abilitymgr/include",
+    "//utils/native/base/include",
+    "//foundation/distributedschedule/dmsfwk/services/dtbschedmgr/include",
+    "//foundation/aafwk/standard/interfaces/innerkits/want/include/ohos/aafwk_L2/content",
+  ]
+
+  configs = [ ":appkit_config" ]
+
+  public_configs = [ ":appkit_public_config" ]
+
+  sources = [
+    "$SUBSYSTEM_DIR/kits/appkit/native/app/src/ability_manager.cpp",
+    "$SUBSYSTEM_DIR/kits/appkit/native/app/src/ability_record_mgr.cpp",
+    "$SUBSYSTEM_DIR/kits/appkit/native/app/src/ability_start_setting.cpp",
+    "$SUBSYSTEM_DIR/kits/appkit/native/app/src/app_loader.cpp",
+    "$SUBSYSTEM_DIR/kits/appkit/native/app/src/application_context.cpp",
+    "$SUBSYSTEM_DIR/kits/appkit/native/app/src/application_env.cpp",
+    "$SUBSYSTEM_DIR/kits/appkit/native/app/src/application_env_impl.cpp",
+    "$SUBSYSTEM_DIR/kits/appkit/native/app/src/application_impl.cpp",
+    "$SUBSYSTEM_DIR/kits/appkit/native/app/src/context_container.cpp",
+
+    #"$SUBSYSTEM_DIR/kits/appkit/native/app/main.cpp",
+    "$SUBSYSTEM_DIR/kits/appkit/native/app/src/context_deal.cpp",
+    "$SUBSYSTEM_DIR/kits/appkit/native/app/src/main_thread.cpp",
+    "$SUBSYSTEM_DIR/kits/appkit/native/app/src/ohos_application.cpp",
+    "$SUBSYSTEM_DIR/kits/appkit/native/app/src/sys_mgr_client.cpp",
+  ]
+  cflags = []
+  if (target_cpu == "arm") {
+    cflags += [ "-DBINDER_IPC_32BIT" ]
+  }
+  deps = [
+    "$SUBSYSTEM_DIR/common:libappexecfwk_common",
+    "$SUBSYSTEM_DIR/interfaces/innerkits/appexecfwk_base:appexecfwk_base",
+    "$SUBSYSTEM_DIR/interfaces/innerkits/appexecfwk_core:appexecfwk_core",
+    "//base/global/resmgr_standard/frameworks/resmgr:global_resmgr",
+    "//foundation/aafwk/standard/frameworks/kits/ability/native:abilitykit_native",
+    "//foundation/aafwk/standard/interfaces/innerkits/ability_manager:ability_manager",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/libeventhandler:libeventhandler",
+    "//foundation/distributedschedule/dmsfwk/interfaces/innerkits/uri:zuri",
+    "//foundation/distributedschedule/samgr/interfaces/innerkits/samgr_proxy:samgr_proxy",
+    "//utils/native/base:utils",
+  ]
+
+  external_deps = [
+    "hiviewdfx_hilog_native:libhilog",
+    "ipc:ipc_core",
+  ]
+
+  part_name = "appexecfwk_standard"
+}

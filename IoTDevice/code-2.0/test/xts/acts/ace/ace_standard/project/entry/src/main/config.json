@@ -1,0 +1,52 @@
+{
+  "app": {
+    "bundleName": "com.example.aceceshi",
+    "vendor": "example",
+    "version": {
+      "code": 1,
+      "name": "1.0"
+    },
+    "apiVersion": {
+      "compatible": 5,
+      "target": 5,
+      "releaseType": "Release"
+    }
+  },
+  "deviceConfig": {},
+  "module": {
+    "package": "com.example.aceceshi",
+    "name": "testModule",
+    "deviceType": [
+      "phone"
+    ],
+    "distro": {
+      "deliveryWithInstall": true,
+      "moduleName": "entry_test",
+      "moduleType": "feature"
+    },
+    "abilities": [
+      {
+        "name": "decc.testkit.runner.JsEntryAbility",
+        "description": "Test Entry Ability",
+        "icon": "$media:icon",
+        "label": "TestAbility",
+        "launchType": "standard",
+        "orientation": "landscape",
+        "visible": true,
+        "type": "page"
+      }
+    ],
+    "js": [
+      {
+        "pages": [
+          "pages/index/index"
+        ],
+        "name": "default",
+        "window": {
+          "designWidth": 750,
+          "autoDesignWidth": false
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,82 @@
+From f1b954fd737ca0e7571019f88b18a926ce849e6b Mon Sep 17 00:00:00 2001
+From: hantwofish <hankangkang5@huawei.com>
+Date: Tue, 5 Dec 2023 10:57:46 +0800
+Subject: [PATCH] modify log info err
+
+---
+ src/core/tcp.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/src/core/tcp.c b/src/core/tcp.c
+index 3c7bbd0..2cfee11 100644
+--- a/src/core/tcp.c
++++ b/src/core/tcp.c
+@@ -1397,17 +1397,17 @@ tcp_slowtmr_start:
+ 
+     if (pcb->state == SYN_SENT && pcb->nrtx >= TCP_SYNMAXRTX) {
+       ++pcb_remove;
+-      LWIP_DEBUGF(TCP_DEBUG | GAZELLE_DEBUG_SERIOUS, ("tcp_slowtmr: max SYN retries reached loac_port=%u, remote_port=%u\n", pcb->local_port, pcb->remote_port));
++      LWIP_DEBUGF(TCP_DEBUG | GAZELLE_DEBUG_SERIOUS, ("tcp_slowtmr: max SYN retries reached local_port=%u, remote_port=%u\n", pcb->local_port, pcb->remote_port));
+     } else if (pcb->nrtx >= TCP_MAXRTX) {
+       ++pcb_remove;
+-      LWIP_DEBUGF(TCP_DEBUG | GAZELLE_DEBUG_SERIOUS, ("tcp_slowtmr: max DATA retries reached loac_port=%u, remote_port=%u\n", pcb->local_port, pcb->remote_port));
++      LWIP_DEBUGF(TCP_DEBUG | GAZELLE_DEBUG_SERIOUS, ("tcp_slowtmr: max DATA retries reached local_port=%u, remote_port=%u\n", pcb->local_port, pcb->remote_port));
+     } else {
+       if (pcb->persist_backoff > 0) {
+         LWIP_ASSERT("tcp_slowtimr: persist ticking with in-flight data", pcb->unacked == NULL);
+         LWIP_ASSERT("tcp_slowtimr: persist ticking with empty send buffer", pcb->unsent != NULL);
+         if (pcb->persist_probe >= TCP_MAXRTX) {
+           ++pcb_remove; /* max probes reached */
+-          LWIP_DEBUGF(TCP_DEBUG | GAZELLE_DEBUG_SERIOUS, ("tcp_slowtmr: persist_probe is greater TCP_MAXRTX loac_port=%u, remote_port=%u\n", pcb->local_port, pcb->remote_port));
++          LWIP_DEBUGF(TCP_DEBUG | GAZELLE_DEBUG_SERIOUS, ("tcp_slowtmr: persist_probe is greater TCP_MAXRTX local_port=%u, remote_port=%u\n", pcb->local_port, pcb->remote_port));
+         } else {
+           u8_t backoff_cnt = tcp_persist_backoff[pcb->persist_backoff - 1];
+           if (pcb->persist_cnt < backoff_cnt) {
+@@ -1491,7 +1491,7 @@ tcp_slowtmr_start:
+         if ((u32_t)(tcp_ticks - pcb->tmr) >
+             TCP_FIN_WAIT_TIMEOUT / TCP_SLOW_INTERVAL) {
+           ++pcb_remove;
+-          LWIP_DEBUGF(TCP_DEBUG | GAZELLE_DEBUG_SERIOUS, ("tcp_slowtmr: removing pcb stuck in FIN-WAIT-2 loac_port=%u, remote_port=%u\n", pcb->local_port, pcb->remote_port));
++          LWIP_DEBUGF(TCP_DEBUG | GAZELLE_DEBUG_SERIOUS, ("tcp_slowtmr: removing pcb stuck in FIN-WAIT-2 local_port=%u, remote_port=%u\n", pcb->local_port, pcb->remote_port));
+         }
+       }
+     }
+@@ -1502,7 +1502,7 @@ tcp_slowtmr_start:
+          (pcb->state == CLOSE_WAIT))) {
+       if ((u32_t)(tcp_ticks - pcb->tmr) >
+           (pcb->keep_idle + TCP_KEEP_DUR(pcb)) / TCP_SLOW_INTERVAL) {
+-        LWIP_DEBUGF(TCP_DEBUG | GAZELLE_DEBUG_SERIOUS, ("tcp_slowtmr: KEEPALIVE timeout. Aborting connection to loac_port=%u, remote_port=%u\n", pcb->local_port, pcb->remote_port));
++        LWIP_DEBUGF(TCP_DEBUG | GAZELLE_DEBUG_SERIOUS, ("tcp_slowtmr: KEEPALIVE timeout. Aborting connection to local_port=%u, remote_port=%u\n", pcb->local_port, pcb->remote_port));
+         ip_addr_debug_print_val(TCP_DEBUG, pcb->remote_ip);
+         LWIP_DEBUGF(TCP_DEBUG, ("\n"));
+ 
+@@ -1524,7 +1524,7 @@ tcp_slowtmr_start:
+ #if TCP_QUEUE_OOSEQ
+     if (pcb->ooseq != NULL &&
+         (tcp_ticks - pcb->tmr >= (u32_t)pcb->rto * TCP_OOSEQ_TIMEOUT)) {
+-      LWIP_DEBUGF(TCP_DEBUG | GAZELLE_DEBUG_SERIOUS, ("tcp_slowtmr: dropping OOSEQ queued data loac_port=%u, remote_port=%u\n", pcb->local_port, pcb->remote_port));
++      LWIP_DEBUGF(TCP_DEBUG | GAZELLE_DEBUG_SERIOUS, ("tcp_slowtmr: dropping OOSEQ queued data local_port=%u, remote_port=%u\n", pcb->local_port, pcb->remote_port));
+       tcp_free_ooseq(pcb);
+     }
+ #endif /* TCP_QUEUE_OOSEQ */
+@@ -1534,7 +1534,7 @@ tcp_slowtmr_start:
+       if ((u32_t)(tcp_ticks - pcb->tmr) >
+           TCP_SYN_RCVD_TIMEOUT / TCP_SLOW_INTERVAL) {
+         ++pcb_remove;
+-        LWIP_DEBUGF(TCP_DEBUG | GAZELLE_DEBUG_SERIOUS, ("tcp_slowtmr: removing pcb stuck in SYN-RCVD loac_port=%u, remote_port=%u\n", pcb->local_port, pcb->remote_port));
++        LWIP_DEBUGF(TCP_DEBUG | GAZELLE_DEBUG_SERIOUS, ("tcp_slowtmr: removing pcb stuck in SYN-RCVD local_port=%u, remote_port=%u\n", pcb->local_port, pcb->remote_port));
+       }
+     }
+ 
+@@ -1542,7 +1542,7 @@ tcp_slowtmr_start:
+     if (pcb->state == LAST_ACK) {
+       if ((u32_t)(tcp_ticks - pcb->tmr) > 2 * TCP_MSL / TCP_SLOW_INTERVAL) {
+         ++pcb_remove;
+-        LWIP_DEBUGF(TCP_DEBUG | GAZELLE_DEBUG_SERIOUS, ("tcp_slowtmr: removing pcb stuck in LAST-ACK loac_port=%u, remote_port=%u\n", pcb->local_port, pcb->remote_port));
++        LWIP_DEBUGF(TCP_DEBUG | GAZELLE_DEBUG_SERIOUS, ("tcp_slowtmr: removing pcb stuck in LAST-ACK local_port=%u, remote_port=%u\n", pcb->local_port, pcb->remote_port));
+       }
+     }
+ 
+-- 
+2.33.0
+

@@ -1,0 +1,28 @@
+From 5e5195ad88819a77d59038ec49004d1e11801d08 Mon Sep 17 00:00:00 2001
+From: jiangheng <jiangheng14@huawei.com>
+Date: Fri, 8 Dec 2023 11:14:15 +0800
+Subject: [PATCH] frag: fix coredump when get netif
+
+---
+ src/core/ipv4/ip4_frag.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/core/ipv4/ip4_frag.c b/src/core/ipv4/ip4_frag.c
+index f63a99e..b4a183a 100644
+--- a/src/core/ipv4/ip4_frag.c
++++ b/src/core/ipv4/ip4_frag.c
+@@ -640,9 +640,9 @@ ip4_reass(struct pbuf *p)
+     IPH_CHKSUM_SET(fraghdr, 0);
+     /* @todo: do we need to set/calculate the correct checksum? */
+ #if CHECKSUM_GEN_IP
+-    IF__NETIF_CHECKSUM_ENABLED(ip_current_input_netif(), NETIF_CHECKSUM_GEN_IP) {
++    IF__NETIF_CHECKSUM_ENABLED(netif_default, NETIF_CHECKSUM_GEN_IP) {
+ #if CHECKSUM_GEN_IP_HW
+-    if (netif_get_txol_flags(ip_current_input_netif()) & DEV_TX_OFFLOAD_IPV4_CKSUM) {
++    if (netif_get_txol_flags(netif_default) & DEV_TX_OFFLOAD_IPV4_CKSUM) {
+       iph_cksum_set(p, IP_HLEN, 1);
+     } else {
+       iph_cksum_set(p, IP_HLEN, 0);
+-- 
+2.27.0
+

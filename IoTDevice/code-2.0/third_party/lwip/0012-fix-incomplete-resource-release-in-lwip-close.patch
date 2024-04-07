@@ -1,0 +1,49 @@
+From c5db70bef7f1ac6627b278fdf06be57bce0ef00b Mon Sep 17 00:00:00 2001
+From: wuchangsheng <wuchangsheng2@huawei.com>
+Date: Thu, 19 Aug 2021 14:53:14 +0800
+Subject: [PATCH] fix event.data.ptr double free due to socket don't free in
+lwip_close
+
+---
+src/api/sockets.c | 10 ++++++----
+1 file changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/src/api/sockets.c b/src/api/sockets.c
+index 7ce9378..ac4cccb 100644
+--- a/src/api/sockets.c
++++ b/src/api/sockets.c
+@@ -963,18 +963,20 @@ lwip_close(int s)
+   struct lwip_sock *sock;
+   int is_tcp = 0;
+   err_t err;
++  int ret = 0;
+
+   LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_close(%d)\n", s));
+
+ #if USE_LIBOS
+-  int ret;
+   if (posix_api->is_epfd(s)) {
+     return posix_api->epoll_close_fn(s);
+   }
+
++  /* No matter what the result of close, lwip_sock resources should release
++   * to prevent the potential double freee problem caused by reporting events after the close */
+   ret = posix_api->close_fn(s);
+-  if (ret < 0)
+-    return ret;
++  if ((ret < 0) && (errno == EINTR))
++    ret = posix_api->close_fn(s);
+   if (posix_api->is_chld == 0)
+     clean_host_fd(s);
+
+@@ -1014,7 +1016,7 @@ lwip_close(int s)
+
+   free_socket(sock, is_tcp);
+   set_errno(0);
+-  return 0;
++  return ret;
+ }
+
+ int
+--
+2.23.0

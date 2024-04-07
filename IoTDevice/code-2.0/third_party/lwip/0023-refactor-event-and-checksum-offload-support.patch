@@ -1,0 +1,698 @@
+From 8dd0a15e60cfee7e7f1be1ea051d0e09031f8fdd Mon Sep 17 00:00:00 2001
+From: jiangheng <jiangheng12@huawei.com>
+Date: Tue, 29 Mar 2022 21:33:17 +0800
+Subject: [PATCH] refactor event and add HW checksum offload
+
+---
+ src/api/api_msg.c        |   9 ++++
+ src/api/posix_api.c      |   2 +
+ src/api/sockets.c        |   4 +-
+ src/core/ipv4/icmp.c     |  13 +++++
+ src/core/ipv4/ip4.c      |  24 ++++++++-
+ src/core/ipv4/ip4_frag.c |  23 +++++++++
+ src/core/pbuf.c          |   9 +++-
+ src/core/tcp_in.c        |  17 +++++++
+ src/core/tcp_out.c       |  72 +++++++++++++++++++++++++-
+ src/include/dpdk_cksum.h | 107 +++++++++++++++++++++++++++++++++++++++
+ src/include/lwip/pbuf.h  |  12 ++++-
+ src/include/lwipopts.h   |  30 ++++++++---
+ src/include/lwipsock.h   |  18 +++----
+ src/netif/ethernet.c     |   8 +++
+ 14 files changed, 322 insertions(+), 26 deletions(-)
+ create mode 100644 src/include/dpdk_cksum.h
+
+diff --git a/src/api/api_msg.c b/src/api/api_msg.c
+index 3072dd9..672f022 100644
+--- a/src/api/api_msg.c
++++ b/src/api/api_msg.c
+@@ -57,6 +57,7 @@
+ #if USE_LIBOS
+ #include "lwip/sockets.h"
+ #include "lwipsock.h"
++#include "posix_api.h"
+ #endif
+ 
+ #include <string.h>
+@@ -1758,7 +1759,15 @@ lwip_netconn_do_writemore(struct netconn *conn  WRITE_DELAYED_PARAM)
+       } else {
+         write_more = 0;
+       }
++#if USE_LIBOS
++      /* vector->ptr is private arg sock */
++      LWIP_UNUSED_ARG(dataptr);
++      write_more = 0;
++      err = tcp_write(conn->pcb.tcp, conn->current_msg->msg.w.vector->ptr, len, apiflags);
++      conn->current_msg->msg.w.len = len;
++#else
+       err = tcp_write(conn->pcb.tcp, dataptr, len, apiflags);
++#endif
+       if (err == ERR_OK) {
+         conn->current_msg->msg.w.offset += len;
+         conn->current_msg->msg.w.vector_off += len;
+diff --git a/src/api/posix_api.c b/src/api/posix_api.c
+index bce07f5..3f85bad 100644
+--- a/src/api/posix_api.c
++++ b/src/api/posix_api.c
+@@ -42,6 +42,7 @@
+ 
+ #include "lwip/err.h"
+ #include "lwipsock.h"
++#include "posix_api.h"
+ 
+ posix_api_t *posix_api;
+ posix_api_t posix_api_val;
+@@ -64,6 +65,7 @@ void posix_api_fork(void)
+     posix_api->get_socket = chld_get_socket;
+ }
+ 
++
+ int posix_api_init(void)
+ {
+ /* the symbol we use here won't be NULL, so we don't need dlerror()
+diff --git a/src/api/sockets.c b/src/api/sockets.c
+index 21de5d9..3d94454 100644
+--- a/src/api/sockets.c
++++ b/src/api/sockets.c
+@@ -65,6 +65,7 @@
+ #if USE_LIBOS
+ #include <stdarg.h>
+ #include "lwipsock.h"
++#include "posix_api.h"
+ #endif
+ 
+ #include <string.h>
+@@ -2682,9 +2683,6 @@ event_callback(struct netconn *conn, enum netconn_evt evt, u16_t len)
+         check_waiters = 0;
+       }
+       sock->sendevent = 1;
+-#if USE_LIBOS
+-      add_epoll_event(conn, EPOLLOUT);
+-#endif
+       break;
+     case NETCONN_EVT_SENDMINUS:
+       sock->sendevent = 0;
+diff --git a/src/core/ipv4/icmp.c b/src/core/ipv4/icmp.c
+index 59b493a..c58ae25 100644
+--- a/src/core/ipv4/icmp.c
++++ b/src/core/ipv4/icmp.c
+@@ -51,6 +51,10 @@
+ 
+ #include <string.h>
+ 
++#if USE_LIBOS && CHECKSUM_GEN_IP_HW
++#include "dpdk_cksum.h"
++#endif
++
+ #ifdef LWIP_HOOK_FILENAME
+ #include LWIP_HOOK_FILENAME
+ #endif
+@@ -236,7 +240,16 @@ icmp_input(struct pbuf *p, struct netif *inp)
+         IPH_CHKSUM_SET(iphdr, 0);
+ #if CHECKSUM_GEN_IP
+         IF__NETIF_CHECKSUM_ENABLED(inp, NETIF_CHECKSUM_GEN_IP) {
++#if CHECKSUM_GEN_IP_HW
++        if (get_eth_params_tx_ol() & DEV_TX_OFFLOAD_IPV4_CKSUM) {
++          iph_cksum_set(p, hlen, 1);
++        } else {
++          iph_cksum_set(p, hlen, 0);
++          IPH_CHKSUM_SET(iphdr, inet_chksum(iphdr, hlen));
++        }
++#else
+           IPH_CHKSUM_SET(iphdr, inet_chksum(iphdr, hlen));
++#endif
+         }
+ #endif /* CHECKSUM_GEN_IP */
+ 
+diff --git a/src/core/ipv4/ip4.c b/src/core/ipv4/ip4.c
+index c83afbe..1334cdc 100644
+--- a/src/core/ipv4/ip4.c
++++ b/src/core/ipv4/ip4.c
+@@ -59,6 +59,10 @@
+ 
+ #include <string.h>
+ 
++#if USE_LIBOS && (CHECKSUM_CHECK_IP_HW || CHECKSUM_GEN_IP_HW)
++#include "dpdk_cksum.h"
++#endif
++
+ #ifdef LWIP_HOOK_FILENAME
+ #include LWIP_HOOK_FILENAME
+ #endif
+@@ -503,8 +507,17 @@ ip4_input(struct pbuf *p, struct netif *inp)
+   /* verify checksum */
+ #if CHECKSUM_CHECK_IP
+   IF__NETIF_CHECKSUM_ENABLED(inp, NETIF_CHECKSUM_CHECK_IP) {
++#if CHECKSUM_CHECK_IP_HW
++    u64_t ret;
++    if (get_eth_params_rx_ol() & DEV_RX_OFFLOAD_IPV4_CKSUM) {
++      ret = is_cksum_ipbad(p);
++    } else {
++      ret = (u64_t)inet_chksum(iphdr, iphdr_hlen);
++    }
++    if (ret != 0) {
++#else
+     if (inet_chksum(iphdr, iphdr_hlen) != 0) {
+-
++#endif
+       LWIP_DEBUGF(IP_DEBUG | LWIP_DBG_LEVEL_SERIOUS,
+                   ("Checksum (0x%"X16_F") failed, IP packet dropped.\n", inet_chksum(iphdr, iphdr_hlen)));
+       ip4_debug_print(p);
+@@ -972,7 +985,16 @@ ip4_output_if_opt_src(struct pbuf *p, const ip4_addr_t *src, const ip4_addr_t *d
+     IPH_CHKSUM_SET(iphdr, 0);
+ #if CHECKSUM_GEN_IP
+     IF__NETIF_CHECKSUM_ENABLED(netif, NETIF_CHECKSUM_GEN_IP) {
++#if CHECKSUM_GEN_IP_HW
++    if (get_eth_params_tx_ol() & DEV_TX_OFFLOAD_IPV4_CKSUM) {
++      iph_cksum_set(p, ip_hlen, 1);
++    } else {
++      iph_cksum_set(p, ip_hlen, 0);
++      IPH_CHKSUM_SET(iphdr, inet_chksum(iphdr, ip_hlen));
++    }
++#else
+       IPH_CHKSUM_SET(iphdr, inet_chksum(iphdr, ip_hlen));
++#endif
+     }
+ #endif /* CHECKSUM_GEN_IP */
+ #endif /* CHECKSUM_GEN_IP_INLINE */
+diff --git a/src/core/ipv4/ip4_frag.c b/src/core/ipv4/ip4_frag.c
+index a445530..17a4ccd 100644
+--- a/src/core/ipv4/ip4_frag.c
++++ b/src/core/ipv4/ip4_frag.c
+@@ -51,6 +51,10 @@
+ 
+ #include <string.h>
+ 
++#if USE_LIBOS && CHECKSUM_GEN_IP_HW
++#include "dpdk_cksum.h"
++#endif
++
+ #if IP_REASSEMBLY
+ /**
+  * The IP reassembly code currently has the following limitations:
+@@ -632,8 +636,17 @@ ip4_reass(struct pbuf *p)
+     /* @todo: do we need to set/calculate the correct checksum? */
+ #if CHECKSUM_GEN_IP
+     IF__NETIF_CHECKSUM_ENABLED(ip_current_input_netif(), NETIF_CHECKSUM_GEN_IP) {
++#if CHECKSUM_GEN_IP_HW
++    if (get_eth_params_tx_ol() & DEV_TX_OFFLOAD_IPV4_CKSUM) {
++      iph_cksum_set(p, IP_HLEN, 1);
++    } else {
++      iph_cksum_set(p, IP_HLEN, 0);
+       IPH_CHKSUM_SET(fraghdr, inet_chksum(fraghdr, IP_HLEN));
+     }
++#else
++      IPH_CHKSUM_SET(fraghdr, inet_chksum(fraghdr, IP_HLEN));
++#endif
++    }
+ #endif /* CHECKSUM_GEN_IP */
+ 
+     p = ipr->p;
+@@ -862,8 +875,18 @@ ip4_frag(struct pbuf *p, struct netif *netif, const ip4_addr_t *dest)
+     IPH_CHKSUM_SET(iphdr, 0);
+ #if CHECKSUM_GEN_IP
+     IF__NETIF_CHECKSUM_ENABLED(netif, NETIF_CHECKSUM_GEN_IP) {
++#if CHECKSUM_GEN_IP_HW
++    if (get_eth_params_tx_ol() & DEV_TX_OFFLOAD_IPV4_CKSUM) {
++      iph_cksum_set(p, IP_HLEN, 1);
++    } else {
++      iph_cksum_set(p, IP_HLEN, 0);
+       IPH_CHKSUM_SET(iphdr, inet_chksum(iphdr, IP_HLEN));
+     }
++
++#else
++      IPH_CHKSUM_SET(iphdr, inet_chksum(iphdr, IP_HLEN));
++#endif
++    }
+ #endif /* CHECKSUM_GEN_IP */
+ 
+     /* No need for separate header pbuf - we allowed room for it in rambuf
+diff --git a/src/core/pbuf.c b/src/core/pbuf.c
+index cd6b558..247681d 100644
+--- a/src/core/pbuf.c
++++ b/src/core/pbuf.c
+@@ -282,7 +282,7 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
+ 
+       /* If pbuf is to be allocated in RAM, allocate memory for it. */
+ #if USE_LIBOS
+-      /* alloc mbuf to reduce copy in sending */
++      /* alloc mbuf avoid send copy */
+       p = lwip_alloc_pbuf(layer, length, type);
+ #else
+       p = (struct pbuf *)mem_malloc(alloc_len);
+@@ -1019,6 +1019,13 @@ pbuf_copy_partial_pbuf(struct pbuf *p_to, const struct pbuf *p_from, u16_t copy_
+       /* current p_from does not fit into current p_to */
+       len_calc = p_to->len - offset_to;
+     }
++
++#if USE_LIBOS && (CHECKSUM_GEN_IP_HW || CHECKSUM_GEN_TCP_HW)
++    p_to->l2_len = p_from->l2_len;
++    p_to->l3_len = p_from->l3_len;
++    p_to->ol_flags = p_from->ol_flags;
++#endif
++
+     len = (u16_t)LWIP_MIN(copy_len, len_calc);
+     MEMCPY((u8_t *)p_to->payload + offset_to, (u8_t *)p_from->payload + offset_from, len);
+     offset_to += len;
+diff --git a/src/core/tcp_in.c b/src/core/tcp_in.c
+index 0d3a2f1..b1bbe00 100644
+--- a/src/core/tcp_in.c
++++ b/src/core/tcp_in.c
+@@ -64,6 +64,10 @@
+ 
+ #include <string.h>
+ 
++#if USE_LIBOS && CHECKSUM_CHECK_TCP_HW
++#include <dpdk_cksum.h>
++#endif /* CHECKSUM_CHECK_TCP_HW */
++
+ #ifdef LWIP_HOOK_FILENAME
+ #include LWIP_HOOK_FILENAME
+ #endif
+@@ -172,11 +176,24 @@ tcp_input(struct pbuf *p, struct netif *inp)
+ #if CHECKSUM_CHECK_TCP
+   IF__NETIF_CHECKSUM_ENABLED(inp, NETIF_CHECKSUM_CHECK_TCP) {
+     /* Verify TCP checksum. */
++#if CHECKSUM_CHECK_TCP_HW
++  u64_t ret;
++  if (get_eth_params_rx_ol() & DEV_RX_OFFLOAD_TCP_CKSUM) {
++    ret = is_cksum_tcpbad(p);
++  } else {
++    ret = (u64_t)ip_chksum_pseudo(p, IP_PROTO_TCP, p->tot_len,
++                                  ip_current_src_addr(), ip_current_dest_addr());
++
++  }
++  if (ret != 0) {
++    LWIP_DEBUGF(TCP_INPUT_DEBUG, ("tcp_input: packet discarded due to failing checksum\n"));
++#else
+     u16_t chksum = ip_chksum_pseudo(p, IP_PROTO_TCP, p->tot_len,
+                                     ip_current_src_addr(), ip_current_dest_addr());
+     if (chksum != 0) {
+       LWIP_DEBUGF(TCP_INPUT_DEBUG, ("tcp_input: packet discarded due to failing checksum 0x%04"X16_F"\n",
+                                     chksum));
++#endif
+       tcp_debug_print(tcphdr);
+       TCP_STATS_INC(tcp.chkerr);
+       goto dropped;
+diff --git a/src/core/tcp_out.c b/src/core/tcp_out.c
+index b99974d..1b0af8d 100644
+--- a/src/core/tcp_out.c
++++ b/src/core/tcp_out.c
+@@ -80,6 +80,13 @@
+ 
+ #include <string.h>
+ 
++#if USE_LIBOS
++#include "lwipsock.h"
++#if CHECKSUM_GEN_TCP_HW
++#include "dpdk_cksum.h"
++#endif
++#endif
++
+ #ifdef LWIP_HOOK_FILENAME
+ #include LWIP_HOOK_FILENAME
+ #endif
+@@ -660,8 +667,11 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
+       pbuf_cat(p/*header*/, p2/*data*/);
+     }
+ #else  /* USE_LIBOS */
+-    p = (struct pbuf *)arg;
+-    seglen = p->len;
++    p = write_lwip_data((struct lwip_sock *)arg, len - pos, &apiflags);
++    if (p == NULL) {
++      break;
++    }
++    seglen = p->tot_len;
+ #endif  /* USE_LIBOS */
+ 
+     queuelen += pbuf_clen(p);
+@@ -789,8 +799,13 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
+   /*
+    * Finally update the pcb state.
+    */
++#if USE_LIBOS
++  pcb->snd_lbb += pos;
++  pcb->snd_buf -= pos;
++#else
+   pcb->snd_lbb += len;
+   pcb->snd_buf -= len;
++#endif
+   pcb->snd_queuelen = queuelen;
+ 
+   LWIP_DEBUGF(TCP_QLEN_DEBUG, ("tcp_write: %"S16_F" (after enqueued)\n",
+@@ -1584,6 +1599,11 @@ tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb, struct netif *netif
+ 
+ #if CHECKSUM_GEN_TCP
+   IF__NETIF_CHECKSUM_ENABLED(netif, NETIF_CHECKSUM_GEN_TCP) {
++#if CHECKSUM_GEN_TCP_HW
++  if (get_eth_params_tx_ol() & DEV_TX_OFFLOAD_TCP_CKSUM) {
++    tcph_cksum_set(seg->p, TCP_HLEN);
++    seg->tcphdr->chksum = ip_chksum_pseudo_offload(IP_PROTO_TCP,seg->p->tot_len, &pcb->local_ip, &pcb->remote_ip);
++  } else {
+ #if TCP_CHECKSUM_ON_COPY
+     u32_t acc;
+ #if TCP_CHECKSUM_ON_COPY_SANITY_CHECK
+@@ -1618,6 +1638,44 @@ tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb, struct netif *netif
+     seg->tcphdr->chksum = ip_chksum_pseudo(seg->p, IP_PROTO_TCP,
+                                            seg->p->tot_len, &pcb->local_ip, &pcb->remote_ip);
+ #endif /* TCP_CHECKSUM_ON_COPY */
++
++  }
++#else
++#if TCP_CHECKSUM_ON_COPY
++    u32_t acc;
++#if TCP_CHECKSUM_ON_COPY_SANITY_CHECK
++    u16_t chksum_slow = ip_chksum_pseudo(seg->p, IP_PROTO_TCP,
++                                         seg->p->tot_len, &pcb->local_ip, &pcb->remote_ip);
++#endif /* TCP_CHECKSUM_ON_COPY_SANITY_CHECK */
++    if ((seg->flags & TF_SEG_DATA_CHECKSUMMED) == 0) {
++      LWIP_ASSERT("data included but not checksummed",
++                  seg->p->tot_len == TCPH_HDRLEN_BYTES(seg->tcphdr));
++    }
++
++    /* rebuild TCP header checksum (TCP header changes for retransmissions!) */
++    acc = ip_chksum_pseudo_partial(seg->p, IP_PROTO_TCP,
++                                   seg->p->tot_len, TCPH_HDRLEN_BYTES(seg->tcphdr), &pcb->local_ip, &pcb->remote_ip);
++    /* add payload checksum */
++    if (seg->chksum_swapped) {
++      seg_chksum_was_swapped = 1;
++      seg->chksum = SWAP_BYTES_IN_WORD(seg->chksum);
++      seg->chksum_swapped = 0;
++    }
++    acc = (u16_t)~acc + seg->chksum;
++    seg->tcphdr->chksum = (u16_t)~FOLD_U32T(acc);
++#if TCP_CHECKSUM_ON_COPY_SANITY_CHECK
++    if (chksum_slow != seg->tcphdr->chksum) {
++      TCP_CHECKSUM_ON_COPY_SANITY_CHECK_FAIL(
++        ("tcp_output_segment: calculated checksum is %"X16_F" instead of %"X16_F"\n",
++         seg->tcphdr->chksum, chksum_slow));
++      seg->tcphdr->chksum = chksum_slow;
++    }
++#endif /* TCP_CHECKSUM_ON_COPY_SANITY_CHECK */
++#else /* TCP_CHECKSUM_ON_COPY */
++    seg->tcphdr->chksum = ip_chksum_pseudo(seg->p, IP_PROTO_TCP,
++                                           seg->p->tot_len, &pcb->local_ip, &pcb->remote_ip);
++#endif /* TCP_CHECKSUM_ON_COPY */
++#endif /* CHECKSUM_GEN_TCP_HW */
+   }
+ #endif /* CHECKSUM_GEN_TCP */
+   TCP_STATS_INC(tcp.xmit);
+@@ -1959,8 +2017,18 @@ tcp_output_control_segment(const struct tcp_pcb *pcb, struct pbuf *p,
+ #if CHECKSUM_GEN_TCP
+     IF__NETIF_CHECKSUM_ENABLED(netif, NETIF_CHECKSUM_GEN_TCP) {
+       struct tcp_hdr *tcphdr = (struct tcp_hdr *)p->payload;
++#if CHECKSUM_GEN_TCP_HW
++    if (get_eth_params_tx_ol() & DEV_TX_OFFLOAD_TCP_CKSUM) {
++      tcph_cksum_set(p, TCP_HLEN);
++      tcphdr->chksum = ip_chksum_pseudo_offload(IP_PROTO_TCP, p->tot_len, src, dst);
++    } else {
++      tcphdr->chksum = ip_chksum_pseudo(p, IP_PROTO_TCP, p->tot_len,
++                                        src, dst);
++    }
++#else
+       tcphdr->chksum = ip_chksum_pseudo(p, IP_PROTO_TCP, p->tot_len,
+                                         src, dst);
++#endif
+     }
+ #endif
+     if (pcb != NULL) {
+diff --git a/src/include/dpdk_cksum.h b/src/include/dpdk_cksum.h
+new file mode 100644
+index 0000000..e57be4d
+--- /dev/null
++++ b/src/include/dpdk_cksum.h
+@@ -0,0 +1,107 @@
++/*
++ * Copyright (c) 2001-2004 Swedish Institute of Computer Science.
++ * All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without modification,
++ * are permitted provided that the following conditions are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ * 3. The name of the author may not be used to endorse or promote products
++ *    derived from this software without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
++ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
++ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
++ * SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
++ * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
++ * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
++ * OF SUCH DAMAGE.
++ *
++ * This file is part of the lwIP TCP/IP stack.
++ *
++ * Author: Huawei Technologies
++ *
++ */
++
++#ifndef __DPDK_CKSUM_H__
++#define __DPDK_CKSUM_H__
++
++#include "lwipopts.h"
++#if USE_LIBOS
++#include <rte_ethdev.h>
++
++#if CHECKSUM_OFFLOAD_ALL
++#include <rte_mbuf_core.h>
++#include "lwip/pbuf.h"
++#endif
++
++extern uint64_t get_eth_params_rx_ol(void);
++extern uint64_t get_eth_params_tx_ol(void);
++#if CHECKSUM_CHECK_IP_HW
++// for ip4_input
++static inline u64_t is_cksum_ipbad(struct pbuf *p) {
++    return p->ol_flags & (RTE_MBUF_F_RX_IP_CKSUM_BAD);
++}
++#endif /* CHECKSUM_CHECK_IP_HW */
++
++#if CHECKSUM_CHECK_TCP_HW
++// for tcp_input
++static inline u64_t is_cksum_tcpbad(struct pbuf *p) {
++    return p->ol_flags & (RTE_MBUF_F_RX_L4_CKSUM_BAD);
++}
++#endif /* CHECKSUM_CHECK_TCP_HW */
++
++#if CHECKSUM_GEN_IP_HW
++static inline void ethh_cksum_set(struct pbuf *p, u16_t len) {
++    p->l2_len = len;
++}
++
++// replaces IPH_CHKSUM_SET
++static inline void iph_cksum_set(struct pbuf *p, u16_t len, bool do_ipcksum) {
++    p->ol_flags |= RTE_MBUF_F_TX_IPV4;
++    if (do_ipcksum) {
++        p->ol_flags |= RTE_MBUF_F_TX_IP_CKSUM;
++    }
++    p->l3_len = len;
++}
++#endif /* CHECKSUM_GEN_IP_HW */
++
++// replace ip_chksum_pseudo
++#if CHECKSUM_GEN_TCP_HW
++#include <rte_ip.h>
++
++static inline void tcph_cksum_set(struct pbuf *p, u16_t len) {
++    (void)len;
++    p->ol_flags |= RTE_MBUF_F_TX_TCP_CKSUM;
++}
++
++static inline u16_t ip_chksum_pseudo_offload(u8_t proto, u16_t proto_len,
++                                             const ip_addr_t *src, const ip_addr_t *dst)
++{
++    struct ipv4_psd_header {
++        uint32_t src_addr; /* IP address of source host. */
++        uint32_t dst_addr; /* IP address of destination host. */
++        uint8_t  zero;     /* zero. */
++        uint8_t  proto;    /* L4 protocol type. */
++        uint16_t len;      /* L4 length. */
++    } psd_hdr;
++
++    psd_hdr.src_addr = ip4_addr_get_u32(src);
++    psd_hdr.dst_addr = ip4_addr_get_u32(dst);
++    psd_hdr.proto = proto;
++    psd_hdr.len = lwip_htons(proto_len);
++    psd_hdr.zero = 0;
++
++    return rte_raw_cksum(&psd_hdr, sizeof(psd_hdr));
++}
++#endif /* CHECKSUM_GEN_TCP_HW */
++
++#endif /* USE_LIBOS */
++#endif /* __DPDK_CKSUM_H__ */
+diff --git a/src/include/lwip/pbuf.h b/src/include/lwip/pbuf.h
+index 3894574..87cd960 100644
+--- a/src/include/lwip/pbuf.h
++++ b/src/include/lwip/pbuf.h
+@@ -220,6 +220,15 @@ struct pbuf {
+   /** For incoming packets, this contains the input netif's index */
+   u8_t if_idx;
+ 
++#if USE_LIBOS && CHECKSUM_OFFLOAD_ALL
++  /** checksum offload ol_flags */
++  u64_t ol_flags;
++  /** checksum offload l2_len */
++  u64_t l2_len:7;
++  /** checksum offload l3_len */
++  u64_t l3_len:9;
++#endif /* USE_LIBOS CHECKSUM_OFFLOAD_SWITCH */
++
+   /** In case the user needs to store data custom data on a pbuf */
+   LWIP_PBUF_CUSTOM_DATA
+ };
+@@ -271,9 +280,8 @@ void pbuf_free_ooseq(void);
+ 
+ /* Initializes the pbuf module. This call is empty for now, but may not be in future. */
+ #define pbuf_init()
+-
+ #if USE_LIBOS
+-struct pbuf *lwip_alloc_pbuf(pbuf_layer l, u16_t length, pbuf_type type);
++struct pbuf *lwip_alloc_pbuf(pbuf_layer layer, uint16_t length, pbuf_type type);
+ #endif
+ struct pbuf *pbuf_alloc(pbuf_layer l, u16_t length, pbuf_type type);
+ struct pbuf *pbuf_alloc_reference(void *payload, u16_t length, pbuf_type type);
+diff --git a/src/include/lwipopts.h b/src/include/lwipopts.h
+index e0364a2..df587c0 100644
+--- a/src/include/lwipopts.h
++++ b/src/include/lwipopts.h
+@@ -129,14 +129,6 @@
+ 
+ #define LWIP_STATS_DISPLAY 1
+ 
+-#define CHECKSUM_GEN_IP 1 /*  master switch */
+-
+-#define CHECKSUM_GEN_TCP 1 /* master switch */
+-
+-#define CHECKSUM_CHECK_IP 1 /*  master switch */
+-
+-#define CHECKSUM_CHECK_TCP 1 /*  master switch */
+-
+ #define LWIP_TIMEVAL_PRIVATE 0
+ 
+ #define USE_LIBOS 1
+@@ -177,6 +169,28 @@
+ 
+ #define ARP_TABLE_SIZE 512
+ 
++/*  ---------------------------------------
++ *  -------      NIC offloads      --------
++ *  ---------------------------------------
++ */
++#define LWIP_CHECKSUM_CTRL_PER_NETIF 1 /* checksum ability check before checksum*/
++
++// rx cksum
++#define CHECKSUM_CHECK_IP     1 /*  master switch */
++#define CHECKSUM_CHECK_TCP    1 /*  master switch */
++// tx cksum
++#define CHECKSUM_GEN_IP       1 /*  master switch */
++#define CHECKSUM_GEN_TCP      1 /* master switch */
++
++// rx offload cksum
++#define CHECKSUM_CHECK_IP_HW  (1 && CHECKSUM_CHECK_IP) /*  hardware switch */
++#define CHECKSUM_CHECK_TCP_HW (1 && CHECKSUM_CHECK_TCP) /*  hardware switch */
++// tx offload cksum
++#define CHECKSUM_GEN_IP_HW    (1 && CHECKSUM_GEN_IP) /* hardware switch */
++#define CHECKSUM_GEN_TCP_HW   (1 && CHECKSUM_GEN_TCP) /*  hardware switch */
++
++#define CHECKSUM_OFFLOAD_ALL (CHECKSUM_GEN_IP_HW || CHECKSUM_GEN_TCP_HW || CHECKSUM_CHECK_IP_HW || CHECKSUM_CHECK_TCP_HW)
++
+ #if USE_LIBOS
+ #define PER_THREAD __thread
+ #else
+diff --git a/src/include/lwipsock.h b/src/include/lwipsock.h
+index 36bcaed..eec4e8e 100644
+--- a/src/include/lwipsock.h
++++ b/src/include/lwipsock.h
+@@ -36,7 +36,6 @@
+ #include "lwip/opt.h"
+ #include "lwip/api.h"
+ 
+-#include "posix_api.h"
+ #include "eventpoll.h"
+ 
+ /* move some definitions to the lwipsock.h for libnet to use, and
+@@ -62,7 +61,8 @@ union lwip_sock_lastdata {
+ 
+ #if USE_LIBOS
+ struct protocol_stack;
+-struct weakup_poll;
++struct wakeup_poll;
++struct rte_ring;
+ #endif
+ /** Contains all internal pointers and states used for a socket */
+ struct lwip_sock {
+@@ -93,16 +93,16 @@ struct lwip_sock {
+ 
+ #if USE_LIBOS
+   uint32_t epoll_events; /* registered events */
+-  uint32_t events; /* available events */
+-  volatile bool have_event; /* avoid recurring events */
+-  volatile bool have_rpc_send; /* avoid recurring rpc_send */
++  volatile uint32_t events; /* available events */
+   epoll_data_t ep_data;
+-  struct weakup_poll *weakup;
++  struct wakeup_poll *wakeup;
+   struct protocol_stack *stack;
+-  void *recv_ring;
++  struct rte_ring *recv_ring;
++  struct rte_ring *recv_wait_free;
+   struct pbuf *recv_lastdata; /* unread data in one pbuf */
+   struct pbuf *send_lastdata; /* unread data in one pbuf */
+-  void *send_ring;
++  struct rte_ring *send_ring;
++  struct rte_ring *send_idle_ring;
+   int32_t recv_flags;
+   int32_t send_flags;
+   bool wait_close;
+@@ -112,7 +112,6 @@ struct lwip_sock {
+   struct list_node listen_list;
+   struct list_node recv_list;
+   struct list_node event_list;
+-  struct list_node wakeup_list;
+   struct list_node send_list;
+   int32_t nextfd; /* listenfd list */
+ #endif
+@@ -160,6 +159,7 @@ get_socket_without_errno(int s)
+ 
+ extern void add_recv_list(int32_t fd);
+ extern ssize_t read_lwip_data(struct lwip_sock *sock, int32_t flags, u8_t apiflags);
++extern struct pbuf *write_lwip_data(struct lwip_sock *sock, uint16_t remain_size, uint8_t *apiflags);
+ extern void gazelle_clean_sock(int32_t fd);
+ extern void gazelle_init_sock(int32_t fd);
+ #endif /* USE_LIBOS */
+diff --git a/src/netif/ethernet.c b/src/netif/ethernet.c
+index dd171e2..ab976a8 100644
+--- a/src/netif/ethernet.c
++++ b/src/netif/ethernet.c
+@@ -56,6 +56,10 @@
+ #include "netif/ppp/pppoe.h"
+ #endif /* PPPOE_SUPPORT */
+ 
++#if USE_LIBOS && (CHECKSUM_GEN_TCP_HW || CHECKSUM_GEN_IP_HW)
++#include "dpdk_cksum.h"
++#endif
++
+ #ifdef LWIP_HOOK_FILENAME
+ #include LWIP_HOOK_FILENAME
+ #endif
+@@ -308,6 +312,10 @@ ethernet_output(struct netif * netif, struct pbuf * p,
+   LWIP_DEBUGF(ETHARP_DEBUG | LWIP_DBG_TRACE,
+               ("ethernet_output: sending packet %p\n", (void *)p));
+ 
++#if CHECKSUM_GEN_IP_HW || CHECKSUM_GEN_TCP_HW
++  ethh_cksum_set(p, sizeof(*ethhdr));
++#endif
++
+   /* send the packet */
+   return netif->linkoutput(netif, p);
+ 
+-- 
+2.23.0

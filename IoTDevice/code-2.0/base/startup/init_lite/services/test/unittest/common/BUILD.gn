@@ -1,0 +1,58 @@
+# Copyright (c) 2020 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+if (defined(ohos_lite)) {
+  import("//build/lite/config/component/lite_component.gni")
+  import("//build/lite/config/test.gni")
+
+  unittest("init_test") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/startup"
+    ldflags = [
+      "-lstdc++",
+      "-lpthread",
+      "-lm",
+    ]
+    defines = ["OHOS_LITE"]
+    if (storage_type == "emmc") {
+      defines += [ "USE_EMMC_STORAGE" ]
+    }
+
+    include_dirs = [ "//base/startup/init_lite/services/include" ]
+
+    sources = [
+      "//base/startup/init_lite/services/src/init_adapter.c",
+      "//base/startup/init_lite/services/src/init_cmds.c",
+      "//base/startup/init_lite/services/src/init_jobs.c",
+      "//base/startup/init_lite/services/src/init_service.c",
+      "//base/startup/init_lite/services/src/init_service_manager.c",
+      "//base/startup/init_lite/services/src/init_signal_handler.c",
+      "cmd_func_test.cpp",
+    ]
+
+    deps = [
+      "//base/startup/syspara_lite/frameworks/parameter:parameter",
+      "//build/lite/config/component/cJSON:cjson_shared",
+      "//third_party/bounds_checking_function:libsec_shared",
+    ]
+  }
+
+  group("unittest") {
+    deps = [ ":init_test" ]
+  }
+} else {
+  import("//build/ohos.gni")
+  sources = []
+  group("unittest") {
+    deps = []
+  }
+}

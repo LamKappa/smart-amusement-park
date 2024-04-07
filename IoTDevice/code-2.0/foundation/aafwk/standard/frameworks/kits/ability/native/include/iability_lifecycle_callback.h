@@ -1,0 +1,73 @@
+/*
+ * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef FOUNDATION_APPEXECFWK_OHOS_IABILITY_LIFECYCLE_CALLBACK_H
+#define FOUNDATION_APPEXECFWK_OHOS_IABILITY_LIFECYCLE_CALLBACK_H
+
+namespace OHOS {
+namespace AppExecFwk {
+class IAbilityLifecycleCallback {
+public:
+    /**
+     *
+     * Will be called when Ability start
+     *
+     * @param want Want for AbilitySliceManager
+     */
+    virtual void OnAbilityStart(const Want &want) = 0;
+
+    /**
+     *
+     * Will be called when Ability stop
+     */
+    virtual void OnAbilityStop() = 0;
+
+    /**
+     *
+     * Will be called when Ability active
+     */
+    virtual void OnAbilityActive() = 0;
+
+    /**
+     *
+     * Will be called when Ability inactive
+     */
+    virtual void OnAbilityInactive() = 0;
+
+    /**
+     *
+     * Will be called when Ability foreground
+     *
+     * @param want Want for AbilitySliceManager
+     */
+    virtual void OnAbilityForeground(const Want &want) = 0;
+
+    /**
+     *
+     * Will be called when Ability to background
+     */
+    virtual void OnAbilityBackground() = 0;
+
+    /**
+     * Will be called to receive result from other ability
+     *
+     * @param requestCode request code of ability result
+     * @param want ability result from other ability
+     */
+    virtual void OnAbilityResult(int requestCode, const Want &want) = 0;
+};
+}  // namespace AppExecFwk
+}  // namespace OHOS
+#endif  // FOUNDATION_APPEXECFWK_OHOS_IABILITY_LIFECYCLE_CALLBACK_H

@@ -1,0 +1,5569 @@
+From 388525230f809bfa61fe31921b54ebfb6aae57ec Mon Sep 17 00:00:00 2001
+From: jiangheng <jiangheng12@huawei.com>
+Date: Fri, 31 Dec 2021 17:32:49 +0800
+Subject: [PATCH] adapt lstack
+
+---
+ src/Makefile                         |   5 +-
+ src/api/api_lib.c                    |   2 +
+ src/api/api_msg.c                    |  46 +++
+ src/api/dir.mk                       |   2 +-
+ src/api/perf.c                       | 182 ++++++++++++
+ src/api/posix_api.c                  | 156 ++++++++++
+ src/api/sockets.c                    | 558 ++++++++++++++++++++++++++++++++++-
+ src/api/sys_arch.c                   | 379 ++++++++++++++++++++++++
+ src/api/tcpip.c                      |  34 ++-
+ src/core/dir.mk                      |   8 +-
+ src/core/init.c                      |   4 +-
+ src/core/ip.c                        |   2 +-
+ src/core/ipv4/ip4.c                  |  14 +
+ src/core/ipv6/ip6.c                  |  10 +
+ src/core/mem.c                       |   6 +-
+ src/core/memp.c                      |   4 +
+ src/core/netif.c                     |   8 +-
+ src/core/pbuf.c                      |   4 +
+ src/core/stats.c                     |  13 +-
+ src/core/tcp.c                       | 196 +++++++++++-
+ src/core/tcp_in.c                    | 101 ++++++-
+ src/core/tcp_out.c                   |  25 +-
+ src/core/timeouts.c                  |  18 +-
+ src/core/udp.c                       |  15 +
+ src/include/arch/cc.h                |  80 ++++-
+ src/include/arch/perf.h              | 155 ++++++++++
+ src/include/arch/sys_arch.h          |  92 +++++-
+ src/include/eventpoll.h              |  72 +++++
+ src/include/hlist.h                  | 233 +++++++++++++++
+ src/include/list.h                   | 110 +++++++
+ src/include/lwip/api.h               |  35 +++
+ src/include/lwip/debug.h             |   1 +
+ src/include/lwip/def.h               |  15 +
+ src/include/lwip/ip.h                |   8 +-
+ src/include/lwip/memp.h              |  17 ++
+ src/include/lwip/netif.h             |   4 +-
+ src/include/lwip/opt.h               |  62 +++-
+ src/include/lwip/priv/memp_std.h     |   7 +
+ src/include/lwip/priv/sockets_priv.h |  49 +--
+ src/include/lwip/priv/tcp_priv.h     | 162 +++++++++-
+ src/include/lwip/prot/ip4.h          |  15 +
+ src/include/lwip/sockets.h           |  67 ++++-
+ src/include/lwip/stats.h             |   4 +-
+ src/include/lwip/tcp.h               |  94 +++++-
+ src/include/lwip/tcpip.h             |   2 +-
+ src/include/lwip/timeouts.h          |   4 +
+ src/include/lwiplog.h                |  81 +++++
+ src/include/lwipopts.h               | 253 ++++++++++++----
+ src/include/lwipsock.h               | 155 ++++++++++
+ src/include/memp_def.h               |  66 +++++
+ src/include/posix_api.h              |  88 ++++++
+ src/include/reg_sock.h               |  62 ++++
+ src/netif/dir.mk                     |   2 +-
+ 53 files changed, 3581 insertions(+), 206 deletions(-)
+ create mode 100644 src/api/perf.c
+ create mode 100644 src/api/posix_api.c
+ create mode 100644 src/api/sys_arch.c
+ create mode 100644 src/include/arch/perf.h
+ create mode 100644 src/include/eventpoll.h
+ create mode 100644 src/include/hlist.h
+ create mode 100644 src/include/list.h
+ create mode 100644 src/include/lwiplog.h
+ create mode 100644 src/include/lwipsock.h
+ create mode 100644 src/include/memp_def.h
+ create mode 100644 src/include/posix_api.h
+ create mode 100644 src/include/reg_sock.h
+
+diff --git a/src/Makefile b/src/Makefile
+index 3ecf8d2..1676a71 100644
+--- a/src/Makefile
++++ b/src/Makefile
+@@ -2,7 +2,7 @@ LWIP_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+ ROOT_DIR := $(dir $(abspath $(LWIP_DIR)))
+ 
+ LWIP_INC = $(LWIP_DIR)/include
+-#DPDK_INCLUDE_FILE ?= /usr/include/dpdk
++DPDK_INCLUDE_FILE ?= /usr/include/dpdk
+ 
+ SEC_FLAGS = -fstack-protector-strong -Werror -Wall -Wl,-z,relro,-z,now -Wl,-z,noexecstack -Wtrampolines -fPIC
+ 
+@@ -10,7 +10,8 @@ CC = gcc
+ AR = ar
+ OPTIMIZATION = -O3
+ INC = -I$(LWIP_DIR) \
+-      -I$(LWIP_INC)
++      -I$(LWIP_INC) \
++      -I$(DPDK_INCLUDE_FILE)
+ 
+ CFLAGS = -g $(OPTIMIZATION) $(INC) $(SEC_FLAGS)
+ ARFLAGS = crDP
+diff --git a/src/api/api_lib.c b/src/api/api_lib.c
+index ffa14d6..ba9f3c5 100644
+--- a/src/api/api_lib.c
++++ b/src/api/api_lib.c
+@@ -1061,7 +1061,9 @@ netconn_write_vectors_partly(struct netconn *conn, struct netvector *vectors, u1
+   /* For locking the core: this _can_ be delayed on low memory/low send buffer,
+      but if it is, this is done inside api_msg.c:do_write(), so we can use the
+      non-blocking version here. */
++  PERF_START(PERF_LAYER_TCP, PERF_POINT_TCP_DATA_SEND);
+   err = netconn_apimsg(lwip_netconn_do_write, &API_MSG_VAR_REF(msg));
++  PERF_STOP_INCREASE_COUNT("lwip_netconn_do_write", PERF_LAYER_TCP);
+   if (err == ERR_OK) {
+     if (bytes_written != NULL) {
+       *bytes_written = API_MSG_VAR_REF(msg).msg.w.offset;
+diff --git a/src/api/api_msg.c b/src/api/api_msg.c
+index 3f08e03..d5a738f 100644
+--- a/src/api/api_msg.c
++++ b/src/api/api_msg.c
+@@ -54,6 +54,11 @@
+ #include "lwip/mld6.h"
+ #include "lwip/priv/tcpip_priv.h"
+ 
++#if USE_LIBOS
++#include "lwip/sockets.h"
++#include "lwipsock.h"
++#endif
++
+ #include <string.h>
+ 
+ /* netconns are polled once per second (e.g. continue write on memory error) */
+@@ -452,6 +457,14 @@ err_tcp(void *arg, err_t err)
+   old_state = conn->state;
+   conn->state = NETCONN_NONE;
+ 
++#if USE_LIBOS
++  if (CONN_TYPE_IS_HOST(conn)) {
++    LWIP_DEBUGF(API_MSG_DEBUG, 
++        ("linux localhost connection already success, ignore lwip err_tcp fd=%d\n", conn->socket));
++    return;
++  }
++#endif /* USE_LIBOS */
++
+   SYS_ARCH_UNPROTECT(lev);
+ 
+   /* Notify the user layer about a connection error. Used to signal select. */
+@@ -595,6 +608,10 @@ accept_function(void *arg, struct tcp_pcb *newpcb, err_t err)
+     API_EVENT(conn, NETCONN_EVT_RCVPLUS, 0);
+   }
+ 
++#if USE_LIBOS
++  LWIP_DEBUGF(API_MSG_DEBUG, ("libos incoming connection established\n"));
++  SET_CONN_TYPE_LIBOS(newconn);
++#endif
+   return ERR_OK;
+ }
+ #endif /* LWIP_TCP */
+@@ -1315,6 +1332,31 @@ lwip_netconn_do_connected(void *arg, struct tcp_pcb *pcb, err_t err)
+     return ERR_VAL;
+   }
+ 
++#if USE_LIBOS
++  if (CONN_TYPE_IS_HOST(conn)) {
++    LWIP_DEBUGF(API_MSG_DEBUG,
++        ("libos outgoing connection abort fd=%d\n", conn->socket));
++    return ERR_ABRT;
++  }
++  
++  LWIP_DEBUGF(API_MSG_DEBUG, ("libos outgoing connection established\n"));
++  if (CONN_TYPE_HAS_INPRG(conn) && CONN_TYPE_HAS_HOST(conn)) {
++    int s = conn->socket;
++    struct lwip_sock *sock = get_socket_without_errno(s);
++  
++    if (!!sock && !!sock->epoll_data) {
++      struct epoll_event ee = {0};
++      ee.data.fd = s;
++      ee.events |= EPOLLIN | EPOLLOUT | EPOLLERR;
++      posix_api->epoll_ctl_fn(sock->epoll_data->fd, EPOLL_CTL_DEL, s, &ee);
++      posix_api->shutdown_fn(s, SHUT_RDWR);
++      LWIP_DEBUGF(API_MSG_DEBUG,
++          ("linux outgoing connection abort fd=%d\n", s));
++    }
++  }
++  SET_CONN_TYPE_LIBOS(conn);
++#endif
++
+   LWIP_ASSERT("conn->state == NETCONN_CONNECT", conn->state == NETCONN_CONNECT);
+   LWIP_ASSERT("(conn->current_msg != NULL) || conn->in_non_blocking_connect",
+               (conn->current_msg != NULL) || IN_NONBLOCKING_CONNECT(conn));
+@@ -1338,6 +1380,7 @@ lwip_netconn_do_connected(void *arg, struct tcp_pcb *pcb, err_t err)
+   if (was_blocking) {
+     sys_sem_signal(op_completed_sem);
+   }
++
+   return ERR_OK;
+ }
+ #endif /* LWIP_TCP */
+@@ -1372,6 +1415,7 @@ lwip_netconn_do_connect(void *m)
+ #endif /* LWIP_UDP */
+ #if LWIP_TCP
+       case NETCONN_TCP:
++        PERF_START(PERF_LAYER_TCP, PERF_POINT_TCP_SYN_SEND);
+         /* Prevent connect while doing any other action. */
+         if (msg->conn->state == NETCONN_CONNECT) {
+           err = ERR_ALREADY;
+@@ -1389,6 +1433,7 @@ lwip_netconn_do_connect(void *m)
+               err = ERR_INPROGRESS;
+             } else {
+               msg->conn->current_msg = msg;
++              PERF_STOP_INCREASE_COUNT("lwip_netconn_do_connect", PERF_LAYER_TCP);
+               /* sys_sem_signal() is called from lwip_netconn_do_connected (or err_tcp()),
+                  when the connection is established! */
+ #if LWIP_TCPIP_CORE_LOCKING
+@@ -1402,6 +1447,7 @@ lwip_netconn_do_connect(void *m)
+             }
+           }
+         }
++        PERF_STOP_INCREASE_COUNT("lwip_netconn_do_connect", PERF_LAYER_TCP);
+         break;
+ #endif /* LWIP_TCP */
+       default:
+diff --git a/src/api/dir.mk b/src/api/dir.mk
+index 72142ab..afbf863 100644
+--- a/src/api/dir.mk
++++ b/src/api/dir.mk
+@@ -1,3 +1,3 @@
+-SRC = api_lib.c api_msg.c err.c netbuf.c netdb.c netifapi.c sockets.c tcpip.c
++SRC = api_lib.c api_msg.c err.c netbuf.c netdb.c netifapi.c sockets.c tcpip.c perf.c posix_api.c sys_arch.c
+ 
+ $(eval $(call register_dir, api, $(SRC)))
+diff --git a/src/api/perf.c b/src/api/perf.c
+new file mode 100644
+index 0000000..1c2a273
+--- /dev/null
++++ b/src/api/perf.c
+@@ -0,0 +1,182 @@
++/*
++ * Copyright (c) 2001-2004 Swedish Institute of Computer Science.
++ * All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without modification,
++ * are permitted provided that the following conditions are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ * 3. The name of the author may not be used to endorse or promote products
++ *    derived from this software without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
++ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
++ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
++ * SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
++ * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
++ * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
++ * OF SUCH DAMAGE.
++ *
++ * This file is part of the lwIP TCP/IP stack.
++ *
++ * Author: Huawei Technologies
++ *
++ */
++
++#include "arch/perf.h"
++
++#include <signal.h>
++
++#include <lwip/stats.h>
++
++#if LWIP_RECORD_PERF
++
++#define SIG_FUNC_NUM      3
++
++#define SIG_STATS_DISPLAY 38
++#define SIG_PERF_BEGIN    39
++#define SIG_PERF_END      40
++
++typedef void (*pSignalFunc) (int);
++static void signal_stats_display(int s);
++static void signal_perf_begin(int s);
++static void signal_perf_end(int s);
++
++uint32_t g_record_perf;
++__thread uint64_t g_timeTaken[PERF_POINT_END];
++__thread int g_perfPoint[PERF_LAYER_END];
++__thread struct timespec tvStart[PERF_LAYER_END];
++volatile uint64_t g_perfMaxtime[PERF_POINT_END];
++volatile uint64_t g_astPacketCnt[PERF_POINT_END];
++volatile uint64_t g_astPacketProcTime[PERF_POINT_END];
++
++char *g_ppLayerName[PERF_POINT_END] = {
++    "IP_RECV",
++    "TCP_DATA_RECV",
++    "UDP_PARTIAL",
++    "TCP_SYN_RECV",
++    "TCP_SYN_ACK_SEND",
++    "TCP_ACK_RECV",
++    "TCP_SYN_SEND",
++    "TCP_SYN_ACK_RECV",
++    "TCP_ACK_SEND",
++    "TCP_DATA_SEND",
++    "IP_SEND"
++};
++
++static int gsig_arr[SIG_FUNC_NUM] = {
++    SIG_STATS_DISPLAY,
++    SIG_PERF_BEGIN,
++    SIG_PERF_END
++};
++
++static pSignalFunc g_Funcs[SIG_FUNC_NUM] = {
++    signal_stats_display,
++    signal_perf_begin,
++    signal_perf_end,
++};
++
++static void print_perf_data_and_reset()
++{
++    int i;
++    printf("\n********* PERF DATA START*************\n");
++    for (i = 0; i < PERF_POINT_END; i++) {
++        printf("%-20s Total:     PacketProcTime: %-15"PRIu64", Maxtime: %-15"PRIu64", packetCnt: %-15"PRIu64"\n",
++            g_ppLayerName[i], __sync_fetch_and_or(&g_astPacketProcTime[i], 0),
++            __sync_fetch_and_or(&g_perfMaxtime[i], 0),
++            __sync_fetch_and_or(&g_astPacketCnt[i], 0));
++
++        if (__sync_fetch_and_or(&g_astPacketProcTime[i], 0) && __sync_fetch_and_or(&g_astPacketCnt[i], 0)) {
++        printf("%-20s Average:   PacketProcTime: %-15lf, MaxTime: %-15"PRIu64"\n", g_ppLayerName[i],
++            (double)__sync_fetch_and_or(&g_astPacketProcTime[i], 0) / (double)__sync_fetch_and_or(&g_astPacketCnt[i], 0),
++            __sync_or_and_fetch(&g_perfMaxtime[i], 0));
++        }
++
++        __sync_fetch_and_and (&g_astPacketProcTime[i], 0);
++        __sync_fetch_and_and (&g_astPacketCnt[i], 0);
++        __sync_fetch_and_and (&g_perfMaxtime[i], 0);
++    }
++    printf("\n********* PERF DATA END*************\n");
++}
++
++static void signal_stats_display(int s)
++{
++    struct sigaction s_test;
++    printf("Received signal %d, stats display.\n", s);
++    stats_display();
++    s_test.sa_handler = (void *) signal_stats_display;
++    if (sigemptyset(&s_test.sa_mask) != 0) {
++        printf("sigemptyset failed.\n");
++    }
++    s_test.sa_flags = SA_RESETHAND;
++    if (sigaction(s, &s_test, NULL) != 0) {
++        printf("Could not register %d signal handler.\n", s);
++    }
++}
++
++static void signal_perf_begin(int s)
++{
++    struct sigaction s_test;
++    printf("Received signal %d, perf_begin.\n", s);
++    g_record_perf = 1;
++    s_test.sa_handler = (void *) signal_perf_begin;
++    if (sigemptyset(&s_test.sa_mask) != 0) {
++        printf("sigemptyset failed.\n");
++    }
++    s_test.sa_flags = SA_RESETHAND;
++    if (sigaction(s, &s_test, NULL) != 0) {
++        printf("Could not register %d signal handler.\n", s);
++    }
++}
++
++static void signal_perf_end(int s)
++{
++    struct sigaction s_test;
++    printf("Received signal %d, perf_end\n", s);
++    g_record_perf = 0;
++    print_perf_data_and_reset();
++    s_test.sa_handler = (void *) signal_perf_end;
++    if (sigemptyset(&s_test.sa_mask) != 0) {
++        printf("sigemptyset failed.\n");
++    }
++    s_test.sa_flags = SA_RESETHAND;
++    if (sigaction(s, &s_test, NULL) != 0) {
++        printf("Could not register %d signal handler.\n", s);
++    }
++}
++
++int check_layer_point(int layer, int point)
++{
++    if (point == g_perfPoint[layer]) {
++        return 1;
++    }
++    return 0;
++}
++
++int perf_init(void)
++{
++    int i;
++    struct sigaction s_test;
++    for (i = 0; i < SIG_FUNC_NUM; i++) {
++        s_test.sa_handler = (void *) g_Funcs[i];
++        if (sigemptyset(&s_test.sa_mask) != 0) {
++            printf("sigemptyset failed.\n");
++            return 1;
++        }
++
++        s_test.sa_flags = SA_RESETHAND;
++        if (sigaction(gsig_arr[i], &s_test, NULL) != 0) {
++            printf("Could not register %d signal handler.\n", gsig_arr[i]);
++            return 1;
++        }
++    }
++    return 0;
++}
++#endif
+diff --git a/src/api/posix_api.c b/src/api/posix_api.c
+new file mode 100644
+index 0000000..a917cea
+--- /dev/null
++++ b/src/api/posix_api.c
+@@ -0,0 +1,156 @@
++/*
++ * Copyright (c) 2001-2004 Swedish Institute of Computer Science.
++ * All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without modification,
++ * are permitted provided that the following conditions are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ * 3. The name of the author may not be used to endorse or promote products
++ *    derived from this software without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
++ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
++ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
++ * SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
++ * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
++ * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
++ * OF SUCH DAMAGE.
++ *
++ * This file is part of the lwIP TCP/IP stack.
++ *
++ * Author: Huawei Technologies
++ *
++ */
++
++#define _GNU_SOURCE
++#include <dlfcn.h>
++#include <fcntl.h>
++#include <sys/epoll.h>
++#include <sys/socket.h>
++#include <sys/stat.h>
++#include <unistd.h>
++
++#include <rte_log.h>
++
++#include "lwip/err.h"
++#include "lwipsock.h"
++
++posix_api_t *posix_api;
++posix_api_t posix_api_val;
++
++static int chld_is_epfd(int fd)
++{
++    return 0;
++}
++
++static struct lwip_sock *chld_get_socket(int fd)
++{
++    return NULL;
++}
++
++void posix_api_fork(void)
++{
++    /* lstack helper api */
++    posix_api->is_chld = 1;
++    posix_api->is_epfd = chld_is_epfd;
++    posix_api->get_socket = chld_get_socket;
++}
++
++static int chose_dlsym_handle(void *__restrict* khandle)
++{
++    void *dlhandle;
++    int (*gazelle_epoll_create)(int size);
++    dlhandle = dlopen ("liblstack.so", RTLD_LAZY);
++    if (dlhandle == NULL) {
++        return ERR_IF;
++    }
++
++    gazelle_epoll_create = dlsym(dlhandle, "epoll_create");
++    if (gazelle_epoll_create == NULL) {
++        return ERR_MEM;
++    }
++
++    dlclose(dlhandle); 
++
++    *khandle = RTLD_NEXT;
++    if (dlsym(*khandle, "epoll_create") == gazelle_epoll_create) {
++        RTE_LOG(ERR, EAL, "posix api use RTLD_DEFAULT\n");
++        *khandle = RTLD_DEFAULT;
++    } else {
++        RTE_LOG(ERR, EAL, "posix api use RTLD_NEXT\n");
++    }
++
++    return ERR_OK;
++}
++
++int posix_api_init(void)
++{
++/* the symbol we use here won't be NULL, so we don't need dlerror()
++ to test error */
++#define CHECK_DLSYM_RET_RETURN(ret) do {  \
++        if ((ret) == NULL)                   \
++            goto err_out;                 \
++    } while (0)
++
++    posix_api = &posix_api_val;
++
++    void *__restrict handle;
++    int ret = chose_dlsym_handle(&handle);
++    if (ret != ERR_OK) {
++        return ret;
++    }
++
++    /* glibc standard api */
++    CHECK_DLSYM_RET_RETURN(posix_api->socket_fn = dlsym(handle, "socket"));
++    CHECK_DLSYM_RET_RETURN(posix_api->accept_fn = dlsym(handle, "accept"));
++    CHECK_DLSYM_RET_RETURN(posix_api->accept4_fn = dlsym(handle, "accept4"));
++    CHECK_DLSYM_RET_RETURN(posix_api->bind_fn = dlsym(handle, "bind"));
++    CHECK_DLSYM_RET_RETURN(posix_api->listen_fn = dlsym(handle, "listen"));
++    CHECK_DLSYM_RET_RETURN(posix_api->connect_fn = dlsym(handle, "connect"));
++    CHECK_DLSYM_RET_RETURN(posix_api->setsockopt_fn = dlsym(handle, "setsockopt"));
++    CHECK_DLSYM_RET_RETURN(posix_api->getsockopt_fn = dlsym(handle, "getsockopt"));
++    CHECK_DLSYM_RET_RETURN(posix_api->getpeername_fn = dlsym(handle, "getpeername"));
++    CHECK_DLSYM_RET_RETURN(posix_api->getsockname_fn = dlsym(handle, "getsockname"));
++    CHECK_DLSYM_RET_RETURN(posix_api->shutdown_fn = dlsym(handle, "shutdown"));
++    CHECK_DLSYM_RET_RETURN(posix_api->close_fn = dlsym(handle, "close"));
++    CHECK_DLSYM_RET_RETURN(posix_api->read_fn = dlsym(handle, "read"));
++    CHECK_DLSYM_RET_RETURN(posix_api->write_fn = dlsym(handle, "write"));
++    CHECK_DLSYM_RET_RETURN(posix_api->recv_fn = dlsym(handle, "recv"));
++    CHECK_DLSYM_RET_RETURN(posix_api->send_fn = dlsym(handle, "send"));
++    CHECK_DLSYM_RET_RETURN(posix_api->recv_msg = dlsym(handle, "recvmsg"));
++    CHECK_DLSYM_RET_RETURN(posix_api->send_msg = dlsym(handle, "sendmsg"));
++    CHECK_DLSYM_RET_RETURN(posix_api->recv_from = dlsym(handle, "recvfrom"));
++    CHECK_DLSYM_RET_RETURN(posix_api->send_to = dlsym(handle, "sendto"));
++    CHECK_DLSYM_RET_RETURN(posix_api->fcntl_fn = dlsym(handle, "fcntl"));
++    CHECK_DLSYM_RET_RETURN(posix_api->fcntl64_fn = dlsym(handle, "fcntl64"));
++    CHECK_DLSYM_RET_RETURN(posix_api->pipe_fn = dlsym(handle, "pipe"));
++    CHECK_DLSYM_RET_RETURN(posix_api->epoll_create_fn = dlsym(handle, "epoll_create"));
++    CHECK_DLSYM_RET_RETURN(posix_api->epoll_ctl_fn = dlsym(handle, "epoll_ctl"));
++    CHECK_DLSYM_RET_RETURN(posix_api->epoll_wait_fn = dlsym(handle, "epoll_wait"));
++    CHECK_DLSYM_RET_RETURN(posix_api->fork_fn = dlsym(handle, "fork"));
++    CHECK_DLSYM_RET_RETURN(posix_api->eventfd_fn = dlsym(handle, "eventfd"));
++    CHECK_DLSYM_RET_RETURN(posix_api->sigaction_fn = dlsym(handle, "sigaction"));
++    CHECK_DLSYM_RET_RETURN(posix_api->poll_fn = dlsym(handle, "poll"));
++    CHECK_DLSYM_RET_RETURN(posix_api->ioctl_fn = dlsym(handle, "ioctl"));
++
++    /* lstack helper api */
++    posix_api->get_socket = get_socket;
++    posix_api->is_epfd = lwip_is_epfd;
++    posix_api->epoll_close_fn = lwip_epoll_close;
++
++    /* support fork */
++    posix_api->is_chld = 0;
++    return ERR_OK;
++
++err_out:
++    return ERR_MEM;
++#undef CHECK_DLSYM_RET_RETURN
++}
+diff --git a/src/api/sockets.c b/src/api/sockets.c
+index 7852635..3262c1b 100644
+--- a/src/api/sockets.c
++++ b/src/api/sockets.c
+@@ -62,6 +62,11 @@
+ #include <stdarg.h>
+ #endif
+ 
++#if USE_LIBOS
++#include <stdarg.h>
++#include "lwipsock.h"
++#endif
++
+ #include <string.h>
+ 
+ #ifdef LWIP_HOOK_FILENAME
+@@ -85,13 +90,29 @@
+ #define API_SELECT_CB_VAR_ALLOC(name, retblock)   API_VAR_ALLOC_EXT(struct lwip_select_cb, MEMP_SELECT_CB, name, retblock)
+ #define API_SELECT_CB_VAR_FREE(name)              API_VAR_FREE(MEMP_SELECT_CB, name)
+ 
++#if USE_LIBOS
++enum KERNEL_LWIP_PATH {
++  PATH_KERNEL = 0,
++  PATH_LWIP,
++  PATH_ERR,
++};
++#endif
++
+ #if LWIP_IPV4
++#if USE_LIBOS
++#define IP4ADDR_PORT_TO_SOCKADDR(sin, ipaddr, port) do { \
++      (sin)->sin_family = AF_INET; \
++      (sin)->sin_port = lwip_htons((port)); \
++      inet_addr_from_ip4addr(&(sin)->sin_addr, ipaddr); \
++      memset((sin)->sin_zero, 0, SIN_ZERO_LEN); }while(0)
++#else
+ #define IP4ADDR_PORT_TO_SOCKADDR(sin, ipaddr, port) do { \
+       (sin)->sin_len = sizeof(struct sockaddr_in); \
+       (sin)->sin_family = AF_INET; \
+       (sin)->sin_port = lwip_htons((port)); \
+       inet_addr_from_ip4addr(&(sin)->sin_addr, ipaddr); \
+       memset((sin)->sin_zero, 0, SIN_ZERO_LEN); }while(0)
++#endif /* USE_LIBOS */
+ #define SOCKADDR4_TO_IP4ADDR_PORT(sin, ipaddr, port) do { \
+     inet_addr_to_ip4addr(ip_2_ip4(ipaddr), &((sin)->sin_addr)); \
+     (port) = lwip_ntohs((sin)->sin_port); }while(0)
+@@ -257,7 +278,12 @@ static void lwip_socket_drop_registered_mld6_memberships(int s);
+ #endif /* LWIP_IPV6_MLD */
+ 
+ /** The global array of available sockets */
++#if USE_LIBOS
++uint32_t sockets_num;
++struct lwip_sock *sockets;
++#else
+ static struct lwip_sock sockets[NUM_SOCKETS];
++#endif /* USE_LIBOS */
+ 
+ #if LWIP_SOCKET_SELECT || LWIP_SOCKET_POLL
+ #if LWIP_TCPIP_CORE_LOCKING
+@@ -285,7 +311,7 @@ static struct lwip_select_cb *select_cb_list;
+ 
+ /* Forward declaration of some functions */
+ #if LWIP_SOCKET_SELECT || LWIP_SOCKET_POLL
+-static void event_callback(struct netconn *conn, enum netconn_evt evt, u16_t len);
++void event_callback(struct netconn *conn, enum netconn_evt evt, u16_t len);
+ #define DEFAULT_SOCKET_EVENTCB event_callback
+ static void select_check_waiters(int s, int has_recvevent, int has_sendevent, int has_errevent);
+ #else
+@@ -411,7 +437,13 @@ static struct lwip_sock *
+ tryget_socket_unconn_nouse(int fd)
+ {
+   int s = fd - LWIP_SOCKET_OFFSET;
+-  if ((s < 0) || (s >= NUM_SOCKETS)) {
++
++#if USE_LIBOS
++  if ((s < 0) || (s >= sockets_num))
++#else
++  if ((s < 0) || (s >= NUM_SOCKETS))
++#endif /* USE_LIBOS */
++  {
+     LWIP_DEBUGF(SOCKETS_DEBUG, ("tryget_socket_unconn(%d): invalid\n", fd));
+     return NULL;
+   }
+@@ -475,8 +507,13 @@ tryget_socket(int fd)
+  * @param fd externally used socket index
+  * @return struct lwip_sock for the socket or NULL if not found
+  */
++#if USE_LIBOS
++struct lwip_sock *
++get_socket(int fd)
++#else
+ static struct lwip_sock *
+ get_socket(int fd)
++#endif /* USE_LIBOS */
+ {
+   struct lwip_sock *sock = tryget_socket(fd);
+   if (!sock) {
+@@ -489,6 +526,24 @@ get_socket(int fd)
+   return sock;
+ }
+ 
++#if USE_LIBOS
++/**
++ * Map a externally used socket index to the internal socket representation.
++ *
++ * @param s externally used socket index
++ * @return struct lwip_sock for the socket or NULL if not found without
++ * checking.
++ */
++struct lwip_sock *
++get_socket_by_fd(int fd)
++{
++  if ((fd < LWIP_SOCKET_OFFSET) || (fd >= sockets_num + LWIP_SOCKET_OFFSET)) {
++    return NULL;
++  }
++  return &sockets[fd - LWIP_SOCKET_OFFSET];
++}
++#endif /* USE_LIBOS */
++
+ /**
+  * Allocate a new socket for a given netconn.
+  *
+@@ -504,6 +559,62 @@ alloc_socket(struct netconn *newconn, int accepted)
+   SYS_ARCH_DECL_PROTECT(lev);
+   LWIP_UNUSED_ARG(accepted);
+ 
++#if USE_LIBOS
++  int type, protocol = 0, domain = AF_INET;
++  switch (NETCONNTYPE_GROUP(newconn->type)) {
++    case NETCONN_RAW:
++      type = SOCK_RAW;
++      break;
++    case NETCONN_UDPLITE:
++    case NETCONN_UDP:
++      type = SOCK_DGRAM;
++      break;
++    case NETCONN_TCP:
++      type = SOCK_STREAM;
++      break;
++    default:
++      type = -1;
++      break;
++  }
++
++  SYS_ARCH_PROTECT(lev);
++  i = posix_api->socket_fn(domain, type, protocol);
++  if (i == -1) {
++    goto err;
++  }
++
++  if ((i < LWIP_SOCKET_OFFSET) || (i >= sockets_num + LWIP_SOCKET_OFFSET)) {
++    goto err;
++  }
++
++  if (!sockets[i].conn && (sockets[i].select_waiting == 0)) {
++    /*initialize state as NETCONN_HOST | NETCONN_LIBOS,
++     *if connection accepted and alloc_socket called, it can be only NETCONN_LIBOS*/
++    if (accepted)
++      SET_CONN_TYPE_LIBOS(newconn);
++    else
++      SET_CONN_TYPE_LIBOS_OR_HOST(newconn);
++    sockets[i].conn       = newconn;
++    /* The socket is not yet known to anyone, so no need to protect
++       after having marked it as used. */
++    SYS_ARCH_UNPROTECT(lev);
++    sockets[i].lastdata.pbuf = NULL;
++    sockets[i].rcvevent   = 0;
++    /* TCP sendbuf is empty, but the socket is not yet writable until connected
++     * (unless it has been created by accept()). */
++    sockets[i].sendevent  = (NETCONNTYPE_GROUP(newconn->type) == NETCONN_TCP ? (accepted != 0) : 1);
++    sockets[i].errevent   = 0;
++    sockets[i].epoll_data = NULL;
++    init_list_node_null(&sockets[i].list);
++    return i + LWIP_SOCKET_OFFSET;
++  }
++
++err:
++  posix_api->close_fn(i);
++  SYS_ARCH_UNPROTECT(lev);
++  return -1;
++#else /* USE_LIBOS */
++
+   /* allocate a new socket identifier */
+   for (i = 0; i < NUM_SOCKETS; ++i) {
+     /* Protect socket array */
+@@ -535,6 +646,8 @@ alloc_socket(struct netconn *newconn, int accepted)
+     SYS_ARCH_UNPROTECT(lev);
+   }
+   return -1;
++
++#endif /* USE_LIBOS */
+ }
+ 
+ /** Free a socket (under lock)
+@@ -629,10 +742,43 @@ lwip_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
+   SYS_ARCH_DECL_PROTECT(lev);
+ 
+   LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_accept(%d)...\n", s));
++#if USE_LIBOS
++  int sys_errno = 0;
++  
++  sock = posix_api->get_socket(s);
++  /*AF_UNIX case*/
++  if (!sock) {
++    if (rearm_accept_fd(s) < 0) {
++      LWIP_DEBUGF(SOCKETS_DEBUG,
++          ("failed to rearm accept fd=%d errno=%d\n", s, errno));
++    }
++    return posix_api->accept_fn(s, addr, addrlen);
++  }
++  
++  /*for AF_INET, we may try both linux and lwip*/
++  if (!CONN_TYPE_HAS_LIBOS_AND_HOST(sock->conn)) {
++    LWIP_DEBUGF(SOCKETS_DEBUG, ("conn->type has libos and host bits"));
++    set_errno(EINVAL);
++    return -1;
++  }
++  
++  if (rearm_accept_fd(s) < 0) {
++    LWIP_DEBUGF(SOCKETS_DEBUG,
++        ("failed to rearm accept fd=%d errno=%d\n", s, errno));
++  }
++  
++  /* raise accept syscall in palce */
++  newsock = posix_api->accept_fn(s, addr, addrlen);
++  if (newsock >= 0) {
++    return newsock;
++  }
++  sys_errno = errno;
++#else
+   sock = get_socket(s);
+   if (!sock) {
+     return -1;
+   }
++#endif
+ 
+   /* wait for a new connection */
+   err = netconn_accept(sock->conn, &newconn);
+@@ -646,6 +792,9 @@ lwip_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
+       sock_set_errno(sock, err_to_errno(err));
+     }
+     done_socket(sock);
++#if USE_LIBOS
++    set_errno(sys_errno);
++#endif /* USE_LIBOS */
+     return -1;
+   }
+   LWIP_ASSERT("newconn != NULL", newconn != NULL);
+@@ -657,7 +806,11 @@ lwip_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
+     done_socket(sock);
+     return -1;
+   }
++#if USE_LIBOS
++  LWIP_ASSERT("invalid socket index", (newsock >= LWIP_SOCKET_OFFSET) && (newsock < sockets_num + LWIP_SOCKET_OFFSET));
++#else
+   LWIP_ASSERT("invalid socket index", (newsock >= LWIP_SOCKET_OFFSET) && (newsock < NUM_SOCKETS + LWIP_SOCKET_OFFSET));
++#endif /* USE_LIBOS */
+   nsock = &sockets[newsock - LWIP_SOCKET_OFFSET];
+ 
+   /* See event_callback: If data comes in right away after an accept, even
+@@ -695,9 +848,11 @@ lwip_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
+     }
+ 
+     IPADDR_PORT_TO_SOCKADDR(&tempaddr, &naddr, port);
++#if !USE_LIBOS
+     if (*addrlen > tempaddr.sa.sa_len) {
+       *addrlen = tempaddr.sa.sa_len;
+     }
++#endif /* USE_LIBOS */
+     MEMCPY(addr, &tempaddr, *addrlen);
+ 
+     LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_accept(%d) returning new sock=%d addr=", s, newsock));
+@@ -720,11 +875,24 @@ lwip_bind(int s, const struct sockaddr *name, socklen_t namelen)
+   ip_addr_t local_addr;
+   u16_t local_port;
+   err_t err;
+-
++#if USE_LIBOS
++  sock = posix_api->get_socket(s);
++  /*AF_UNIX case*/
++  if (!sock) {
++    return posix_api->bind_fn(s, name, namelen);
++  }
++  /*for AF_INET, we may try both linux and lwip*/
++  if (!CONN_TYPE_HAS_LIBOS_AND_HOST(sock->conn)) {
++    LWIP_DEBUGF(SOCKETS_DEBUG, ("conn->type has libos and host bits"));
++    set_errno(EINVAL);
++    return -1;
++  }
++#else
+   sock = get_socket(s);
+   if (!sock) {
+     return -1;
+   }
++#endif
+ 
+   if (!SOCK_ADDR_TYPE_MATCH(name, sock)) {
+     /* sockaddr does not match socket type (IPv4/IPv6) */
+@@ -744,6 +912,18 @@ lwip_bind(int s, const struct sockaddr *name, socklen_t namelen)
+   ip_addr_debug_print_val(SOCKETS_DEBUG, local_addr);
+   LWIP_DEBUGF(SOCKETS_DEBUG, (" port=%"U16_F")\n", local_port));
+ 
++#if USE_LIBOS
++  /* Supports kernel NIC IP address. */
++  int ret = posix_api->bind_fn(s, name, namelen);
++  if (ret < 0) {
++    LWIP_DEBUGF(SOCKETS_DEBUG, ("bind syscall failed\n"));
++    /* bind must succeed on both linux and libos */
++    if (!is_host_ipv4(local_addr.addr)) {
++      return ret;
++    }
++  }
++#endif /* USE_LIBOS */
++
+ #if LWIP_IPV4 && LWIP_IPV6
+   /* Dual-stack: Unmap IPv4 mapped IPv6 addresses */
+   if (IP_IS_V6_VAL(local_addr) && ip6_addr_isipv4mappedipv6(ip_2_ip6(&local_addr))) {
+@@ -776,10 +956,29 @@ lwip_close(int s)
+ 
+   LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_close(%d)\n", s));
+ 
++#if USE_LIBOS
++  int ret;
++  if (posix_api->is_epfd(s)) {
++    return posix_api->epoll_close_fn(s);
++  }
++
++  ret = posix_api->close_fn(s);
++  if (ret < 0)
++    return ret;
++  if (posix_api->is_chld == 0)
++    clean_host_fd(s);
++
++  sock = posix_api->get_socket(s);
++  /*AF_UNIX case*/
++  if (!sock) {
++    return ret;
++  }
++#else
+   sock = get_socket(s);
+   if (!sock) {
+     return -1;
+   }
++#endif /* USE_LIBOS */
+ 
+   if (sock->conn != NULL) {
+     is_tcp = NETCONNTYPE_GROUP(netconn_type(sock->conn)) == NETCONN_TCP;
+@@ -803,6 +1002,13 @@ lwip_close(int s)
+     return -1;
+   }
+ 
++#if USE_LIBOS
++  sock->epoll = LIBOS_EPOLLNONE;
++  sock->events = 0;
++  sock->epoll_data = NULL;
++  list_del_node_null(&sock->list);
++#endif
++
+   free_socket(sock, is_tcp);
+   set_errno(0);
+   return 0;
+@@ -814,10 +1020,28 @@ lwip_connect(int s, const struct sockaddr *name, socklen_t namelen)
+   struct lwip_sock *sock;
+   err_t err;
+ 
++#if USE_LIBOS
++  int ret;
++  
++  sock = posix_api->get_socket(s);
++  if (!sock) {
++    return posix_api->connect_fn(s, name, namelen);
++  }
++  
++  /* raise connect syscall in place */
++  ADD_CONN_TYPE_INPRG(sock->conn);
++  ret = posix_api->connect_fn(s, name, namelen);
++  if (!ret) {
++    SET_CONN_TYPE_HOST(sock->conn);
++    LWIP_DEBUGF(SOCKETS_DEBUG, ("linux connect succeed fd=%d\n", s));
++    return ret;
++  }
++#else
+   sock = get_socket(s);
+   if (!sock) {
+     return -1;
+   }
++#endif
+ 
+   if (!SOCK_ADDR_TYPE_MATCH_OR_UNSPEC(name, sock)) {
+     /* sockaddr does not match socket type (IPv4/IPv6) */
+@@ -862,6 +1086,11 @@ lwip_connect(int s, const struct sockaddr *name, socklen_t namelen)
+     return -1;
+   }
+ 
++#if USE_LIBOS
++  LWIP_DEBUGF(SOCKETS_DEBUG, ("libos connect succeed fd=%d\n",s));
++  SET_CONN_TYPE_LIBOS(sock->conn);
++#endif /* USE_LIBOS */
++
+   LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_connect(%d) succeeded\n", s));
+   sock_set_errno(sock, 0);
+   done_socket(sock);
+@@ -884,10 +1113,29 @@ lwip_listen(int s, int backlog)
+ 
+   LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_listen(%d, backlog=%d)\n", s, backlog));
+ 
++#if USE_LIBOS
++  int ret;
++  
++  sock = posix_api->get_socket(s);
++  /*AF_UNIX case*/
++  if (!sock) {
++    return posix_api->listen_fn(s, backlog);
++  }
++  /*for AF_INET, we may try both linux and lwip*/
++  if (!CONN_TYPE_HAS_LIBOS_AND_HOST(sock->conn)) {
++    LWIP_DEBUGF(SOCKETS_DEBUG, ("conn->type has libos and host bits"));
++    set_errno(EADDRINUSE);
++    return -1;
++  }
++  
++  if ((ret = posix_api->listen_fn(s, backlog)) == -1)
++    return ret;
++#else
+   sock = get_socket(s);
+   if (!sock) {
+     return -1;
+   }
++#endif
+ 
+   /* limit the "backlog" parameter to fit in an u8_t */
+   backlog = LWIP_MIN(LWIP_MAX(backlog, 0), 0xff);
+@@ -919,6 +1167,9 @@ static ssize_t
+ lwip_recv_tcp(struct lwip_sock *sock, void *mem, size_t len, int flags)
+ {
+   u8_t apiflags = NETCONN_NOAUTORCVD;
++#if USE_LIBOS
++  apiflags = 0;
++#endif
+   ssize_t recvd = 0;
+   ssize_t recv_left = (len <= SSIZE_MAX) ? (ssize_t)len : SSIZE_MAX;
+ 
+@@ -938,6 +1189,13 @@ lwip_recv_tcp(struct lwip_sock *sock, void *mem, size_t len, int flags)
+     /* Check if there is data left from the last recv operation. */
+     if (sock->lastdata.pbuf) {
+       p = sock->lastdata.pbuf;
++#if USE_LIBOS
++      if ((flags & MSG_PEEK) == 0) {
++        if ((NETCONNTYPE_GROUP(netconn_type(sock->conn)) == NETCONN_TCP)) {
++          del_epoll_event(sock->conn, EPOLLIN);
++        }
++      }
++#endif
+     } else {
+       /* No data was left from the previous operation, so we try to get
+          some from the network. */
+@@ -1008,10 +1266,22 @@ lwip_recv_tcp(struct lwip_sock *sock, void *mem, size_t len, int flags)
+     /* @todo: do we need to support peeking more than one pbuf? */
+   } while ((recv_left > 0) && !(flags & MSG_PEEK));
+ lwip_recv_tcp_done:
+-  if ((recvd > 0) && !(flags & MSG_PEEK)) {
+-    /* ensure window update after copying all data */
+-    netconn_tcp_recvd(sock->conn, (size_t)recvd);
++#if USE_LIBOS
++  if (apiflags & NETCONN_NOAUTORCVD)
++#endif
++  {
++    if ((recvd > 0) && !(flags & MSG_PEEK)) {
++      /* ensure window update after copying all data */
++      netconn_tcp_recvd(sock->conn, (size_t)recvd);
++    }
+   }
++#if USE_LIBOS
++  if ((flags & MSG_PEEK) == 0) {
++    if (((NETCONNTYPE_GROUP(netconn_type(sock->conn)) == NETCONN_TCP)) && sock->lastdata.pbuf) {
++      add_epoll_event(sock->conn, EPOLLIN);
++    }
++  }
++#endif
+   sock_set_errno(sock, 0);
+   return recvd;
+ }
+@@ -1040,11 +1310,13 @@ lwip_sock_make_addr(struct netconn *conn, ip_addr_t *fromaddr, u16_t port,
+ #endif /* LWIP_IPV4 && LWIP_IPV6 */
+ 
+   IPADDR_PORT_TO_SOCKADDR(&saddr, fromaddr, port);
++#if !USE_LIBOS
+   if (*fromlen < saddr.sa.sa_len) {
+     truncated = 1;
+   } else if (*fromlen > saddr.sa.sa_len) {
+     *fromlen = saddr.sa.sa_len;
+   }
++#endif
+   MEMCPY(from, &saddr, *fromlen);
+   return truncated;
+ }
+@@ -1194,6 +1466,43 @@ lwip_recvfrom_udp_raw(struct lwip_sock *sock, int flags, struct msghdr *msg, u16
+   return ERR_OK;
+ }
+ 
++#if USE_LIBOS
++static inline enum KERNEL_LWIP_PATH select_path(int s)
++{
++  struct lwip_sock *sock;
++  
++  sock = posix_api->get_socket(s);
++  /*AF_UNIX case*/
++  if (!sock) {
++    if (rearm_host_fd(s) < 0) {
++      LWIP_DEBUGF(SOCKETS_DEBUG, ("failed to rearm fd=%d errno=%d\n", s, errno));
++    }
++    return PATH_KERNEL;
++  }
++
++  if (CONN_TYPE_HAS_INPRG(sock->conn)) {
++    set_errno(EWOULDBLOCK);
++    return PATH_ERR;
++  }
++
++  /*for AF_INET, we can try erther linux or lwip*/
++  if (CONN_TYPE_IS_HOST(sock->conn)) {
++    if (rearm_host_fd(s) < 0) {
++      LWIP_DEBUGF(SOCKETS_DEBUG, ("failed to rearm read fd=%d errno=%d\n", s, errno));
++    }
++    return PATH_KERNEL;
++  }
++
++  if (!CONN_TYPE_IS_LIBOS(sock->conn)) {
++    LWIP_DEBUGF(SOCKETS_DEBUG, ("conn->type is not libos bit type=%x", netconn_type(sock->conn)));
++    set_errno(EINVAL);
++    return PATH_ERR;
++  }
++
++  return PATH_LWIP;
++}
++#endif
++
+ ssize_t
+ lwip_recvfrom(int s, void *mem, size_t len, int flags,
+               struct sockaddr *from, socklen_t *fromlen)
+@@ -1201,6 +1510,15 @@ lwip_recvfrom(int s, void *mem, size_t len, int flags,
+   struct lwip_sock *sock;
+   ssize_t ret;
+ 
++#if USE_LIBOS
++  enum KERNEL_LWIP_PATH path = select_path(s);
++  if (path == PATH_ERR) {
++    return -1;
++  } else if (path == PATH_KERNEL) {
++    return posix_api->recv_from(s, mem, len, flags, from, fromlen);
++  }
++#endif
++
+   LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_recvfrom(%d, %p, %"SZT_F", 0x%x, ..)\n", s, mem, len, flags));
+   sock = get_socket(s);
+   if (!sock) {
+@@ -1250,6 +1568,14 @@ lwip_recvfrom(int s, void *mem, size_t len, int flags,
+ ssize_t
+ lwip_read(int s, void *mem, size_t len)
+ {
++#if USE_LIBOS
++  enum KERNEL_LWIP_PATH path = select_path(s);
++  if (path == PATH_ERR) {
++    return -1;
++  } else if (path == PATH_KERNEL) {
++    return posix_api->read_fn(s, mem, len);
++  }
++#endif
+   return lwip_recvfrom(s, mem, len, 0, NULL, NULL);
+ }
+ 
+@@ -1283,6 +1609,15 @@ lwip_recvmsg(int s, struct msghdr *message, int flags)
+   int i;
+   ssize_t buflen;
+ 
++#if USE_LIBOS
++  enum KERNEL_LWIP_PATH path = select_path(s);
++  if (path == PATH_ERR) {
++    return -1;
++  } else if (path == PATH_KERNEL) {
++    return posix_api->recv_msg(s, message, flags);
++  }
++#endif
++
+   LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_recvmsg(%d, message=%p, flags=0x%x)\n", s, (void *)message, flags));
+   LWIP_ERROR("lwip_recvmsg: invalid message pointer", message != NULL, return ERR_ARG;);
+   LWIP_ERROR("lwip_recvmsg: unsupported flags", (flags & ~(MSG_PEEK|MSG_DONTWAIT)) == 0,
+@@ -1427,6 +1762,15 @@ lwip_sendmsg(int s, const struct msghdr *msg, int flags)
+ #endif
+   err_t err = ERR_OK;
+ 
++#if USE_LIBOS
++  enum KERNEL_LWIP_PATH path = select_path(s);
++  if (path == PATH_ERR) {
++    return -1;
++  } else if (path == PATH_KERNEL) {
++    return posix_api->send_msg(s, msg, flags);
++  }
++#endif
++
+   sock = get_socket(s);
+   if (!sock) {
+     return -1;
+@@ -1436,10 +1780,10 @@ lwip_sendmsg(int s, const struct msghdr *msg, int flags)
+              sock_set_errno(sock, err_to_errno(ERR_ARG)); done_socket(sock); return -1;);
+   LWIP_ERROR("lwip_sendmsg: invalid msghdr iov", msg->msg_iov != NULL,
+              sock_set_errno(sock, err_to_errno(ERR_ARG)); done_socket(sock); return -1;);
+-  LWIP_ERROR("lwip_sendmsg: maximum iovs exceeded", (msg->msg_iovlen > 0) && (msg->msg_iovlen <= IOV_MAX),
+-             sock_set_errno(sock, EMSGSIZE); done_socket(sock); return -1;);
+-  LWIP_ERROR("lwip_sendmsg: unsupported flags", (flags & ~(MSG_DONTWAIT | MSG_MORE)) == 0,
+-             sock_set_errno(sock, EOPNOTSUPP); done_socket(sock); return -1;);
++  //LWIP_ERROR("lwip_sendmsg: maximum iovs exceeded", (msg->msg_iovlen > 0) && (msg->msg_iovlen <= IOV_MAX),
++  //           sock_set_errno(sock, EMSGSIZE); done_socket(sock); return -1;);
++  //LWIP_ERROR("lwip_sendmsg: unsupported flags", (flags & ~(MSG_DONTWAIT | MSG_MORE)) == 0,
++  //           sock_set_errno(sock, EOPNOTSUPP); done_socket(sock); return -1;);
+ 
+   LWIP_UNUSED_ARG(msg->msg_control);
+   LWIP_UNUSED_ARG(msg->msg_controllen);
+@@ -1590,6 +1934,15 @@ lwip_sendto(int s, const void *data, size_t size, int flags,
+   u16_t remote_port;
+   struct netbuf buf;
+ 
++#if USE_LIBOS
++  enum KERNEL_LWIP_PATH path = select_path(s);
++  if (path == PATH_ERR) {
++    return -1;
++  } else if (path == PATH_KERNEL) {
++    return posix_api->send_to(s, data, size, flags, to, tolen);
++  }
++#endif
++
+   sock = get_socket(s);
+   if (!sock) {
+     return -1;
+@@ -1688,6 +2041,11 @@ lwip_socket(int domain, int type, int protocol)
+ 
+   LWIP_UNUSED_ARG(domain); /* @todo: check this */
+ 
++#if USE_LIBOS
++  if ((domain != AF_INET && domain != AF_UNSPEC) || posix_api->is_chld)
++    return posix_api->socket_fn(domain, type, protocol);
++#endif
++
+   /* create a netconn */
+   switch (type) {
+     case SOCK_RAW:
+@@ -1744,6 +2102,14 @@ lwip_socket(int domain, int type, int protocol)
+ ssize_t
+ lwip_write(int s, const void *data, size_t size)
+ {
++#if USE_LIBOS
++  enum KERNEL_LWIP_PATH path = select_path(s);
++  if (path == PATH_ERR) {
++    return -1;
++  } else if (path == PATH_KERNEL) {
++    return posix_api->write_fn(s, data, size);
++  }
++#endif
+   return lwip_send(s, data, size, 0);
+ }
+ 
+@@ -2479,7 +2845,7 @@ lwip_poll_should_wake(const struct lwip_select_cb *scb, int fd, int has_recveven
+  *   NETCONN_EVT_ERROR
+  * This requirement will be asserted in select_check_waiters()
+  */
+-static void
++void
+ event_callback(struct netconn *conn, enum netconn_evt evt, u16_t len)
+ {
+   int s, check_waiters;
+@@ -2528,23 +2894,38 @@ event_callback(struct netconn *conn, enum netconn_evt evt, u16_t len)
+       if (sock->rcvevent > 1) {
+         check_waiters = 0;
+       }
++#if USE_LIBOS
++      add_epoll_event(conn, EPOLLIN);
++#endif
+       break;
+     case NETCONN_EVT_RCVMINUS:
+       sock->rcvevent--;
+       check_waiters = 0;
++#if USE_LIBOS
++      del_epoll_event(conn, EPOLLIN);
++#endif
+       break;
+     case NETCONN_EVT_SENDPLUS:
+       if (sock->sendevent) {
+         check_waiters = 0;
+       }
+       sock->sendevent = 1;
++#if USE_LIBOS
++      add_epoll_event(conn, EPOLLOUT);
++#endif
+       break;
+     case NETCONN_EVT_SENDMINUS:
+       sock->sendevent = 0;
+       check_waiters = 0;
++#if USE_LIBOS
++      del_epoll_event(conn, EPOLLOUT);
++#endif
+       break;
+     case NETCONN_EVT_ERROR:
+       sock->errevent = 1;
++#if USE_LIBOS
++      add_epoll_event(conn, EPOLLERR);
++#endif
+       break;
+     default:
+       LWIP_ASSERT("unknown event", 0);
+@@ -2739,9 +3120,11 @@ lwip_getaddrname(int s, struct sockaddr *name, socklen_t *namelen, u8_t local)
+   ip_addr_debug_print_val(SOCKETS_DEBUG, naddr);
+   LWIP_DEBUGF(SOCKETS_DEBUG, (" port=%"U16_F")\n", port));
+ 
++#if !USE_LIBOS
+   if (*namelen > saddr.sa.sa_len) {
+     *namelen = saddr.sa.sa_len;
+   }
++#endif
+   MEMCPY(name, &saddr, *namelen);
+ 
+   sock_set_errno(sock, 0);
+@@ -2752,12 +3135,41 @@ lwip_getaddrname(int s, struct sockaddr *name, socklen_t *namelen, u8_t local)
+ int
+ lwip_getpeername(int s, struct sockaddr *name, socklen_t *namelen)
+ {
++#if USE_LIBOS
++  struct lwip_sock *sock;
++  
++  sock = posix_api->get_socket(s);
++  if (!sock) {
++    return posix_api->getpeername_fn(s, name, namelen);
++  }
++  /*for AF_INET, if has only host type bit, just call linux api,
++   *if has libos and host type bits, it's a not connected fd, call
++   *linux api and return -1(errno == ENOTCONN) is also ok*/
++  if (CONN_TYPE_HAS_HOST(sock->conn)) {
++    return posix_api->getpeername_fn(s, name, namelen);
++  }
++#endif
++
+   return lwip_getaddrname(s, name, namelen, 0);
+ }
+ 
+ int
+ lwip_getsockname(int s, struct sockaddr *name, socklen_t *namelen)
+ {
++#if USE_LIBOS
++  struct lwip_sock *sock;
++  
++  sock = posix_api->get_socket(s);
++  if (!sock) {
++    return posix_api->getsockname_fn(s, name, namelen);
++  }
++  /*for AF_INET, if has only host type bit, just call linux api,
++   *if has libos and host type bits, also call linux api*/
++  if (CONN_TYPE_HAS_HOST(sock->conn)) {
++    return posix_api->getsockname_fn(s, name, namelen);
++  }
++#endif
++
+   return lwip_getaddrname(s, name, namelen, 1);
+ }
+ 
+@@ -2765,15 +3177,28 @@ int
+ lwip_getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen)
+ {
+   int err;
+-  struct lwip_sock *sock = get_socket(s);
+ #if !LWIP_TCPIP_CORE_LOCKING
+   err_t cberr;
+   LWIP_SETGETSOCKOPT_DATA_VAR_DECLARE(data);
+ #endif /* !LWIP_TCPIP_CORE_LOCKING */
+ 
++#if USE_LIBOS
++  struct lwip_sock *sock = posix_api->get_socket(s);
++  
++  if (!sock) {
++    return posix_api->getsockopt_fn(s, level, optname, optval, optlen);
++  }
++  /*for AF_INET, we return linux result? */
++  if (CONN_TYPE_HAS_HOST(sock->conn)) {
++    return posix_api->getsockopt_fn(s, level, optname, optval, optlen);
++  }
++#else
++  struct lwip_sock *sock = get_socket(s);
++
+   if (!sock) {
+     return -1;
+   }
++#endif /* USE_LIBOS */
+ 
+   if ((NULL == optval) || (NULL == optlen)) {
+     sock_set_errno(sock, EFAULT);
+@@ -3211,15 +3636,30 @@ int
+ lwip_setsockopt(int s, int level, int optname, const void *optval, socklen_t optlen)
+ {
+   int err = 0;
+-  struct lwip_sock *sock = get_socket(s);
+ #if !LWIP_TCPIP_CORE_LOCKING
+   err_t cberr;
+   LWIP_SETGETSOCKOPT_DATA_VAR_DECLARE(data);
+ #endif /* !LWIP_TCPIP_CORE_LOCKING */
+ 
++#if USE_LIBOS
++  struct lwip_sock *sock = posix_api->get_socket(s);
++
++  if (!sock) {
++    return posix_api->setsockopt_fn(s, level, optname, optval, optlen);
++  }
++  /*for AF_INET, we may try both linux and lwip*/
++  if (CONN_TYPE_HAS_HOST(sock->conn)) {
++    if (posix_api->setsockopt_fn(s, level, optname, optval, optlen) < 0) {
++      return -1;
++    }
++  }
++#else
++  struct lwip_sock *sock = get_socket(s);
++
+   if (!sock) {
+     return -1;
+   }
++#endif /* USE_LIBOS */
+ 
+   if (NULL == optval) {
+     sock_set_errno(sock, EFAULT);
+@@ -3333,6 +3773,7 @@ lwip_setsockopt_impl(int s, int level, int optname, const void *optval, socklen_
+         case SO_KEEPALIVE:
+ #if SO_REUSE
+         case SO_REUSEADDR:
++        case SO_REUSEPORT:
+ #endif /* SO_REUSE */
+           if ((optname == SO_BROADCAST) &&
+               (NETCONNTYPE_GROUP(sock->conn->type) != NETCONN_UDP)) {
+@@ -3745,6 +4186,29 @@ lwip_setsockopt_impl(int s, int level, int optname, const void *optval, socklen_
+   return err;
+ }
+ 
++#if USE_LIBOS
++int
++lwip_ioctl(int s, long cmd, ...)
++{
++  struct lwip_sock *sock = posix_api->get_socket(s);
++  u8_t val;
++
++  int ret = -1;
++  void *argp;
++  va_list ap;
++
++  va_start(ap, cmd);
++  argp = va_arg(ap, void *);
++  va_end(ap);
++
++  if (!sock) {
++    return posix_api->ioctl_fn(s, cmd, argp);
++  }
++  if (CONN_TYPE_HAS_HOST(sock->conn)) {
++    if ((ret = posix_api->ioctl_fn(s, cmd, argp)) == -1)
++      return ret;
++  }
++#else
+ int
+ lwip_ioctl(int s, long cmd, void *argp)
+ {
+@@ -3757,6 +4221,7 @@ lwip_ioctl(int s, long cmd, void *argp)
+   if (!sock) {
+     return -1;
+   }
++#endif /* USE_LIBOS */
+ 
+   switch (cmd) {
+ #if LWIP_SO_RCVBUF || LWIP_FIONREAD_LINUXMODE
+@@ -3839,6 +4304,26 @@ lwip_ioctl(int s, long cmd, void *argp)
+  * the flag O_NONBLOCK is implemented for F_SETFL.
+  */
+ int
++#if USE_LIBOS
++lwip_fcntl(int s, int cmd, ...)
++{
++  struct lwip_sock *sock = posix_api->get_socket(s);
++  int val, ret = -1;
++  int op_mode = 0;
++  va_list ap;
++
++  va_start(ap, cmd);
++  val = va_arg(ap, int);
++  va_end(ap);
++
++  if (!sock) {
++    return posix_api->fcntl_fn(s, cmd, val);
++  }
++  if (CONN_TYPE_HAS_HOST(sock->conn)) {
++    if ((ret = posix_api->fcntl_fn(s, cmd, val)) == -1)
++      return ret;
++  }
++#else /* USE_LIBOS */
+ lwip_fcntl(int s, int cmd, int val)
+ {
+   struct lwip_sock *sock = get_socket(s);
+@@ -3848,6 +4333,7 @@ lwip_fcntl(int s, int cmd, int val)
+   if (!sock) {
+     return -1;
+   }
++#endif /* USE_LIBOS */
+ 
+   switch (cmd) {
+     case F_GETFL:
+@@ -4163,4 +4649,50 @@ lwip_socket_drop_registered_mld6_memberships(int s)
+ }
+ #endif /* LWIP_IPV6_MLD */
+ 
++#if USE_LIBOS
++void lwip_sock_init(void)
++{
++  if (sockets_num == 0) {
++    sockets_num = NUM_SOCKETS;
++    sockets = calloc(sockets_num, sizeof(struct lwip_sock));
++    LWIP_ASSERT("sockets != NULL", sockets != NULL);
++    memset(sockets, 0, sockets_num * sizeof(struct lwip_sock));
++  }
++  return;
++}
++
++//modify from lwip_close
++void lwip_exit(void)
++{
++  int i, is_tcp;
++  struct lwip_sock *sock;
++
++  if (memp_pools[MEMP_SYS_MBOX] == NULL) {
++    return;
++  }
++
++  for (i = 0; i < sockets_num; i++) {
++    sock = &sockets[i];
++    if (!sock->conn)
++      continue;
++#if LWIP_IGMP
++    /* drop all possibly joined IGMP memberships */
++    lwip_socket_drop_registered_memberships(i);
++#endif /* LWIP_IGMP */
++    /*
++     * process is exiting, call netconn_delete to
++     * close tcp connection, and ignore the return value
++     */
++    is_tcp = NETCONNTYPE_GROUP(netconn_type(sock->conn)) == NETCONN_TCP;
++    netconn_delete(sock->conn);
++    free_socket(sock, is_tcp);
++  }
++
++  free(sockets);
++  sockets = NULL;
++  sockets_num = 0;
++}
++
++#endif /* USE_LIBOS */
++
+ #endif /* LWIP_SOCKET */
+diff --git a/src/api/sys_arch.c b/src/api/sys_arch.c
+new file mode 100644
+index 0000000..55561b1
+--- /dev/null
++++ b/src/api/sys_arch.c
+@@ -0,0 +1,379 @@
++/*
++ * Copyright (c) 2001-2004 Swedish Institute of Computer Science.
++ * All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without modification,
++ * are permitted provided that the following conditions are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ * 3. The name of the author may not be used to endorse or promote products
++ *    derived from this software without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
++ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
++ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
++ * SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
++ * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
++ * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
++ * OF SUCH DAMAGE.
++ *
++ * This file is part of the lwIP TCP/IP stack.
++ *
++ * Author: Huawei Technologies
++ *
++ */
++
++#define _GNU_SOURCE
++#include <pthread.h>
++#include <string.h>
++#include <time.h>
++#include <unistd.h>
++
++#include <rte_memzone.h>
++#include <rte_ring.h>
++
++#include "lwip/err.h"
++#include "lwip/mem.h"
++#include "lwip/memp.h"
++#include "lwip/opt.h"
++#include "lwip/sys.h"
++#include "lwip/timeouts.h"
++#include "arch/sys_arch.h"
++
++struct sys_mutex {
++    volatile unsigned int m;
++};
++
++struct sys_mutex lstack_mutex;
++
++struct sys_sem lstack_sem;
++
++#define MAX_THREAD_NAME 64
++#define MBOX_NAME_PREFIX  "_mbox_0x"
++#define MAX_MBOX_NAME_LEN (sizeof(MBOX_NAME_PREFIX) + 32) // log(UINT64_MAX) < 32
++
++struct sys_thread {
++    struct sys_thread *next;
++    char name[MAX_THREAD_NAME];
++    lwip_thread_fn fn;
++    void *arg;
++    int stacksize;
++    int prio;
++    pthread_t tid;
++};
++
++
++struct sys_mem_stats {
++    uint32_t tot_len;
++};
++
++static PER_THREAD struct sys_mem_stats hugepage_stats;
++
++static PER_THREAD uint64_t cycles_per_ms __attribute__((aligned(64)));
++static PER_THREAD uint64_t sys_start_ms __attribute__((aligned(64)));
++
++/*
++ * Mailbox
++ * */
++static int mbox_wait_func(void)
++{
++#if LWIP_TIMERS
++    sys_timer_run();
++#endif /* LWIP_TIMER */
++    return eth_dev_poll();
++}
++
++err_t sys_mbox_new(struct sys_mbox **mb, int size)
++{
++    int ret;
++    struct sys_mbox *mbox;
++
++    mbox = (struct sys_mbox *)memp_malloc(MEMP_SYS_MBOX);
++    if (mbox == NULL) {
++        return ERR_MEM;
++    }
++
++    mbox->flags = RING_F_SP_ENQ | RING_F_SC_DEQ;
++
++    ret = snprintf(mbox->name, sizeof(mbox->name), MBOX_NAME_PREFIX"%"PRIXPTR, (uintptr_t)mbox);
++    if (ret < 0) {
++        memp_free(MEMP_SYS_MBOX, mbox);
++        return ERR_VAL;
++    }
++
++    mbox->size = size;
++    mbox->socket_id = rte_socket_id();
++    mbox->ring = rte_ring_create(mbox->name, mbox->size, mbox->socket_id, mbox->flags);
++    if (!mbox->ring) {
++		RTE_LOG(ERR, EAL, "cannot create rte_ring for mbox\n");
++        memp_free(MEMP_SYS_MBOX, mbox);
++        return ERR_MEM;
++    }
++    mbox->wait_fn = mbox_wait_func;
++    *mb = mbox;
++
++    return ERR_OK;
++}
++
++void sys_mbox_free(struct sys_mbox **mb)
++{
++    struct sys_mbox *mbox = *mb;
++    rte_ring_free(mbox->ring);
++    memp_free(MEMP_SYS_MBOX, mbox);
++}
++
++err_t sys_mbox_trypost(struct sys_mbox **mb, void *msg)
++{
++    unsigned int n;
++    struct sys_mbox *mbox = *mb;
++
++    n = rte_ring_sp_enqueue_bulk(mbox->ring, &msg, 1, NULL);
++    if (!n)
++        return ERR_BUF;
++    return ERR_OK;
++}
++
++void sys_mbox_post(struct sys_mbox **mb, void *msg)
++{
++    struct sys_mbox *mbox = *mb;
++
++    /* NOTE:  sys_mbox_post is used on mbox defined in src/api/tcpip.c.
++    * If the ring size of mbox is greater than MEMP_NUM_TCPIP_MSG_API,
++    * enqueue failure will never happen.
++    * */
++    if (!rte_ring_sp_enqueue_bulk(mbox->ring, &msg, 1, NULL)) {
++        LWIP_ASSERT("It is failed to post msg into mbox", 0);
++    }
++}
++
++err_t sys_mbox_trypost_fromisr(sys_mbox_t *q, void *msg)
++{
++    return sys_mbox_trypost(q, msg);
++}
++
++uint32_t sys_arch_mbox_tryfetch(struct sys_mbox **mb, void **msg)
++{
++    unsigned int n;
++    struct sys_mbox *mbox = *mb;
++
++    n = rte_ring_sc_dequeue_bulk(mbox->ring, msg, 1, NULL);
++    if (!n) {
++        *msg = NULL;
++        return SYS_MBOX_EMPTY;
++    }
++
++    return 0;
++}
++
++uint32_t sys_arch_mbox_fetch(struct sys_mbox **mb, void **msg, uint32_t timeout)
++{
++    unsigned int n;
++    uint32_t poll_ts = 0;
++    uint32_t time_needed = 0;
++    struct sys_mbox *mbox = *mb;
++
++    n = rte_ring_sc_dequeue_bulk(mbox->ring, msg, 1, NULL);
++
++    if (timeout > 0)
++        poll_ts = sys_now();
++
++    while (!n) {
++        if (timeout > 0) {
++            time_needed = sys_now() - poll_ts;
++            if (time_needed >= timeout) {
++                return SYS_ARCH_TIMEOUT;
++            }
++        }
++
++        (void)mbox->wait_fn();
++
++        n = rte_ring_sc_dequeue_bulk(mbox->ring, msg, 1, NULL);
++    }
++
++    return time_needed;
++}
++
++int sys_mbox_empty(struct sys_mbox *mb)
++{
++    return rte_ring_count(mb->ring) == 0;
++}
++
++/*
++ * Threads
++ * */
++sys_thread_t sys_thread_new(const char *name, lwip_thread_fn function, void *arg, int stacksize, int prio)
++{
++    int err;
++    pthread_t tid;
++    struct sys_thread *thread;
++
++    thread = (struct sys_thread *)malloc(sizeof(struct sys_thread));
++    if (thread == NULL) {
++        LWIP_DEBUGF(SYS_DEBUG, ("sys_thread_new: malloc sys_thread failed\n"));
++        rte_exit(EXIT_FAILURE, "malloc sys_thread failed\n");
++    }
++
++    err = pthread_create(&tid, NULL, (void*(*)(void *))function, arg);
++    if (err > 0) {
++        LWIP_DEBUGF(SYS_DEBUG, ("sys_thread_new: pthread_create failed\n"));
++        rte_exit(EXIT_FAILURE, "pthread_create failed\n");
++    }
++
++    err = pthread_setname_np(tid, name);
++    if (err > 0) {
++        LWIP_DEBUGF(SYS_DEBUG, ("sys_thread_new: pthread_setname_np failed\n"));
++    }
++    thread->tid = tid;
++    thread->stacksize = stacksize;
++    thread->prio = prio;
++
++    return thread;
++}
++
++/*
++ * Semaphore
++ * */
++err_t sys_sem_new(struct sys_sem **sem, uint8_t count)
++{
++    *sem = (struct sys_sem *)memp_malloc(MEMP_SYS_SEM);
++    if ((*sem) == NULL) {
++        return ERR_MEM;
++    }
++    (*sem)->c = 0;
++    (*sem)->wait_fn = mbox_wait_func;
++    return ERR_OK;
++}
++
++void sys_sem_signal(struct sys_sem **s)
++{
++    struct sys_sem *sem = NULL;
++    LWIP_ASSERT("invalid sem", (s != NULL) && (*s != NULL));
++    sem = *s;
++    ++(sem->c);
++}
++
++static uint32_t cond_wait(struct sys_sem *sem, uint32_t timeout)
++{
++    uint32_t used_ms = 0;
++    uint32_t poll_ts;
++
++    if (timeout == 0) {
++        (void)sem->wait_fn();
++        return 0;
++    }
++
++    poll_ts = sys_now();
++
++    while (used_ms < timeout) {
++        if (sem->c > 0)
++            return timeout - used_ms;
++
++        (void)sem->wait_fn();
++        used_ms = sys_now() - poll_ts;
++    }
++
++    return SYS_ARCH_TIMEOUT;
++}
++
++uint32_t sys_arch_sem_wait(struct sys_sem **s, uint32_t timeout)
++{
++    uint32_t time_needed = 0;
++    struct sys_sem *sem = NULL;
++    LWIP_ASSERT("invalid sem", (s != NULL) && (*s != NULL));
++    sem = *s;
++
++    while (sem->c <= 0) {
++        if (timeout > 0) {
++            time_needed = cond_wait(sem, timeout);
++
++            if (time_needed == SYS_ARCH_TIMEOUT) {
++                return SYS_ARCH_TIMEOUT;
++            }
++        } else {
++            cond_wait(sem, 0);
++        }
++    }
++
++    sem->c--;
++    return time_needed;
++}
++
++void sys_sem_free(struct sys_sem **s)
++{
++    if ((s != NULL) && (*s != SYS_SEM_NULL))
++        memp_free(MEMP_SYS_SEM, *s);
++}
++
++/*
++ * Mutex
++ * */
++err_t sys_mutex_new(struct sys_mutex **mutex)
++{
++    return ERR_OK;
++}
++
++void sys_mutex_lock(struct sys_mutex **mutex)
++{
++}
++
++void sys_mutex_unlock(struct sys_mutex **mutex)
++{
++}
++
++void sys_mutex_free(struct sys_mutex **mutex)
++{
++}
++
++/* Timer from DPDK */
++void sys_calibrate_tsc(void)
++{
++#define MS_PER_SEC  1E3
++    uint64_t freq = rte_get_tsc_hz();
++
++    cycles_per_ms = (freq + MS_PER_SEC - 1) / MS_PER_SEC;
++    sys_start_ms = rte_rdtsc() / cycles_per_ms;
++}
++
++uint32_t sys_now(void)
++{
++    uint64_t cur_ms = rte_rdtsc() / cycles_per_ms;
++    return (uint32_t)(cur_ms - sys_start_ms);
++}
++
++/*
++ * Critical section
++ * */
++sys_prot_t sys_arch_protect(void)
++{
++    return 0;
++}
++
++void sys_arch_unprotect(sys_prot_t pval)
++{
++}
++
++/*
++ * Hugepage memory manager
++ * */
++uint8_t *sys_hugepage_malloc(const char *name, uint32_t size)
++{
++    const struct rte_memzone *mz;
++
++    mz = rte_memzone_reserve(name, size, rte_socket_id(), 0);
++    if (mz == NULL) {
++        rte_exit(EXIT_FAILURE, "failed to reserver memory for mempool[%s]\n", name);
++        return NULL;
++    }
++
++    memset(mz->addr, 0, mz->len);
++    hugepage_stats.tot_len += mz->len;
++
++    return (uint8_t*)mz->addr;
++}
+diff --git a/src/api/tcpip.c b/src/api/tcpip.c
+index a7e312a..d3d0b55 100644
+--- a/src/api/tcpip.c
++++ b/src/api/tcpip.c
+@@ -56,13 +56,13 @@
+ #define TCPIP_MSG_VAR_FREE(name)    API_VAR_FREE(MEMP_TCPIP_MSG_API, name)
+ 
+ /* global variables */
+-static tcpip_init_done_fn tcpip_init_done;
+-static void *tcpip_init_done_arg;
+-static sys_mbox_t tcpip_mbox;
++static PER_THREAD tcpip_init_done_fn tcpip_init_done;
++static PER_THREAD void *tcpip_init_done_arg;
++static PER_THREAD sys_mbox_t tcpip_mbox;
+ 
+ #if LWIP_TCPIP_CORE_LOCKING
+ /** The global semaphore to lock the stack. */
+-sys_mutex_t lock_tcpip_core;
++PER_THREAD sys_mutex_t lock_tcpip_core;
+ #endif /* LWIP_TCPIP_CORE_LOCKING */
+ 
+ static void tcpip_thread_handle_msg(struct tcpip_msg *msg);
+@@ -123,8 +123,13 @@ again:
+  *
+  * @param arg unused argument
+  */
++#if USE_LIBOS
++__attribute__((unused)) static void
++tcpip_thread(void *arg)
++#else
+ static void
+ tcpip_thread(void *arg)
++#endif /* USE_LIBOS */
+ {
+   struct tcpip_msg *msg;
+   LWIP_UNUSED_ARG(arg);
+@@ -242,6 +247,9 @@ tcpip_inpkt(struct pbuf *p, struct netif *inp, netif_input_fn input_fn)
+ #if LWIP_TCPIP_CORE_LOCKING_INPUT
+   err_t ret;
+   LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip_inpkt: PACKET %p/%p\n", (void *)p, (void *)inp));
++#if USE_LIBOS && LWIP_TIMERS
++  sys_timer_run();
++#endif
+   LOCK_TCPIP_CORE();
+   ret = input_fn(p, inp);
+   UNLOCK_TCPIP_CORE();
+@@ -321,6 +329,9 @@ tcpip_callback(tcpip_callback_fn function, void *ctx)
+   msg->msg.cb.function = function;
+   msg->msg.cb.ctx = ctx;
+ 
++#if USE_LIBOS && LWIP_TIMER
++  sys_timer_run();
++#endif
+   sys_mbox_post(&tcpip_mbox, msg);
+   return ERR_OK;
+ }
+@@ -357,6 +368,9 @@ tcpip_try_callback(tcpip_callback_fn function, void *ctx)
+   msg->msg.cb.function = function;
+   msg->msg.cb.ctx = ctx;
+ 
++#if USE_LIBOS && LWIP_TIMER
++  sys_timer_run();
++#endif
+   if (sys_mbox_trypost(&tcpip_mbox, msg) != ERR_OK) {
+     memp_free(MEMP_TCPIP_MSG_API, msg);
+     return ERR_MEM;
+@@ -438,6 +452,9 @@ tcpip_send_msg_wait_sem(tcpip_callback_fn fn, void *apimsg, sys_sem_t *sem)
+ {
+ #if LWIP_TCPIP_CORE_LOCKING
+   LWIP_UNUSED_ARG(sem);
++#if USE_LIBOS && LWIP_TIMERS
++  sys_timer_run();
++#endif
+   LOCK_TCPIP_CORE();
+   fn(apimsg);
+   UNLOCK_TCPIP_CORE();
+@@ -475,6 +492,9 @@ tcpip_api_call(tcpip_api_call_fn fn, struct tcpip_api_call_data *call)
+ #if LWIP_TCPIP_CORE_LOCKING
+   err_t err;
+   LOCK_TCPIP_CORE();
++#if USE_LIBOS && LWIP_TIMERS
++  sys_timer_run();
++#endif
+   err = fn(call);
+   UNLOCK_TCPIP_CORE();
+   return err;
+@@ -537,6 +557,10 @@ tcpip_callbackmsg_new(tcpip_callback_fn function, void *ctx)
+   msg->type = TCPIP_MSG_CALLBACK_STATIC;
+   msg->msg.cb.function = function;
+   msg->msg.cb.ctx = ctx;
++
++#if USE_LIBOS && LWIP_TIMER
++  sys_timer_run();
++#endif
+   return (struct tcpip_callback_msg *)msg;
+ }
+ 
+@@ -614,7 +638,9 @@ tcpip_init(tcpip_init_done_fn initfunc, void *arg)
+   }
+ #endif /* LWIP_TCPIP_CORE_LOCKING */
+ 
++#if !USE_LIBOS
+   sys_thread_new(TCPIP_THREAD_NAME, tcpip_thread, NULL, TCPIP_THREAD_STACKSIZE, TCPIP_THREAD_PRIO);
++#endif
+ }
+ 
+ /**
+diff --git a/src/core/dir.mk b/src/core/dir.mk
+index e5a055b..ebc01a5 100644
+--- a/src/core/dir.mk
++++ b/src/core/dir.mk
+@@ -1,6 +1,6 @@
+-SRC = inet_chksum.c init.c ip.c mem.c memp.c netif.c pbuf.c \
+-	raw.c stats.c tcp.c tcp_in.c tcp_out.c timeouts.c udp.c \
+-	ipv4/etharp.c ipv4/icmp.c ipv4/ip4_addr.c ipv4/ip4.c \
+-	ipv4/ip4_frag.c
++SRC = def.c inet_chksum.c init.c ip.c mem.c memp.c netif.c pbuf.c \
++	  raw.c tcp.c tcp_in.c tcp_out.c timeouts.c udp.c stats.c\
++	  ipv4/icmp.c ipv4/ip4_addr.c ipv4/ip4_frag.c ipv4/etharp.c \
++	  ipv4/ip4.c
+ 
+ $(eval $(call register_dir, core, $(SRC)))
+diff --git a/src/core/init.c b/src/core/init.c
+index 3620e1d..60e1c68 100644
+--- a/src/core/init.c
++++ b/src/core/init.c
+@@ -343,9 +343,7 @@ lwip_init(void)
+ 
+   /* Modules initialization */
+   stats_init();
+-#if !NO_SYS
+-  sys_init();
+-#endif /* !NO_SYS */
++
+   mem_init();
+   memp_init();
+   pbuf_init();
+diff --git a/src/core/ip.c b/src/core/ip.c
+index 18514cf..0d39d2d 100644
+--- a/src/core/ip.c
++++ b/src/core/ip.c
+@@ -61,7 +61,7 @@
+ #include "lwip/ip.h"
+ 
+ /** Global data for both IPv4 and IPv6 */
+-struct ip_globals ip_data;
++PER_THREAD struct ip_globals ip_data;
+ 
+ #if LWIP_IPV4 && LWIP_IPV6
+ 
+diff --git a/src/core/ipv4/ip4.c b/src/core/ipv4/ip4.c
+index 26c26a9..c83afbe 100644
+--- a/src/core/ipv4/ip4.c
++++ b/src/core/ipv4/ip4.c
+@@ -282,7 +282,9 @@ ip4_forward(struct pbuf *p, struct ip_hdr *iphdr, struct netif *inp)
+ {
+   struct netif *netif;
+ 
++#ifndef LWIP_PERF
+   PERF_START;
++#endif
+   LWIP_UNUSED_ARG(inp);
+ 
+   if (!ip4_canforward(p)) {
+@@ -344,7 +346,9 @@ ip4_forward(struct pbuf *p, struct ip_hdr *iphdr, struct netif *inp)
+   MIB2_STATS_INC(mib2.ipforwdatagrams);
+   IP_STATS_INC(ip.xmit);
+ 
++#ifndef LWIP_PERF
+   PERF_STOP("ip4_forward");
++#endif
+   /* don't fragment if interface has mtu set to 0 [loopif] */
+   if (netif->mtu && (p->tot_len > netif->mtu)) {
+     if ((IPH_OFFSET(iphdr) & PP_NTOHS(IP_DF)) == 0) {
+@@ -438,6 +442,8 @@ ip4_input(struct pbuf *p, struct netif *inp)
+ 
+   LWIP_ASSERT_CORE_LOCKED();
+ 
++  PERF_START(PERF_LAYER_IP, PERF_POINT_IP_RECV);
++
+   IP_STATS_INC(ip.recv);
+   MIB2_STATS_INC(mib2.ipinreceives);
+ 
+@@ -700,13 +706,19 @@ ip4_input(struct pbuf *p, struct netif *inp)
+       case IP_PROTO_UDPLITE:
+ #endif /* LWIP_UDPLITE */
+         MIB2_STATS_INC(mib2.ipindelivers);
++        PERF_PAUSE(PERF_LAYER_IP);
+         udp_input(p, inp);
++        PERF_RESUME(PERF_LAYER_IP, PERF_POINT_IP_RECV);
+         break;
+ #endif /* LWIP_UDP */
+ #if LWIP_TCP
+       case IP_PROTO_TCP:
+         MIB2_STATS_INC(mib2.ipindelivers);
++        PERF_PAUSE(PERF_LAYER_IP);
++        PERF_START(PERF_LAYER_TCP, PERF_POINT_TCP_RECV);
+         tcp_input(p, inp);
++        PERF_STOP_INCREASE_COUNT("tcp_input", PERF_LAYER_TCP);
++        PERF_RESUME(PERF_LAYER_IP, PERF_POINT_IP_RECV);
+         break;
+ #endif /* LWIP_TCP */
+ #if LWIP_ICMP
+@@ -755,6 +767,8 @@ ip4_input(struct pbuf *p, struct netif *inp)
+   ip4_addr_set_any(ip4_current_src_addr());
+   ip4_addr_set_any(ip4_current_dest_addr());
+ 
++  PERF_STOP_INCREASE_COUNT("ip4_input", PERF_LAYER_IP);
++
+   return ERR_OK;
+ }
+ 
+diff --git a/src/core/ipv6/ip6.c b/src/core/ipv6/ip6.c
+index 060d5f3..9d904ec 100644
+--- a/src/core/ipv6/ip6.c
++++ b/src/core/ipv6/ip6.c
+@@ -522,6 +522,8 @@ ip6_input(struct pbuf *p, struct netif *inp)
+ 
+   LWIP_ASSERT_CORE_LOCKED();
+ 
++  PERF_START(PERF_LAYER_IP, PERF_POINT_IP_RECV);
++
+   IP6_STATS_INC(ip6.recv);
+ 
+   /* identify the IP header */
+@@ -1069,12 +1071,18 @@ options_done:
+ #if LWIP_UDPLITE
+     case IP6_NEXTH_UDPLITE:
+ #endif /* LWIP_UDPLITE */
++      PERF_PAUSE(PERF_LAYER_IP);
+       udp_input(p, inp);
++      PERF_RESUME(PERF_LAYER_IP, PERF_POINT_IP_RECV);
+       break;
+ #endif /* LWIP_UDP */
+ #if LWIP_TCP
+     case IP6_NEXTH_TCP:
++      PERF_PAUSE(PERF_LAYER_IP);
++      PERF_START(PERF_LAYER_TCP, PERF_POINT_TCP_RECV);
+       tcp_input(p, inp);
++      PERF_STOP_INCREASE_COUNT("tcp_input", PERF_LAYER_TCP);
++      PERF_RESUME(PERF_LAYER_IP, PERF_POINT_IP_RECV);
+       break;
+ #endif /* LWIP_TCP */
+ #if LWIP_ICMP6
+@@ -1115,6 +1123,8 @@ ip6_input_cleanup:
+   ip6_addr_set_zero(ip6_current_src_addr());
+   ip6_addr_set_zero(ip6_current_dest_addr());
+ 
++  PERF_STOP_INCREASE_COUNT("ip6_input", PERF_LAYER_IP);
++
+   return ERR_OK;
+ }
+ 
+diff --git a/src/core/mem.c b/src/core/mem.c
+index 315fb3c..84b3fcc 100644
+--- a/src/core/mem.c
++++ b/src/core/mem.c
+@@ -381,9 +381,9 @@ LWIP_DECLARE_MEMORY_ALIGNED(ram_heap, MEM_SIZE_ALIGNED + (2U * SIZEOF_STRUCT_MEM
+ #endif /* LWIP_RAM_HEAP_POINTER */
+ 
+ /** pointer to the heap (ram_heap): for alignment, ram is now a pointer instead of an array */
+-static u8_t *ram;
++static PER_THREAD u8_t *ram;
+ /** the last entry, always unused! */
+-static struct mem *ram_end;
++static PER_THREAD struct mem *ram_end;
+ 
+ /** concurrent access protection */
+ #if !NO_SYS
+@@ -418,7 +418,7 @@ static volatile u8_t mem_free_count;
+ #endif /* LWIP_ALLOW_MEM_FREE_FROM_OTHER_CONTEXT */
+ 
+ /** pointer to the lowest free block, this is used for faster search */
+-static struct mem * LWIP_MEM_LFREE_VOLATILE lfree;
++static PER_THREAD struct mem * LWIP_MEM_LFREE_VOLATILE lfree;
+ 
+ #if MEM_SANITY_CHECK
+ static void mem_sanity(void);
+diff --git a/src/core/memp.c b/src/core/memp.c
+index 352ce5a..454ba32 100644
+--- a/src/core/memp.c
++++ b/src/core/memp.c
+@@ -78,10 +78,14 @@
+ #define LWIP_MEMPOOL(name,num,size,desc) LWIP_MEMPOOL_DECLARE(name,num,size,desc)
+ #include "lwip/priv/memp_std.h"
+ 
++#if USE_LIBOS
++PER_THREAD struct memp_desc* memp_pools[MEMP_MAX] = {NULL};
++#else
+ const struct memp_desc *const memp_pools[MEMP_MAX] = {
+ #define LWIP_MEMPOOL(name,num,size,desc) &memp_ ## name,
+ #include "lwip/priv/memp_std.h"
+ };
++#endif /* USE_LIBOS */
+ 
+ #ifdef LWIP_HOOK_FILENAME
+ #include LWIP_HOOK_FILENAME
+diff --git a/src/core/netif.c b/src/core/netif.c
+index 088b50e..70392cb 100644
+--- a/src/core/netif.c
++++ b/src/core/netif.c
+@@ -107,12 +107,12 @@ static netif_ext_callback_t *ext_callback;
+ #endif
+ 
+ #if !LWIP_SINGLE_NETIF
+-struct netif *netif_list;
++PER_THREAD struct netif *netif_list;
+ #endif /* !LWIP_SINGLE_NETIF */
+-struct netif *netif_default;
++PER_THREAD struct netif *netif_default;
+ 
+ #define netif_index_to_num(index)   ((index) - 1)
+-static u8_t netif_num;
++static PER_THREAD u8_t netif_num;
+ 
+ #if LWIP_NUM_NETIF_CLIENT_DATA > 0
+ static u8_t netif_client_id;
+@@ -138,7 +138,7 @@ static err_t netif_loop_output_ipv6(struct netif *netif, struct pbuf *p, const i
+ #endif
+ 
+ 
+-static struct netif loop_netif;
++static PER_THREAD struct netif loop_netif;
+ 
+ /**
+  * Initialize a lwip network interface structure for a loopback interface
+diff --git a/src/core/pbuf.c b/src/core/pbuf.c
+index 7638dfd..27afc28 100644
+--- a/src/core/pbuf.c
++++ b/src/core/pbuf.c
+@@ -737,7 +737,9 @@ pbuf_free(struct pbuf *p)
+   }
+   LWIP_DEBUGF(PBUF_DEBUG | LWIP_DBG_TRACE, ("pbuf_free(%p)\n", (void *)p));
+ 
++#ifndef LWIP_PERF
+   PERF_START;
++#endif
+ 
+   count = 0;
+   /* de-allocate all consecutive pbufs from the head of the chain that
+@@ -794,7 +796,9 @@ pbuf_free(struct pbuf *p)
+       p = NULL;
+     }
+   }
++#ifndef LWIP_PERF
+   PERF_STOP("pbuf_free");
++#endif
+   /* return number of de-allocated pbufs */
+   return count;
+ }
+diff --git a/src/core/stats.c b/src/core/stats.c
+index 34e9b27..f7e0604 100644
+--- a/src/core/stats.c
++++ b/src/core/stats.c
+@@ -47,7 +47,7 @@
+ 
+ #include <string.h>
+ 
+-struct stats_ lwip_stats;
++PER_THREAD struct stats_ lwip_stats;
+ 
+ void
+ stats_init(void)
+@@ -59,6 +59,17 @@ stats_init(void)
+ #endif /* LWIP_DEBUG */
+ }
+ 
++int get_mib2_stats(char *buf)
++{
++  int len = 0;
++#if MIB2_STATS
++  len = (long)&((struct stats_mib2 *)0)->udpindatagrams;
++  /* we just need the ip&tcp, others not needed. */
++  memcpy(buf, &lwip_stats.mib2, len);
++#endif
++  return len;
++}
++
+ #if LWIP_STATS_DISPLAY
+ void
+ stats_display_proto(struct stats_proto *proto, const char *name)
+diff --git a/src/core/tcp.c b/src/core/tcp.c
+index 371db2b..9e75810 100644
+--- a/src/core/tcp.c
++++ b/src/core/tcp.c
+@@ -113,6 +113,7 @@
+ #include "lwip/nd6.h"
+ 
+ #include <string.h>
++#include <pthread.h>
+ 
+ #ifdef LWIP_HOOK_FILENAME
+ #include LWIP_HOOK_FILENAME
+@@ -157,36 +158,50 @@ static const char *const tcp_state_str[] = {
+ 
+ /* last local TCP port */
+ static u16_t tcp_port = TCP_LOCAL_PORT_RANGE_START;
++static pthread_mutex_t g_tcp_port_mutex = PTHREAD_MUTEX_INITIALIZER;
+ 
+ /* Incremented every coarse grained timer shot (typically every 500 ms). */
+-u32_t tcp_ticks;
+-static const u8_t tcp_backoff[13] =
++PER_THREAD u32_t tcp_ticks;
++static PER_THREAD const u8_t tcp_backoff[13] =
+ { 1, 2, 3, 4, 5, 6, 7, 7, 7, 7, 7, 7, 7};
+ /* Times per slowtmr hits */
+-static const u8_t tcp_persist_backoff[7] = { 3, 6, 12, 24, 48, 96, 120 };
++static PER_THREAD const u8_t tcp_persist_backoff[7] = { 3, 6, 12, 24, 48, 96, 120 };
+ 
+ /* The TCP PCB lists. */
+ 
+ /** List of all TCP PCBs bound but not yet (connected || listening) */
+-struct tcp_pcb *tcp_bound_pcbs;
++PER_THREAD struct tcp_pcb *tcp_bound_pcbs;
+ /** List of all TCP PCBs in LISTEN state */
+-union tcp_listen_pcbs_t tcp_listen_pcbs;
++PER_THREAD union tcp_listen_pcbs_t tcp_listen_pcbs;
+ /** List of all TCP PCBs that are in a state in which
+  * they accept or send data. */
+-struct tcp_pcb *tcp_active_pcbs;
++PER_THREAD struct tcp_pcb *tcp_active_pcbs;
+ /** List of all TCP PCBs in TIME-WAIT state */
+-struct tcp_pcb *tcp_tw_pcbs;
++PER_THREAD struct tcp_pcb *tcp_tw_pcbs;
+ 
+ /** An array with all (non-temporary) PCB lists, mainly used for smaller code size */
+-struct tcp_pcb **const tcp_pcb_lists[] = {&tcp_listen_pcbs.pcbs, &tcp_bound_pcbs,
+-         &tcp_active_pcbs, &tcp_tw_pcbs
+-};
++PER_THREAD struct tcp_pcb ** tcp_pcb_lists[NUM_TCP_PCB_LISTS] = {NULL, NULL, NULL, NULL};
++
++#if TCP_PCB_HASH
++#define INIT_TCP_HTABLE(ht_ptr) \
++  do { \
++    int _i; \
++    (ht_ptr)->size = TCP_HTABLE_SIZE; \
++    for (_i = 0; _i < TCP_HTABLE_SIZE; ++_i) { \
++      if (sys_mutex_new(&(ht_ptr)->array[_i].mutex) != ERR_OK) \
++        LWIP_ASSERT("failed to create ht->array[].mutex", 0);\
++      INIT_HLIST_HEAD(&(ht_ptr)->array[_i].chain); \
++    }\
++  } while (0)
++
++PER_THREAD struct tcp_hash_table  *tcp_active_htable; /* key: lport/fport/lip/fip */
++#endif
+ 
+-u8_t tcp_active_pcbs_changed;
++PER_THREAD u8_t tcp_active_pcbs_changed;
+ 
+ /** Timer counter to handle calling slow-timer from tcp_tmr() */
+-static u8_t tcp_timer;
+-static u8_t tcp_timer_ctr;
++static PER_THREAD u8_t tcp_timer;
++static PER_THREAD u8_t tcp_timer_ctr;
+ static u16_t tcp_new_port(void);
+ 
+ static err_t tcp_close_shutdown_fin(struct tcp_pcb *pcb);
+@@ -200,9 +215,20 @@ static void tcp_ext_arg_invoke_callbacks_destroyed(struct tcp_pcb_ext_args *ext_
+ void
+ tcp_init(void)
+ {
++  tcp_pcb_lists[0] = &tcp_listen_pcbs.pcbs;
++  tcp_pcb_lists[1] = &tcp_bound_pcbs;
++  tcp_pcb_lists[2] = &tcp_active_pcbs;
++  tcp_pcb_lists[3] = &tcp_tw_pcbs;
++
+ #ifdef LWIP_RAND
+   tcp_port = TCP_ENSURE_LOCAL_PORT_RANGE(LWIP_RAND());
+ #endif /* LWIP_RAND */
++
++#if TCP_PCB_HASH
++  tcp_active_htable = (struct tcp_hash_table*)mem_malloc(sizeof(struct tcp_hash_table));
++  LWIP_ASSERT("malloc tcp_active_htable mem failed.", tcp_active_htable != NULL);
++  INIT_TCP_HTABLE(tcp_active_htable);
++#endif
+ }
+ 
+ /** Free a tcp pcb */
+@@ -361,6 +387,9 @@ tcp_close_shutdown(struct tcp_pcb *pcb, u8_t rst_on_unacked_data)
+               pcb->local_port, pcb->remote_port);
+ 
+       tcp_pcb_purge(pcb);
++#if TCP_PCB_HASH
++      TCP_RMV_ACTIVE_HASH(pcb);
++#endif
+       TCP_RMV_ACTIVE(pcb);
+       /* Deallocate the pcb since we already sent a RST for it */
+       if (tcp_input_pcb == pcb) {
+@@ -395,6 +424,9 @@ tcp_close_shutdown(struct tcp_pcb *pcb, u8_t rst_on_unacked_data)
+       tcp_free_listen(pcb);
+       break;
+     case SYN_SENT:
++#if TCP_PCB_HASH
++      TCP_PCB_REMOVE_ACTIVE_HASH(pcb);
++#endif
+       TCP_PCB_REMOVE_ACTIVE(pcb);
+       tcp_free(pcb);
+       MIB2_STATS_INC(mib2.tcpattemptfails);
+@@ -494,6 +526,7 @@ tcp_close(struct tcp_pcb *pcb)
+     /* Set a flag not to receive any more data... */
+     tcp_set_flags(pcb, TF_RXCLOSED);
+   }
++
+   /* ... and close */
+   return tcp_close_shutdown(pcb, 1);
+ }
+@@ -599,6 +632,9 @@ tcp_abandon(struct tcp_pcb *pcb, int reset)
+     } else {
+       send_rst = reset;
+       local_port = pcb->local_port;
++#if TCP_PCB_HASH
++      TCP_PCB_REMOVE_ACTIVE_HASH(pcb);
++#endif
+       TCP_PCB_REMOVE_ACTIVE(pcb);
+     }
+     if (pcb->unacked != NULL) {
+@@ -880,6 +916,11 @@ tcp_listen_with_backlog_and_err(struct tcp_pcb *pcb, u8_t backlog, err_t *err)
+     }
+   }
+ #endif /* SO_REUSE */
++
++#if USE_LIBOS
++  vdev_reg_done(REG_RING_TCP_LISTEN, pcb);
++#endif
++
+   lpcb = (struct tcp_pcb_listen *)memp_malloc(MEMP_TCP_PCB_LISTEN);
+   if (lpcb == NULL) {
+     res = ERR_MEM;
+@@ -1015,6 +1056,7 @@ tcp_new_port(void)
+   u16_t n = 0;
+   struct tcp_pcb *pcb;
+ 
++  pthread_mutex_lock(&g_tcp_port_mutex);
+ again:
+   tcp_port++;
+   if (tcp_port == TCP_LOCAL_PORT_RANGE_END) {
+@@ -1032,6 +1074,8 @@ again:
+       }
+     }
+   }
++  pthread_mutex_unlock(&g_tcp_port_mutex);
++
+   return tcp_port;
+ }
+ 
+@@ -1142,6 +1186,10 @@ tcp_connect(struct tcp_pcb *pcb, const ip_addr_t *ipaddr, u16_t port,
+ #endif /* SO_REUSE */
+   }
+ 
++#if USE_LIBOS
++  vdev_reg_done(REG_RING_TCP_CONNECT, pcb);
++#endif
++
+   iss = tcp_next_iss(pcb);
+   pcb->rcv_nxt = 0;
+   pcb->snd_nxt = iss;
+@@ -1174,6 +1222,9 @@ tcp_connect(struct tcp_pcb *pcb, const ip_addr_t *ipaddr, u16_t port,
+     if (old_local_port != 0) {
+       TCP_RMV(&tcp_bound_pcbs, pcb);
+     }
++#if TCP_PCB_HASH
++    TCP_REG_ACTIVE_HASH(pcb);
++#endif
+     TCP_REG_ACTIVE(pcb);
+     MIB2_STATS_INC(mib2.tcpactiveopens);
+ 
+@@ -1389,11 +1440,26 @@ tcp_slowtmr_start:
+       if (prev != NULL) {
+         LWIP_ASSERT("tcp_slowtmr: middle tcp != tcp_active_pcbs", pcb != tcp_active_pcbs);
+         prev->next = pcb->next;
++#if USE_LIBOS
++        if (pcb->next)
++          pcb->next->prev = prev;
++        //dont set next NULL, it will be used below
++        pcb->prev = NULL;
++#endif
+       } else {
+         /* This PCB was the first. */
+         LWIP_ASSERT("tcp_slowtmr: first pcb == tcp_active_pcbs", tcp_active_pcbs == pcb);
+         tcp_active_pcbs = pcb->next;
++#if USE_LIBOS
++        if (pcb->next)
++          pcb->next->prev = NULL;
++        //dont set next NULL, it will be used below
++        pcb->prev = NULL;
++#endif
+       }
++#if TCP_PCB_HASH
++      TCP_RMV_ACTIVE_HASH(pcb);
++#endif
+ 
+       if (pcb_reset) {
+         tcp_rst(pcb, pcb->snd_nxt, pcb->rcv_nxt, &pcb->local_ip, &pcb->remote_ip,
+@@ -1404,6 +1470,9 @@ tcp_slowtmr_start:
+       last_state = pcb->state;
+       pcb2 = pcb;
+       pcb = pcb->next;
++#if USE_LIBOS
++      pcb2->next = NULL;
++#endif
+       tcp_free(pcb2);
+ 
+       tcp_active_pcbs_changed = 0;
+@@ -1455,13 +1524,28 @@ tcp_slowtmr_start:
+       if (prev != NULL) {
+         LWIP_ASSERT("tcp_slowtmr: middle tcp != tcp_tw_pcbs", pcb != tcp_tw_pcbs);
+         prev->next = pcb->next;
++#if USE_LIBOS
++        if (pcb->next)
++          pcb->next->prev = prev;
++        //dont set next NULL, it will be used below
++        pcb->prev = NULL;
++#endif
+       } else {
+         /* This PCB was the first. */
+         LWIP_ASSERT("tcp_slowtmr: first pcb == tcp_tw_pcbs", tcp_tw_pcbs == pcb);
+         tcp_tw_pcbs = pcb->next;
++#if USE_LIBOS
++        if (pcb->next)
++          pcb->next->prev = NULL;
++        //dont set next NULL, it will be used below
++        pcb->prev = NULL;
++#endif
+       }
+       pcb2 = pcb;
+       pcb = pcb->next;
++#if USE_LIBOS
++      pcb2->next = NULL;
++#endif
+       tcp_free(pcb2);
+     } else {
+       prev = pcb;
+@@ -2210,6 +2294,14 @@ tcp_pcb_remove(struct tcp_pcb **pcblist, struct tcp_pcb *pcb)
+   LWIP_ASSERT("tcp_pcb_remove: tcp_pcbs_sane()", tcp_pcbs_sane());
+ }
+ 
++#if TCP_PCB_HASH
++void
++tcp_pcb_remove_hash(struct tcp_hash_table *htb, struct tcp_pcb *pcb)
++{
++  TCP_RMV_HASH(htb, pcb);
++}
++#endif /* TCP_PCB_HASH */
++
+ /**
+  * Calculates a new initial sequence number for new connections.
+  *
+@@ -2384,6 +2476,84 @@ tcp_tcp_get_tcp_addrinfo(struct tcp_pcb *pcb, int local, ip_addr_t *addr, u16_t
+   return ERR_VAL;
+ }
+ 
++uint32_t tcp_get_conn_num(void)
++{
++    struct tcp_pcb *pcb = NULL;
++    struct tcp_pcb_listen *pcbl = NULL;
++    uint32_t conn_num = 0;
++
++    for (pcb = tcp_active_pcbs; pcb != NULL; pcb = pcb->next) {
++        conn_num++;
++    }
++
++    for (pcbl = tcp_listen_pcbs.listen_pcbs; pcbl != NULL; pcbl = pcbl->next) {
++        conn_num++;
++    }
++
++    for (pcb = tcp_tw_pcbs; pcb != NULL; pcb = pcb->next) {
++        conn_num++;
++    }
++
++    return conn_num;
++}
++
++void tcp_get_conn(char *buf, int32_t len, uint32_t *conn_num)
++{
++  int tmp_len = 0;
++  char *tmp_buf = buf;
++  struct tcp_pcb_dp tdp;
++  struct tcp_pcb *pcb = NULL;
++  struct tcp_pcb_listen *pcbl = NULL;
++
++#define COPY_TDP(b, l) \
++  do { \
++    if (l + sizeof(tdp) <= len) { \
++	  memcpy(b, &tdp, sizeof(tdp)); \
++	  b += sizeof(tdp); \
++	  l += sizeof(tdp); \
++      *conn_num += 1; \
++    } else \
++      return; \
++  } while(0);
++
++  *conn_num = 0;
++
++  for (pcb = tcp_active_pcbs; pcb != NULL; pcb = pcb->next) {
++    tdp.state = ACTIVE_LIST;
++    tdp.lip = pcb->local_ip.addr;
++    tdp.rip = pcb->remote_ip.addr;
++    tdp.l_port = pcb->local_port;
++    tdp.r_port = pcb->remote_port;
++    tdp.s_next = pcb->snd_queuelen;
++    /* lwip not cache rcv buf. Set it to 0. */
++    tdp.r_next = 0;
++    tdp.tcp_sub_state = pcb->state;
++    COPY_TDP(tmp_buf, tmp_len);
++  }
++
++  for (pcbl = tcp_listen_pcbs.listen_pcbs; pcbl != NULL; pcbl = pcbl->next) {
++    tdp.state = LISTEN_LIST;
++    tdp.lip = pcbl->local_ip.addr;
++    tdp.rip = pcbl->remote_ip.addr;
++    tdp.l_port = pcbl->local_port;
++    tdp.tcp_sub_state = pcbl->state;
++    COPY_TDP(tmp_buf, tmp_len);
++  }
++
++  for (pcb = tcp_tw_pcbs; pcb != NULL; pcb = pcb->next) {
++    tdp.state = TIME_WAIT_LIST;
++    tdp.lip = pcb->local_ip.addr;
++    tdp.rip = pcb->remote_ip.addr;
++    tdp.l_port = pcb->local_port;
++    tdp.r_port = pcb->remote_port;
++    tdp.s_next = pcb->snd_queuelen;
++    /* lwip not cache rcv buf. Set it to 0. */
++    tdp.r_next = 0;
++    tdp.tcp_sub_state = pcb->state;
++    COPY_TDP(tmp_buf, tmp_len);
++  }
++}
++
+ #if TCP_QUEUE_OOSEQ
+ /* Free all ooseq pbufs (and possibly reset SACK state) */
+ void
+diff --git a/src/core/tcp_in.c b/src/core/tcp_in.c
+index 2202e38..2b4c160 100644
+--- a/src/core/tcp_in.c
++++ b/src/core/tcp_in.c
+@@ -71,21 +71,22 @@
+ /* These variables are global to all functions involved in the input
+    processing of TCP segments. They are set by the tcp_input()
+    function. */
+-static struct tcp_seg inseg;
+-static struct tcp_hdr *tcphdr;
+-static u16_t tcphdr_optlen;
+-static u16_t tcphdr_opt1len;
+-static u8_t *tcphdr_opt2;
+-static u16_t tcp_optidx;
+-static u32_t seqno, ackno;
+-static tcpwnd_size_t recv_acked;
+-static u16_t tcplen;
+-static u8_t flags;
+-
+-static u8_t recv_flags;
+-static struct pbuf *recv_data;
+-
+-struct tcp_pcb *tcp_input_pcb;
++static PER_THREAD struct tcp_seg inseg;
++static PER_THREAD struct tcp_hdr *tcphdr;
++static PER_THREAD u16_t tcphdr_optlen;
++static PER_THREAD u16_t tcphdr_opt1len;
++static PER_THREAD u8_t *tcphdr_opt2;
++static PER_THREAD u16_t tcp_optidx;
++static PER_THREAD u32_t seqno;
++static PER_THREAD u32_t ackno;
++static PER_THREAD tcpwnd_size_t recv_acked;
++static PER_THREAD u16_t tcplen;
++static PER_THREAD u8_t flags;
++
++static PER_THREAD u8_t recv_flags;
++static PER_THREAD struct pbuf *recv_data;
++
++PER_THREAD struct tcp_pcb *tcp_input_pcb;
+ 
+ /* Forward declarations. */
+ static err_t tcp_process(struct tcp_pcb *pcb);
+@@ -126,11 +127,20 @@ tcp_input(struct pbuf *p, struct netif *inp)
+   u8_t hdrlen_bytes;
+   err_t err;
+ 
++#if TCP_PCB_HASH
++  u32_t idx;
++  struct hlist_head *head;
++  struct hlist_node *node;
++  pcb = NULL;
++#endif
++
+   LWIP_UNUSED_ARG(inp);
+   LWIP_ASSERT_CORE_LOCKED();
+   LWIP_ASSERT("tcp_input: invalid pbuf", p != NULL);
+ 
++#ifndef LWIP_PERF
+   PERF_START;
++#endif
+ 
+   TCP_STATS_INC(tcp.recv);
+   MIB2_STATS_INC(mib2.tcpinsegs);
+@@ -247,7 +257,15 @@ tcp_input(struct pbuf *p, struct netif *inp)
+      for an active connection. */
+   prev = NULL;
+ 
++#if TCP_PCB_HASH
++  idx = TUPLE4_HASH_FN( ip_current_dest_addr()->addr, tcphdr->dest,
++                      ip_current_src_addr()->addr, tcphdr->src) &
++         (tcp_active_htable->size - 1);
++  head = &tcp_active_htable->array[idx].chain;
++  tcppcb_hlist_for_each(pcb, node, head) {
++#else
+   for (pcb = tcp_active_pcbs; pcb != NULL; pcb = pcb->next) {
++#endif
+     LWIP_ASSERT("tcp_input: active pcb->state != CLOSED", pcb->state != CLOSED);
+     LWIP_ASSERT("tcp_input: active pcb->state != TIME-WAIT", pcb->state != TIME_WAIT);
+     LWIP_ASSERT("tcp_input: active pcb->state != LISTEN", pcb->state != LISTEN);
+@@ -263,6 +281,7 @@ tcp_input(struct pbuf *p, struct netif *inp)
+         pcb->local_port == tcphdr->dest &&
+         ip_addr_cmp(&pcb->remote_ip, ip_current_src_addr()) &&
+         ip_addr_cmp(&pcb->local_ip, ip_current_dest_addr())) {
++#if !TCP_PCB_HASH
+       /* Move this PCB to the front of the list so that subsequent
+          lookups will be faster (we exploit locality in TCP segment
+          arrivals). */
+@@ -275,9 +294,14 @@ tcp_input(struct pbuf *p, struct netif *inp)
+         TCP_STATS_INC(tcp.cachehit);
+       }
+       LWIP_ASSERT("tcp_input: pcb->next != pcb (after cache)", pcb->next != pcb);
++#endif
+       break;
+     }
++#if TCP_PCB_HASH
++    pcb = NULL;
++#else
+     prev = pcb;
++#endif
+   }
+ 
+   if (pcb == NULL) {
+@@ -363,8 +387,15 @@ tcp_input(struct pbuf *p, struct netif *inp)
+          arrivals). */
+       if (prev != NULL) {
+         ((struct tcp_pcb_listen *)prev)->next = lpcb->next;
++#if USE_LIBOS
++        if (lpcb->next)
++          lpcb->next->prev = (struct tcp_pcb_listen *)prev;
++#endif
+         /* our successor is the remainder of the listening list */
+         lpcb->next = tcp_listen_pcbs.listen_pcbs;
++#if USE_LIBOS
++        lpcb->prev = NULL;
++#endif
+         /* put this listening pcb at the head of the listening list */
+         tcp_listen_pcbs.listen_pcbs = lpcb;
+       } else {
+@@ -445,6 +476,9 @@ tcp_input(struct pbuf *p, struct netif *inp)
+            application that the connection is dead before we
+            deallocate the PCB. */
+         TCP_EVENT_ERR(pcb->state, pcb->errf, pcb->callback_arg, ERR_RST);
++#if TCP_PCB_HASH
++        tcp_pcb_remove_hash(tcp_active_htable, pcb);
++#endif
+         tcp_pcb_remove(&tcp_active_pcbs, pcb);
+         tcp_free(pcb);
+       } else {
+@@ -550,7 +584,19 @@ tcp_input(struct pbuf *p, struct netif *inp)
+           goto aborted;
+         }
+         /* Try to send something out. */
++#if LWIP_RECORD_PERF
++        if (check_layer_point(PERF_LAYER_TCP, PERF_POINT_TCP_SYN_ACK_RECV)) {
++          PERF_PAUSE(PERF_LAYER_TCP);
++          PERF_START(PERF_LAYER_TCP, PERF_POINT_TCP_ACK_SEND);
++        }
++#endif
+         tcp_output(pcb);
++#if LWIP_RECORD_PERF
++        if (check_layer_point(PERF_LAYER_TCP, PERF_POINT_TCP_ACK_SEND)) {
++          PERF_STOP_INCREASE_COUNT("tcp_in", PERF_LAYER_TCP);
++          PERF_RESUME(PERF_LAYER_TCP, PERF_POINT_TCP_SYN_ACK_RECV);
++        }
++#endif
+ #if TCP_INPUT_DEBUG
+ #if TCP_DEBUG
+         tcp_debug_print_state(pcb->state);
+@@ -583,7 +629,9 @@ aborted:
+   }
+ 
+   LWIP_ASSERT("tcp_input: tcp_pcbs_sane()", tcp_pcbs_sane());
++#ifndef LWIP_PERF
+   PERF_STOP("tcp_input");
++#endif
+   return;
+ dropped:
+   TCP_STATS_INC(tcp.drop);
+@@ -610,6 +658,9 @@ tcp_input_delayed_close(struct tcp_pcb *pcb)
+           ensure the application doesn't continue using the PCB. */
+       TCP_EVENT_ERR(pcb->state, pcb->errf, pcb->callback_arg, ERR_CLSD);
+     }
++#if TCP_PCB_HASH
++    tcp_pcb_remove_hash(tcp_active_htable, pcb);
++#endif
+     tcp_pcb_remove(&tcp_active_pcbs, pcb);
+     tcp_free(pcb);
+     return 1;
+@@ -649,6 +700,7 @@ tcp_listen_input(struct tcp_pcb_listen *pcb)
+     tcp_rst((const struct tcp_pcb *)pcb, ackno, seqno + tcplen, ip_current_dest_addr(),
+             ip_current_src_addr(), tcphdr->dest, tcphdr->src);
+   } else if (flags & TCP_SYN) {
++    PERF_UPDATE_POINT(PERF_LAYER_TCP, PERF_POINT_TCP_SYN_RECV);
+     LWIP_DEBUGF(TCP_DEBUG, ("TCP connection request %"U16_F" -> %"U16_F".\n", tcphdr->src, tcphdr->dest));
+ #if TCP_LISTEN_BACKLOG
+     if (pcb->accepts_pending >= pcb->backlog) {
+@@ -695,6 +747,9 @@ tcp_listen_input(struct tcp_pcb_listen *pcb)
+     npcb->netif_idx = pcb->netif_idx;
+     /* Register the new PCB so that we can begin receiving segments
+        for it. */
++#if TCP_PCB_HASH
++    TCP_REG_ACTIVE_HASH(npcb);
++#endif
+     TCP_REG_ACTIVE(npcb);
+ 
+     /* Parse any options in the SYN. */
+@@ -715,13 +770,18 @@ tcp_listen_input(struct tcp_pcb_listen *pcb)
+     }
+ #endif
+ 
++    PERF_PAUSE(PERF_LAYER_TCP);
++    PERF_START(PERF_LAYER_TCP, PERF_POINT_TCP_SYN_ACK_SEND);
+     /* Send a SYN|ACK together with the MSS option. */
+     rc = tcp_enqueue_flags(npcb, TCP_SYN | TCP_ACK);
+     if (rc != ERR_OK) {
+       tcp_abandon(npcb, 0);
++      PERF_RESUME(PERF_LAYER_TCP, PERF_POINT_TCP_SYN_RECV);
+       return;
+     }
+     tcp_output(npcb);
++    PERF_STOP_INCREASE_COUNT("tcp_output", PERF_LAYER_TCP);
++    PERF_RESUME(PERF_LAYER_TCP, PERF_POINT_TCP_SYN_RECV);
+   }
+   return;
+ }
+@@ -858,6 +918,7 @@ tcp_process(struct tcp_pcb *pcb)
+       /* received SYN ACK with expected sequence number? */
+       if ((flags & TCP_ACK) && (flags & TCP_SYN)
+           && (ackno == pcb->lastack + 1)) {
++        PERF_UPDATE_POINT(PERF_LAYER_TCP, PERF_POINT_TCP_SYN_ACK_RECV);
+         pcb->rcv_nxt = seqno + 1;
+         pcb->rcv_ann_right_edge = pcb->rcv_nxt;
+         pcb->lastack = ackno;
+@@ -925,6 +986,7 @@ tcp_process(struct tcp_pcb *pcb)
+         /* expected ACK number? */
+         if (TCP_SEQ_BETWEEN(ackno, pcb->lastack + 1, pcb->snd_nxt)) {
+           pcb->state = ESTABLISHED;
++          PERF_UPDATE_POINT(PERF_LAYER_TCP, PERF_POINT_TCP_ACK_RECV);
+           LWIP_DEBUGF(TCP_DEBUG, ("TCP connection established %"U16_F" -> %"U16_F".\n", inseg.tcphdr->src, inseg.tcphdr->dest));
+ #if LWIP_CALLBACK_API || TCP_LISTEN_BACKLOG
+           if (pcb->listener == NULL) {
+@@ -995,6 +1057,9 @@ tcp_process(struct tcp_pcb *pcb)
+                       ("TCP connection closed: FIN_WAIT_1 %"U16_F" -> %"U16_F".\n", inseg.tcphdr->src, inseg.tcphdr->dest));
+           tcp_ack_now(pcb);
+           tcp_pcb_purge(pcb);
++#if TCP_PCB_HASH
++          TCP_RMV_ACTIVE_HASH(pcb);
++#endif
+           TCP_RMV_ACTIVE(pcb);
+           pcb->state = TIME_WAIT;
+           TCP_REG(&tcp_tw_pcbs, pcb);
+@@ -1013,6 +1078,9 @@ tcp_process(struct tcp_pcb *pcb)
+         LWIP_DEBUGF(TCP_DEBUG, ("TCP connection closed: FIN_WAIT_2 %"U16_F" -> %"U16_F".\n", inseg.tcphdr->src, inseg.tcphdr->dest));
+         tcp_ack_now(pcb);
+         tcp_pcb_purge(pcb);
++#if TCP_PCB_HASH
++        TCP_RMV_ACTIVE_HASH(pcb);
++#endif
+         TCP_RMV_ACTIVE(pcb);
+         pcb->state = TIME_WAIT;
+         TCP_REG(&tcp_tw_pcbs, pcb);
+@@ -1023,6 +1091,9 @@ tcp_process(struct tcp_pcb *pcb)
+       if ((flags & TCP_ACK) && ackno == pcb->snd_nxt && pcb->unsent == NULL) {
+         LWIP_DEBUGF(TCP_DEBUG, ("TCP connection closed: CLOSING %"U16_F" -> %"U16_F".\n", inseg.tcphdr->src, inseg.tcphdr->dest));
+         tcp_pcb_purge(pcb);
++#if TCP_PCB_HASH
++        TCP_RMV_ACTIVE_HASH(pcb);
++#endif
+         TCP_RMV_ACTIVE(pcb);
+         pcb->state = TIME_WAIT;
+         TCP_REG(&tcp_tw_pcbs, pcb);
+diff --git a/src/core/tcp_out.c b/src/core/tcp_out.c
+index 8149d39..dac498e 100644
+--- a/src/core/tcp_out.c
++++ b/src/core/tcp_out.c
+@@ -271,7 +271,7 @@ tcp_pbuf_prealloc(pbuf_layer layer, u16_t length, u16_t max_length,
+   return p;
+ }
+ #else /* TCP_OVERSIZE */
+-#define tcp_pbuf_prealloc(layer, length, mx, os, pcb, api, fst) pbuf_alloc((layer), (length), PBUF_RAM)
++#define tcp_pbuf_prealloc(layer, length, mx, os, pcb, api, fst) pbuf_alloc((layer), (length), PBUF_POOL)
+ #endif /* TCP_OVERSIZE */
+ 
+ #if TCP_CHECKSUM_ON_COPY
+@@ -640,7 +640,7 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
+       ((struct pbuf_rom *)p2)->payload = (const u8_t *)arg + pos;
+ 
+       /* Second, allocate a pbuf for the headers. */
+-      if ((p = pbuf_alloc(PBUF_TRANSPORT, optlen, PBUF_RAM)) == NULL) {
++      if ((p = pbuf_alloc(PBUF_TRANSPORT, optlen, PBUF_POOL)) == NULL) {
+         /* If allocation fails, we have to deallocate the data pbuf as
+          * well. */
+         pbuf_free(p2);
+@@ -1458,6 +1458,11 @@ tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb, struct netif *netif
+   err_t err;
+   u16_t len;
+   u32_t *opts;
++
++#if LWIP_RECORD_PERF
++  int tmpPoint;
++#endif
++
+ #if TCP_CHECKSUM_ON_COPY
+   int seg_chksum_was_swapped = 0;
+ #endif
+@@ -1604,6 +1609,9 @@ tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb, struct netif *netif
+ #endif /* CHECKSUM_GEN_TCP */
+   TCP_STATS_INC(tcp.xmit);
+ 
++  PERF_PAUSE_RETURN_POINT(PERF_LAYER_TCP, tmpPoint);
++  PERF_START(PERF_LAYER_IP, PERF_POINT_IP_SEND);
++
+   NETIF_SET_HINTS(netif, &(pcb->netif_hints));
+   err = ip_output_if(seg->p, &pcb->local_ip, &pcb->remote_ip, pcb->ttl,
+                      pcb->tos, IP_PROTO_TCP, netif);
+@@ -1618,6 +1626,9 @@ tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb, struct netif *netif
+   }
+ #endif
+ 
++  PERF_STOP_INCREASE_COUNT("ip_out", PERF_LAYER_IP);
++  PERF_RESUME(PERF_LAYER_TCP, tmpPoint);
++
+   return err;
+ }
+ 
+@@ -2024,6 +2035,10 @@ tcp_send_empty_ack(struct tcp_pcb *pcb)
+   u8_t optlen, optflags = 0;
+   u8_t num_sacks = 0;
+ 
++#if LWIP_RECORD_PERF
++  int tmpPoint;
++#endif
++
+   LWIP_ASSERT("tcp_send_empty_ack: invalid pcb", pcb != NULL);
+ 
+ #if LWIP_TCP_TIMESTAMPS
+@@ -2040,6 +2055,9 @@ tcp_send_empty_ack(struct tcp_pcb *pcb)
+   }
+ #endif
+ 
++  PERF_PAUSE_RETURN_POINT(PERF_LAYER_TCP, tmpPoint);
++  PERF_START(PERF_LAYER_IP, PERF_POINT_IP_SEND);
++
+   p = tcp_output_alloc_header(pcb, optlen, 0, lwip_htonl(pcb->snd_nxt));
+   if (p == NULL) {
+     /* let tcp_fasttmr retry sending this ACK */
+@@ -2064,6 +2082,9 @@ tcp_send_empty_ack(struct tcp_pcb *pcb)
+     tcp_clear_flags(pcb, TF_ACK_DELAY | TF_ACK_NOW);
+   }
+ 
++  PERF_STOP_INCREASE_COUNT("ip_out", PERF_LAYER_IP);
++  PERF_RESUME(PERF_LAYER_TCP, tmpPoint);
++
+   return err;
+ }
+ 
+diff --git a/src/core/timeouts.c b/src/core/timeouts.c
+index f37acfe..0542a32 100644
+--- a/src/core/timeouts.c
++++ b/src/core/timeouts.c
+@@ -119,9 +119,9 @@ const int lwip_num_cyclic_timers = LWIP_ARRAYSIZE(lwip_cyclic_timers);
+ #if LWIP_TIMERS && !LWIP_TIMERS_CUSTOM
+ 
+ /** The one and only timeout list */
+-static struct sys_timeo *next_timeout;
++static PER_THREAD struct sys_timeo *next_timeout;
+ 
+-static u32_t current_timeout_due_time;
++static PER_THREAD u32_t current_timeout_due_time;
+ 
+ #if LWIP_TESTMODE
+ struct sys_timeo**
+@@ -133,7 +133,7 @@ sys_timeouts_get_next_timeout(void)
+ 
+ #if LWIP_TCP
+ /** global variable that shows if the tcp timer is currently scheduled or not */
+-static int tcpip_tcp_timer_active;
++static PER_THREAD int tcpip_tcp_timer_active;
+ 
+ /**
+  * Timer callback function that calls tcp_tmr() and reschedules itself.
+@@ -442,6 +442,18 @@ sys_timeouts_sleeptime(void)
+   }
+ }
+ 
++#if USE_LIBOS
++void sys_timer_run(void)
++{
++  u32_t sleeptime;
++
++  sleeptime = sys_timeouts_sleeptime();
++  if (sleeptime == 0) {
++    sys_check_timeouts();
++  }
++}
++#endif /* USE_LIBOS */
++
+ #else /* LWIP_TIMERS && !LWIP_TIMERS_CUSTOM */
+ /* Satisfy the TCP code which calls this function */
+ void
+diff --git a/src/core/udp.c b/src/core/udp.c
+index 0b609d3..a5f76b9 100644
+--- a/src/core/udp.c
++++ b/src/core/udp.c
+@@ -207,7 +207,11 @@ udp_input(struct pbuf *p, struct netif *inp)
+   LWIP_ASSERT("udp_input: invalid pbuf", p != NULL);
+   LWIP_ASSERT("udp_input: invalid netif", inp != NULL);
+ 
++#if LWIP_RECORD_PERF
++  PERF_START(PERF_LAYER_UDP, PERF_POINT_UDP);
++#else
+   PERF_START;
++#endif
+ 
+   UDP_STATS_INC(udp.recv);
+ 
+@@ -428,7 +432,12 @@ udp_input(struct pbuf *p, struct netif *inp)
+     pbuf_free(p);
+   }
+ end:
++#if LWIP_RECORD_PERF
++  PERF_STOP_INCREASE_COUNT("udp_input", PERF_LAYER_UDP);
++#else
+   PERF_STOP("udp_input");
++#endif
++
+   return;
+ #if CHECKSUM_CHECK_UDP
+ chkerr:
+@@ -438,7 +447,13 @@ chkerr:
+   UDP_STATS_INC(udp.drop);
+   MIB2_STATS_INC(mib2.udpinerrors);
+   pbuf_free(p);
++
++#if LWIP_RECORD_PERF
++  PERF_STOP_INCREASE_COUNT("udp_input", PERF_LAYER_UDP);
++#else
+   PERF_STOP("udp_input");
++#endif
++
+ #endif /* CHECKSUM_CHECK_UDP */
+ }
+ 
+diff --git a/src/include/arch/cc.h b/src/include/arch/cc.h
+index 52b76f9..33c24b4 100644
+--- a/src/include/arch/cc.h
++++ b/src/include/arch/cc.h
+@@ -1,7 +1,81 @@
+-#ifndef LWIP_CC_H
+-#define LWIP_CC_H
++/*
++ * Copyright (c) 2001-2004 Swedish Institute of Computer Science.
++ * All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without modification,
++ * are permitted provided that the following conditions are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ * 3. The name of the author may not be used to endorse or promote products
++ *    derived from this software without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
++ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
++ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
++ * SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
++ * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
++ * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
++ * OF SUCH DAMAGE.
++ *
++ * This file is part of the lwIP TCP/IP stack.
++ *
++ * Author: Huawei Technologies
++ *
++ */
+ 
++#ifndef LWIP_ARCH_CC_H
++#define LWIP_ARCH_CC_H
+ 
++#include <stdint.h>
++#include <stdlib.h>
++#include <sys/time.h>
++#include <sys/types.h>
+ 
+-#endif /* LWIP_CC_H */
++#include "lwiplog.h"
+ 
++#define LWIP_NOASSERT
++
++#define LWIP_ERRNO_STDINCLUDE 1
++#define MEMP_MEMORY_BASE_PLACEHOLDER 0
++#define MEMZONE_NAMESIZE 32
++
++#define LWIP_RAND()     ((uint32_t)rand())
++
++extern uint8_t *sys_hugepage_malloc(const char *name, uint32_t size);
++
++#define LWIP_DECLARE_MEMP_BASE_ALIGNED(name, __size)\
++PER_THREAD uint8_t *memp_memory_##name##_base; \
++void alloc_memp_##name##_base(void) \
++{ \
++    memp_ ## name.desc = memp_desc_ ## name; \
++    memp_ ## name.stats = &memp_stat ## name; \
++    memp_ ## name.size = memp_size ## name; \
++    memp_ ## name.num = memp_num ## name; \
++    memp_ ## name.tab = &memp_tab_ ## name; \
++    memp_pools[MEMP_##name] = &memp_ ## name; \
++    \
++    char mpname[MEMZONE_NAMESIZE] = {0}; \
++    snprintf(mpname, MEMZONE_NAMESIZE, "%ld_%s", gettid(), #name); \
++    memp_memory_##name##_base = \
++        sys_hugepage_malloc(mpname, LWIP_MEM_ALIGN_BUFFER(__size)); \
++    memp_pools[MEMP_##name]->base = memp_memory_##name##_base; \
++}
++
++#define LWIP_DECLARE_MEMORY_ALIGNED(variable_name, size) \
++PER_THREAD uint8_t *variable_name; \
++void alloc_memory_##variable_name(void) \
++{ \
++    char mpname[MEMZONE_NAMESIZE] = {0}; \
++    snprintf(mpname, MEMZONE_NAMESIZE, "%ld_%s", gettid(), #variable_name); \
++    (variable_name) = \
++        sys_hugepage_malloc(mpname, LWIP_MEM_ALIGN_BUFFER(size)); \
++}
++
++#endif /* LWIP_ARCH_CC_H */
+diff --git a/src/include/arch/perf.h b/src/include/arch/perf.h
+new file mode 100644
+index 0000000..e505da7
+--- /dev/null
++++ b/src/include/arch/perf.h
+@@ -0,0 +1,155 @@
++/*
++ * Copyright (c) 2001-2004 Swedish Institute of Computer Science.
++ * All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without modification,
++ * are permitted provided that the following conditions are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ * 3. The name of the author may not be used to endorse or promote products
++ *    derived from this software without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
++ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
++ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
++ * SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
++ * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
++ * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
++ * OF SUCH DAMAGE.
++ *
++ * This file is part of the lwIP TCP/IP stack.
++ *
++ * Author: Huawei Technologies
++ *
++ */
++
++#ifndef LWIP_ARCH_PERF_H
++#define LWIP_ARCH_PERF_H
++
++#include <time.h>
++
++#include "lwip/debug.h"
++
++#if LWIP_RECORD_PERF
++enum PERF_POINT {
++    PERF_POINT_IP_RECV,
++    PERF_POINT_TCP_RECV,
++    PERF_POINT_UDP,
++    PERF_POINT_TCP_SYN_RECV,
++    PERF_POINT_TCP_SYN_ACK_SEND,
++    PERF_POINT_TCP_ACK_RECV,
++    PERF_POINT_TCP_SYN_SEND,
++    PERF_POINT_TCP_SYN_ACK_RECV,
++    PERF_POINT_TCP_ACK_SEND,
++    PERF_POINT_TCP_DATA_SEND,
++    PERF_POINT_IP_SEND,
++    PERF_POINT_END
++};
++
++enum PERF_LAYER {
++    PERF_LAYER_IP,
++    PERF_LAYER_TCP,
++    PERF_LAYER_UDP,
++    PERF_LAYER_END
++};
++
++extern uint32_t g_record_perf;
++
++extern __thread uint64_t g_timeTaken[PERF_POINT_END];
++extern __thread int g_perfPoint[PERF_LAYER_END];
++extern __thread struct timespec tvStart[PERF_LAYER_END];
++
++extern char *g_ppLayerName[PERF_POINT_END];
++extern volatile uint64_t g_perfMaxtime[PERF_POINT_END];
++extern volatile uint64_t g_astPacketCnt[PERF_POINT_END];
++extern volatile uint64_t g_astPacketProcTime[PERF_POINT_END];
++
++#define PERF_START(layer, point) do {\
++    g_perfPoint[(layer)] = (point);\
++    LWIP_DEBUGF(PERF_OUTPUT_DEBUG, ("set point %d:%s\n", layer, g_ppLayerName[g_perfPoint[(layer)]]));\
++    clock_gettime(CLOCK_MONOTONIC, &tvStart[(layer)]);\
++    g_timeTaken[(point)] = 0;\
++} while (0)
++
++#define PERF_UPDATE_POINT(layer, point) do {\
++    LWIP_DEBUGF(PERF_OUTPUT_DEBUG, ("old point %d:%s\n", layer, g_ppLayerName[g_perfPoint[(layer)]]));\
++    g_timeTaken[(point)] = g_timeTaken[g_perfPoint[(layer)]];\
++    g_timeTaken[g_perfPoint[(layer)]] = 0;\
++    g_perfPoint[(layer)] = (point);\
++    LWIP_DEBUGF(PERF_OUTPUT_DEBUG, ("new point %d:%s\n", layer, g_ppLayerName[g_perfPoint[(layer)]]));\
++} while (0)
++
++#define PERF_PAUSE(layer) do {\
++    struct timespec tvEnd;\
++    clock_gettime(CLOCK_MONOTONIC, &tvEnd);\
++    LWIP_DEBUGF(PERF_OUTPUT_DEBUG, ("perf pause layer%d\n", layer));\
++    g_timeTaken[g_perfPoint[(layer)]] += ((tvEnd.tv_sec - tvStart[(layer)].tv_sec) \
++            * (1000000000UL) + (tvEnd.tv_nsec - tvStart[(layer)].tv_nsec));\
++} while (0)
++
++#define PERF_PAUSE_RETURN_POINT(layer, pause_point) do {\
++    struct timespec tvEnd;\
++    clock_gettime(CLOCK_MONOTONIC, &tvEnd);\
++    g_timeTaken[g_perfPoint[(layer)]] += ((tvEnd.tv_sec - tvStart[(layer)].tv_sec) \
++            * (1000000000UL) + (tvEnd.tv_nsec - tvStart[(layer)].tv_nsec));\
++    LWIP_DEBUGF(PERF_OUTPUT_DEBUG, ("perf pause point %d:%s\n", layer, g_ppLayerName[g_perfPoint[(layer)]]));\
++    (pause_point) = g_perfPoint[(layer)];\
++} while (0)
++
++
++#define PERF_RESUME(layer, point) do {\
++    LWIP_DEBUGF(PERF_OUTPUT_DEBUG, ("perf resule point %d:%s\n", layer, g_ppLayerName[point]));\
++    clock_gettime(CLOCK_MONOTONIC, &tvStart[(layer)]);\
++    g_perfPoint[(layer)] = (point);\
++} while (0)
++
++
++/* x is a prompt */
++#define PERF_STOP_INCREASE_COUNT(x, layer) do {\
++    if (g_record_perf)\
++    {\
++        struct timespec tvEnd;\
++        int i = 2;\
++        uint32_t oldValue = 0;\
++        clock_gettime(CLOCK_MONOTONIC, &tvEnd);\
++        g_timeTaken[g_perfPoint[(layer)]] += ((tvEnd.tv_sec - tvStart[(layer)].tv_sec) \
++                * (1000000000UL) + (tvEnd.tv_nsec - tvStart[(layer)].tv_nsec));\
++        while (i && !oldValue)\
++        {\
++            oldValue = __sync_or_and_fetch(&g_perfMaxtime[g_perfPoint[(layer)]], 0);\
++            if (oldValue >= g_timeTaken[g_perfPoint[(layer)]])\
++            {\
++                break;\
++            }\
++            oldValue = __sync_val_compare_and_swap(&g_perfMaxtime[g_perfPoint[(layer)]],\
++                    oldValue, g_timeTaken[g_perfPoint[(layer)]]);\
++            i--;\
++        }\
++        __sync_fetch_and_add(&g_astPacketCnt[g_perfPoint[(layer)]], 1);\
++        __sync_fetch_and_add(&g_astPacketProcTime[g_perfPoint[(layer)]], g_timeTaken[g_perfPoint[(layer)]]);\
++        LWIP_DEBUGF(PERF_OUTPUT_DEBUG, ("Time for %s is: %ld\n",\
++                g_ppLayerName[g_perfPoint[(layer)]], g_timeTaken[g_perfPoint[(layer)]]));\
++    }\
++} while (0)
++
++
++int check_layer_point(int layer, int point);
++int perf_init();
++
++#else
++#define PERF_START(layer, point)         do {  } while (0)
++#define PERF_UPDATE_POINT(layer, point)  do {  } while (0)
++#define PERF_PAUSE(layer)                do {  } while (0)
++#define PERF_PAUSE_RETURN_POINT(layer, pause_point) do {  } while (0)
++#define PERF_RESUME(layer, point)           do {  } while (0)
++#define PERF_STOP_INCREASE_COUNT(x, layer)  do {  } while (0)
++#endif
++
++#endif /* LWIP_ARCH_PERF_H */
+diff --git a/src/include/arch/sys_arch.h b/src/include/arch/sys_arch.h
+index 3f555ee..b8a0d28 100644
+--- a/src/include/arch/sys_arch.h
++++ b/src/include/arch/sys_arch.h
+@@ -1,7 +1,93 @@
+-#ifndef LWIP_SYS_ARCH_H
+-#define LWIP_SYS_ARCH_H
++/*
++ * Copyright (c) 2001-2004 Swedish Institute of Computer Science.
++ * All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without modification,
++ * are permitted provided that the following conditions are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ * 3. The name of the author may not be used to endorse or promote products
++ *    derived from this software without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
++ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
++ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
++ * SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
++ * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
++ * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
++ * OF SUCH DAMAGE.
++ *
++ * This file is part of the lwIP TCP/IP stack.
++ *
++ * Author: Huawei Technologies
++ *
++ */
+ 
++#ifndef LWIP_ARCH_SYS_ARCH_H
++#define LWIP_ARCH_SYS_ARCH_H
+ 
++#include <rte_cycles.h>
++#include <rte_debug.h>
+ 
+-#endif /* LWIP_SYS_ARCH_H */
++#define SYS_MBOX_NULL NULL
++#define SYS_SEM_NULL  NULL
++typedef uint32_t sys_prot_t;
+ 
++struct sys_sem {
++    volatile unsigned int c;
++    int (*wait_fn)(void);
++};
++
++#define MBOX_NAME_LEN 64
++struct sys_mbox {
++    struct rte_ring *ring;
++    char name[MBOX_NAME_LEN];
++    int size;
++    int socket_id;
++    unsigned flags;
++    int (*wait_fn)(void);
++};
++
++typedef struct sys_sem *sys_sem_t;
++#define sys_sem_valid(sem)             (((sem) != NULL) && (*(sem) != NULL))
++#define sys_sem_valid_val(sem)         ((sem) != NULL)
++#define sys_sem_set_invalid(sem)       do { if ((sem) != NULL) { *(sem) = NULL; }} while(0)
++#define sys_sem_set_invalid_val(sem)   do { (sem) = NULL; } while(0)
++
++struct sys_mutex;
++typedef struct sys_mutex *sys_mutex_t;
++#define sys_mutex_valid(mutex)         sys_sem_valid(mutex)
++#define sys_mutex_set_invalid(mutex)   sys_sem_set_invalid(mutex)
++
++typedef struct sys_mbox *sys_mbox_t;
++#define sys_mbox_valid(mbox)           sys_sem_valid(mbox)
++#define sys_mbox_valid_val(mbox)       sys_sem_valid_val(mbox)
++#define sys_mbox_set_invalid(mbox)     sys_sem_set_invalid(mbox)
++#define sys_mbox_set_invalid_val(mbox) sys_sem_set_invalid_val(mbox)
++int sys_mbox_empty(struct sys_mbox *);
++
++struct sys_thread;
++typedef struct sys_thread *sys_thread_t;
++
++extern int eth_dev_poll(void);
++
++void sys_calibrate_tsc(void);
++uint32_t sys_now(void);
++__attribute__((always_inline)) inline int update_timeout(int timeout, uint32_t poll_ts)
++{
++    uint32_t used_ms = sys_now() - poll_ts;
++    if (timeout > 0 && used_ms < timeout) {
++        return timeout;
++    } else {
++        return 0;
++    }
++}
++
++#endif /* LWIP_ARCH_SYS_ARCH_H */
+diff --git a/src/include/eventpoll.h b/src/include/eventpoll.h
+new file mode 100644
+index 0000000..01f8d64
+--- /dev/null
++++ b/src/include/eventpoll.h
+@@ -0,0 +1,72 @@
++/*
++ * Copyright (c) 2001-2004 Swedish Institute of Computer Science.
++ * All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without modification,
++ * are permitted provided that the following conditions are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ * 3. The name of the author may not be used to endorse or promote products
++ *    derived from this software without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
++ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
++ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
++ * SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
++ * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
++ * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
++ * OF SUCH DAMAGE.
++ *
++ * This file is part of the lwIP TCP/IP stack.
++ *
++ * Author: Huawei Technologies
++ *
++ */
++
++#ifndef __EVENTPOLL_H__
++#define __EVENTPOLL_H__
++
++#include <sys/epoll.h>
++
++#include "lwip/api.h"
++#include "list.h"
++
++#define MAX_EPOLLFDS 32
++
++#define LIBOS_EPOLLNONE (0x0)
++#define LIBOS_BADEP     (NULL)
++
++struct event_queue {
++    struct list_node events;
++    /* total number of sockets have events */
++    int num_events;
++};
++
++struct event_array {
++    sys_mbox_t mbox;
++    volatile int num_events;
++    struct epoll_event events[0];
++};
++
++struct libos_epoll {
++    struct event_queue *libos_queue;
++    struct event_array *host_queue;
++    int num_hostfds;
++    int hints;
++    int fd;  /* self fd */
++    int efd; /* eventfd */
++};
++
++extern int add_epoll_event(struct netconn*, uint32_t);
++extern int del_epoll_event(struct netconn*, uint32_t);
++extern int lwip_epoll_close(int);
++extern int lwip_is_epfd(int);
++
++#endif /* __EVENTPOLL_H__ */
+diff --git a/src/include/hlist.h b/src/include/hlist.h
+new file mode 100644
+index 0000000..7059488
+--- /dev/null
++++ b/src/include/hlist.h
+@@ -0,0 +1,233 @@
++/*
++ * Copyright (c) 2001-2004 Swedish Institute of Computer Science.
++ * All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without modification,
++ * are permitted provided that the following conditions are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ * 3. The name of the author may not be used to endorse or promote products
++ *    derived from this software without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
++ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
++ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
++ * SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
++ * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
++ * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
++ * OF SUCH DAMAGE.
++ *
++ * This file is part of the lwIP TCP/IP stack.
++ *
++ * Author: Huawei Technologies
++ *
++ */
++
++#ifndef __HLIST_H__
++#define __HLIST_H__
++
++#include "list.h"
++
++//#if TCP_PCB_HASH
++struct hlist_node {
++    /**
++     * @pprev: point the previous node's next pointer
++     */
++    struct hlist_node *next;
++    struct hlist_node **pprev;
++};
++
++struct hlist_head {
++    struct hlist_node *first;
++};
++
++struct hlist_tail {
++    struct hlist_node *end;
++};
++
++struct hlist_ctl {
++    struct hlist_head head;
++    struct hlist_tail tail;
++};
++
++#define INIT_HLIST_CTRL(ptr) {(ptr)->head.first = NULL; (ptr)->tail.end = NULL;}
++#define INIT_HLIST_HEAD(ptr) ((ptr)->first = NULL)
++#define INIT_HLIST_NODE(ptr) {(ptr)->next = NULL; (ptr)->pprev = NULL;}
++#define hlist_entry(ptr, type, member) \
++    container_of(ptr, type, member)
++
++/**
++ * hlist_for_each_entry    - iterate over list of given type
++ * @tpos:    the type * to use as a loop cursor.
++ * @pos:    the &struct hlist_node to use as a loop cursor.
++ * @head:    the head for your list.
++ * @member:    the name of the hlist_node within the struct.
++ */
++#define hlist_for_each_entry(tpos, pos, head, member) \
++    for (pos = (head)->first; \
++        pos && ({ tpos = hlist_entry(pos, typeof(*tpos), member); 1; }); \
++        pos = (pos)->next)
++
++/**
++ * next must be != NULL
++ * add n node before next node
++ *
++ * @n: new node
++ * @next: node in the hlist
++ */
++static inline void hlist_add_before(struct hlist_node *n, struct hlist_node *next)
++{
++    n->pprev = next->pprev;
++    n->next = next;
++    next->pprev = &n->next;
++    *(n->pprev) = n;
++}
++
++static inline int hlist_empty(const struct hlist_head *h)
++{
++    return !h->first;
++}
++
++static inline int hlist_unhashed(const struct hlist_node *h)
++{
++    return !h->pprev;
++}
++
++static inline void hlist_del_init(struct hlist_node *n)
++{
++    struct hlist_node *next = n->next;
++    struct hlist_node **pprev = n->pprev;
++
++    if (pprev == NULL) {
++        return;
++    }
++
++    *pprev = next;
++    if (next != NULL) {
++        next->pprev = pprev;
++    }
++
++    n->next = NULL;
++    n->pprev = NULL;
++}
++
++static inline void hlist_ctl_del(struct hlist_ctl *ctl, struct hlist_node *n)
++{
++    if (ctl->head.first == ctl->tail.end) {
++        ctl->head.first = NULL;
++        ctl->tail.end = NULL;
++        return;
++    }
++
++    if (ctl->tail.end == n) {
++        ctl->tail.end = (struct hlist_node *)n->pprev;
++    }
++
++    hlist_del_init(n);
++}
++
++static inline struct hlist_node *hlist_pop_tail(struct hlist_ctl *ctl)
++{
++    if (hlist_empty(&ctl->head)) {
++        return NULL;
++    }
++
++    if (ctl->head.first == ctl->tail.end) {
++        struct hlist_node *ret = ctl->tail.end;
++        ctl->tail.end = NULL;
++        ctl->head.first = NULL;
++        return ret;
++    }
++
++    struct hlist_node *temp = ctl->tail.end;
++
++    struct hlist_node **ptailPrev = ctl->tail.end->pprev;
++    *ptailPrev = NULL;
++
++    ctl->tail.end = (struct hlist_node *)ptailPrev;
++    temp->pprev = NULL;
++    return temp;
++}
++
++static inline void hlist_add_after(struct hlist_node *n, struct hlist_node *next)
++{
++    next->next = n->next;
++    n->next = next;
++    next->pprev = &n->next;
++    if (next->next) {
++        next->next->pprev = &next->next;
++    }
++}
++
++static inline void hlist_add_head(struct hlist_node *n, struct hlist_head *h)
++{
++    struct hlist_node *first = h->first;
++
++    n->next = first;
++    if (first != NULL) {
++        first->pprev = &n->next;
++    }
++
++    h->first = n;
++    n->pprev = &h->first;
++}
++
++static inline struct hlist_node *hlist_pop_head(struct hlist_ctl *ctl)
++{
++    if (hlist_empty(&ctl->head)) {
++        return NULL;
++    }
++
++    struct hlist_node *temp = ctl->head.first;
++    hlist_ctl_del(ctl, temp);
++    return temp;
++}
++
++static inline void hlist_ctl_add_tail(struct hlist_ctl *ctl, struct hlist_node *node)
++{
++    if (hlist_empty(&ctl->head)) {
++        hlist_add_head(node, &ctl->head);
++        ctl->tail.end = ctl->head.first;
++        return;
++    }
++
++    ctl->tail.end->next = node;
++
++    node->pprev = &(ctl->tail.end->next);
++    node->next = NULL;
++    ctl->tail.end = node;
++}
++
++static inline void hlist_ctl_add_head(struct hlist_node *node, struct hlist_ctl *ctl)
++{
++    hlist_add_head(node, &ctl->head);
++    if (ctl->tail.end == NULL) {
++        ctl->tail.end = ctl->head.first;
++    }
++}
++
++static inline void hlist_ctl_add_before(struct hlist_node *n, struct hlist_node *next, struct hlist_ctl *ctl)
++{
++    hlist_add_before(n, next);
++    if (next == ctl->head.first) {
++        ctl->head.first = n;
++    }
++}
++
++static inline void hlist_ctl_add_after(struct hlist_node *n, struct hlist_node *next, struct hlist_ctl *ctl)
++{
++    hlist_add_after(n, next);
++    if (n == ctl->tail.end) {
++        ctl->tail.end = next;
++    }
++}
++//#endif /* TCP_PCB_HASH */
++
++#endif /* __HLIST_H__ */
+diff --git a/src/include/list.h b/src/include/list.h
+new file mode 100644
+index 0000000..11f94c2
+--- /dev/null
++++ b/src/include/list.h
+@@ -0,0 +1,110 @@
++/*
++ * Copyright (c) 2001-2004 Swedish Institute of Computer Science.
++ * All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without modification,
++ * are permitted provided that the following conditions are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ * 3. The name of the author may not be used to endorse or promote products
++ *    derived from this software without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
++ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
++ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
++ * SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
++ * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
++ * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
++ * OF SUCH DAMAGE.
++ *
++ * This file is part of the lwIP TCP/IP stack.
++ *
++ * Author: Huawei Technologies
++ *
++ */
++
++#ifndef __LIST_H__
++#define __LIST_H__
++
++#ifndef NULL
++#ifdef __cplusplus
++#define NULL 0
++#else
++#define NULL ((void *)0)
++#endif
++#endif
++
++struct list_node {
++    struct list_node *prev;
++    struct list_node *next;
++};
++
++static inline void init_list_node_null(struct list_node *n)
++{
++    n->prev = NULL;
++    n->next = NULL;
++}
++
++static inline void init_list_node(struct list_node *n)
++{
++    n->prev = n;
++    n->next = n;
++}
++
++static inline void list_add_node(struct list_node *h, struct list_node *n)
++{
++    n->next = h;
++    n->prev = h->prev;
++    h->prev->next = n;
++    h->prev = n;
++}
++
++static inline void list_del_node(struct list_node *n)
++{
++    struct list_node *prev = n->prev;
++    struct list_node *next = n->next;
++    next->prev = prev;
++    prev->next = next;
++}
++
++static inline void list_del_node_init(struct list_node *n)
++{
++    list_del_node(n);
++    init_list_node(n);
++}
++
++static inline void list_del_node_null(struct list_node *n)
++{
++    if ((n->next) && (n->prev)) {
++        list_del_node(n);
++    }
++    init_list_node_null(n);
++}
++
++static inline int list_is_null(const struct list_node *n)
++{
++    return (n->prev == NULL) && (n->next == NULL);
++}
++
++static inline int list_is_empty(const struct list_node *h)
++{
++    return h == h->next;
++}
++
++#define list_for_each_safe(pos, n, head) \
++    for (pos = (head)->next, n = (pos)->next; pos != (head); pos = n, n = (pos)->next)
++
++#ifndef container_of
++#define container_of(ptr, type, member) ({ \
++    typeof( ((type *)0)->member ) *__mptr = (ptr); \
++    (type *)((char *)__mptr - offsetof(type,member));})
++#endif /* container_of */
++
++#endif /* __LIST_H__ */
+diff --git a/src/include/lwip/api.h b/src/include/lwip/api.h
+index c2afaf2..6dec8c0 100644
+--- a/src/include/lwip/api.h
++++ b/src/include/lwip/api.h
+@@ -140,8 +140,43 @@ enum netconn_type {
+   /** Raw connection IPv6 (dual-stack by default, unless you call @ref netconn_set_ipv6only) */
+   , NETCONN_RAW_IPV6    = NETCONN_RAW | NETCONN_TYPE_IPV6 /* 0x48 */
+ #endif /* LWIP_IPV6 */
++
++#if USE_LIBOS
++  /*here must bigger than 0xff, because (type & 0xff) is for lwip inner use*/
++  , NETCONN_LIBOS = 0x100
++  , NETCONN_HOST = 0x200
++  , NETCONN_INPRG = 0x400
++  , NETCONN_STACK = NETCONN_LIBOS | NETCONN_HOST | NETCONN_INPRG
++#endif /* USE_LIBOS */
+ };
+ 
++#ifdef USE_LIBOS
++#define SET_CONN_TYPE_LIBOS_OR_HOST(conn) do { \
++  conn->type &= ~(NETCONN_STACK); \
++  conn->type |= (NETCONN_LIBOS | NETCONN_HOST); } while (0)
++#define SET_CONN_TYPE_LIBOS(conn) do { \
++  conn->type &= ~(NETCONN_STACK); \
++  conn->type |= NETCONN_LIBOS; } while (0)
++#define SET_CONN_TYPE_HOST(conn) do { \
++  conn->type &= ~(NETCONN_STACK); \
++  conn->type |= NETCONN_HOST; } while (0)
++#define ADD_CONN_TYPE_INPRG(conn) do { \
++  conn->type |= NETCONN_INPRG; } while(0)
++#define CONN_TYPE_HAS_LIBOS_AND_HOST(conn) ((conn->type & (NETCONN_LIBOS | NETCONN_HOST)) == (NETCONN_LIBOS | NETCONN_HOST))
++#define CONN_TYPE_HAS_LIBOS(conn) (conn->type & NETCONN_LIBOS)
++#define CONN_TYPE_HAS_HOST(conn) (conn->type & NETCONN_HOST)
++#define CONN_TYPE_HAS_INPRG(conn) (!!(conn->type & NETCONN_INPRG))
++#define CONN_TYPE_IS_LIBOS(conn)  (!!(NETCONN_LIBOS == (conn->type & NETCONN_STACK)))
++#define CONN_TYPE_IS_HOST(conn)   (!!(NETCONN_HOST == (conn->type & NETCONN_STACK)))
++#else
++#define SET_CONN_TYPE_LIBOS_OR_HOST(conn) do {} while (0)
++#define SET_CONN_TYPE_LIBOS(conn) do {} while (0)
++#define SET_CONN_TYPE_HOST(conn) do {} while (0)
++#define CONN_TYPE_HAS_LIBOS_AND_HOST(conn) (0)
++#define CONN_TYPE_HAS_LIBOS(conn) (0)
++#define CONN_TYPE_HAS_HOST(conn) (0)
++#endif /* USE_LIBOS */
++
+ /** Current state of the netconn. Non-TCP netconns are always
+  * in state NETCONN_NONE! */
+ enum netconn_state {
+diff --git a/src/include/lwip/debug.h b/src/include/lwip/debug.h
+index 579fd24..f47cbfe 100644
+--- a/src/include/lwip/debug.h
++++ b/src/include/lwip/debug.h
+@@ -145,6 +145,7 @@
+                                    ((debug) & LWIP_DBG_ON) && \
+                                    ((debug) & LWIP_DBG_TYPES_ON) && \
+                                    ((s16_t)((debug) & LWIP_DBG_MASK_LEVEL) >= LWIP_DBG_MIN_LEVEL)) { \
++                                 LWIP_PLATFORM_LOG(debug, STRIP_BRACES(ESC_ARGS message)); \
+                                  LWIP_PLATFORM_DIAG(message); \
+                                  if ((debug) & LWIP_DBG_HALT) { \
+                                    while(1); \
+diff --git a/src/include/lwip/def.h b/src/include/lwip/def.h
+index dfb266d..fea7187 100644
+--- a/src/include/lwip/def.h
++++ b/src/include/lwip/def.h
+@@ -116,6 +116,21 @@ u32_t lwip_htonl(u32_t x);
+ 
+ /* Provide usual function names as macros for users, but this can be turned off */
+ #ifndef LWIP_DONT_PROVIDE_BYTEORDER_FUNCTIONS
++
++/* avoid conflicts with netinet/in.h */
++#ifdef htons
++#undef htons
++#endif
++#ifdef ntohs
++#undef ntohs
++#endif
++#ifdef htonl
++#undef htonl
++#endif
++#ifdef ntohl
++#undef ntohl
++#endif
++
+ #define htons(x) lwip_htons(x)
+ #define ntohs(x) lwip_ntohs(x)
+ #define htonl(x) lwip_htonl(x)
+diff --git a/src/include/lwip/ip.h b/src/include/lwip/ip.h
+index 653c3b2..d560f6b 100644
+--- a/src/include/lwip/ip.h
++++ b/src/include/lwip/ip.h
+@@ -96,9 +96,15 @@ struct ip_pcb {
+ /*
+  * Option flags per-socket. These are the same like SO_XXX in sockets.h
+  */
++#if USE_LIBOS
++#define SOF_REUSEADDR     0x02U /* allow local address reuse */
++#define SOF_KEEPALIVE     0x09U /* keep connections alive */
++#define SOF_BROADCAST     0x06U /* permit to send and to receive broadcast messages (see IP_SOF_BROADCAST option) */
++#else
+ #define SOF_REUSEADDR     0x04U  /* allow local address reuse */
+ #define SOF_KEEPALIVE     0x08U  /* keep connections alive */
+ #define SOF_BROADCAST     0x20U  /* permit to send and to receive broadcast messages (see IP_SOF_BROADCAST option) */
++#endif /* USE_LIBOS */
+ 
+ /* These flags are inherited (e.g. from a listen-pcb to a connection-pcb): */
+ #define SOF_INHERITED   (SOF_REUSEADDR|SOF_KEEPALIVE)
+@@ -125,7 +131,7 @@ struct ip_globals
+   /** Destination IP address of current_header */
+   ip_addr_t current_iphdr_dest;
+ };
+-extern struct ip_globals ip_data;
++extern PER_THREAD struct ip_globals ip_data;
+ 
+ 
+ /** Get the interface that accepted the current packet.
+diff --git a/src/include/lwip/memp.h b/src/include/lwip/memp.h
+index 1630b26..64d8f31 100644
+--- a/src/include/lwip/memp.h
++++ b/src/include/lwip/memp.h
+@@ -58,7 +58,11 @@ typedef enum {
+ #include "lwip/priv/memp_priv.h"
+ #include "lwip/stats.h"
+ 
++#if USE_LIBOS
++extern PER_THREAD struct memp_desc* memp_pools[MEMP_MAX];
++#else
+ extern const struct memp_desc* const memp_pools[MEMP_MAX];
++#endif /* USE_LIBOS */
+ 
+ /**
+  * @ingroup mempool
+@@ -92,6 +96,18 @@ extern const struct memp_desc* const memp_pools[MEMP_MAX];
+  * To relocate a pool, declare it as extern in cc.h. Example for GCC:
+  *   extern u8_t \_\_attribute\_\_((section(".onchip_mem"))) memp_memory_my_private_pool_base[];
+  */
++#if USE_LIBOS
++#define LWIP_MEMPOOL_DECLARE(name,num,size,desc) \
++    PER_THREAD struct memp_desc memp_ ## name = {0}; \
++    PER_THREAD char memp_desc_ ## name[] = desc; \
++    PER_THREAD struct stats_mem memp_stat ## name = {0}; \
++    PER_THREAD u16_t memp_size ## name = size; \
++    PER_THREAD u16_t memp_num ## name = num;   \
++    PER_THREAD struct memp *memp_tab_ ## name = NULL; \
++    LWIP_DECLARE_MEMP_BASE_ALIGNED(name, ((num) * (MEMP_SIZE + MEMP_ALIGN_SIZE(size))));
++
++#else /* USE_LIBOS */
++
+ #define LWIP_MEMPOOL_DECLARE(name,num,size,desc) \
+   LWIP_DECLARE_MEMORY_ALIGNED(memp_memory_ ## name ## _base, ((num) * (MEMP_SIZE + MEMP_ALIGN_SIZE(size)))); \
+     \
+@@ -108,6 +124,7 @@ extern const struct memp_desc* const memp_pools[MEMP_MAX];
+     &memp_tab_ ## name \
+   };
+ 
++#endif /* USE_LIBOS */
+ #endif /* MEMP_MEM_MALLOC */
+ 
+ /**
+diff --git a/src/include/lwip/netif.h b/src/include/lwip/netif.h
+index 9a16ded..057c51f 100644
+--- a/src/include/lwip/netif.h
++++ b/src/include/lwip/netif.h
+@@ -406,11 +406,11 @@ struct netif {
+ #define NETIF_FOREACH(netif) if (((netif) = netif_default) != NULL)
+ #else /* LWIP_SINGLE_NETIF */
+ /** The list of network interfaces. */
+-extern struct netif *netif_list;
++extern PER_THREAD struct netif *netif_list;
+ #define NETIF_FOREACH(netif) for ((netif) = netif_list; (netif) != NULL; (netif) = (netif)->next)
+ #endif /* LWIP_SINGLE_NETIF */
+ /** The default network interface. */
+-extern struct netif *netif_default;
++extern PER_THREAD struct netif *netif_default;
+ 
+ void netif_init(void);
+ 
+diff --git a/src/include/lwip/opt.h b/src/include/lwip/opt.h
+index d8c82d1..8294cdd 100644
+--- a/src/include/lwip/opt.h
++++ b/src/include/lwip/opt.h
+@@ -533,6 +533,22 @@
+ #endif
+ 
+ /**
++ * MEMP_NUM_SYS_SEM: the number of struct sys_sems.
++ * (only needed if you use the sequential API, like api_lib.c)
++ */
++#if !defined MEMP_NUM_SYS_SEM || defined __DOXYGEN__
++#define MEMP_NUM_SYS_SEM                128
++#endif
++
++/**
++ * MEMP_NUM_SYS_MBOX: the number of struct sys_sems.
++ * (only needed if you use the sequential API, like api_lib.c)
++ */
++#if !defined MEMP_NUM_SYS_MBOX || defined __DOXYGEN__
++#define MEMP_NUM_SYS_MBOX                128
++#endif
++
++/**
+  * MEMP_NUM_SELECT_CB: the number of struct lwip_select_cb.
+  * (Only needed if you have LWIP_MPU_COMPATIBLE==1 and use the socket API.
+  * In that case, you need one per thread calling lwip_select.)
+@@ -2232,7 +2248,7 @@
+  * MIB2_STATS==1: Stats for SNMP MIB2.
+  */
+ #if !defined MIB2_STATS || defined __DOXYGEN__
+-#define MIB2_STATS                      0
++#define MIB2_STATS                      1
+ #endif
+ 
+ #else
+@@ -3422,6 +3438,10 @@
+ #define TCP_OUTPUT_DEBUG                LWIP_DBG_OFF
+ #endif
+ 
++#ifndef PERF_OUTPUT_DEBUG
++ #define PERF_OUTPUT_DEBUG              LWIP_DBG_OFF
++#endif
++
+ /**
+  * TCP_RST_DEBUG: Enable debugging for TCP with the RST message.
+  */
+@@ -3502,6 +3522,46 @@
+ #define LWIP_TESTMODE                   0
+ #endif
+ 
++/**
++ * EPOLL_DEBUG: Enable debugging in epoll.c.
++ */
++#if !defined EPOLL_DEBUG || defined __DOXYGEN__ && USE_LIBOS
++#define EPOLL_DEBUG                    LWIP_DBG_OFF
++#endif
++/**
++ * @}
++ */
++
++/**
++ * ETHDEV_DEBUG: Enable debugging in ethdev.c.
++ */
++#if !defined ETHDEV_DEBUG || defined __DOXYGEN__ && USE_LIBOS
++#define ETHDEV_DEBUG                    LWIP_DBG_OFF
++#endif
++/**
++ * @}
++ */
++
++/**
++ * ETHDEV_DEBUG: Enable debugging in ethdev.c.
++ */
++#if !defined SYSCALL_DEBUG || defined __DOXYGEN__ && USE_LIBOS
++#define SYSCALL_DEBUG                    LWIP_DBG_OFF
++#endif
++/**
++ * @}
++ */
++
++/**
++ * CONTROL_DEBUG: Enable debugging in control_plane.c.
++ */
++#if !defined CONTROL_DEBUG || defined __DOXYGEN__ && USE_LIBOS
++#define CONTROL_DEBUG                    LWIP_DBG_ON
++#endif
++/**
++ * @}
++ */
++
+ /*
+    --------------------------------------------------
+    ---------- Performance tracking options ----------
+diff --git a/src/include/lwip/priv/memp_std.h b/src/include/lwip/priv/memp_std.h
+index 669ad4d..395ac0c 100644
+--- a/src/include/lwip/priv/memp_std.h
++++ b/src/include/lwip/priv/memp_std.h
+@@ -122,6 +122,13 @@ LWIP_MEMPOOL(MLD6_GROUP,     MEMP_NUM_MLD6_GROUP,      sizeof(struct mld_group),
+ #endif /* LWIP_IPV6 && LWIP_IPV6_MLD */
+ 
+ 
++#if USE_LIBOS
++#if !LWIP_NETCONN_SEM_PER_THREAD
++LWIP_MEMPOOL(SYS_SEM,     MEMP_NUM_SYS_SEM,      sizeof(struct sys_sem),     "SYS_SEM")
++#endif
++
++LWIP_MEMPOOL(SYS_MBOX,     MEMP_NUM_SYS_MBOX,      sizeof(struct sys_mbox),     "SYS_MBOX")
++#endif /* USE_LIBOS */
+ /*
+  * A list of pools of pbuf's used by LWIP.
+  *
+diff --git a/src/include/lwip/priv/sockets_priv.h b/src/include/lwip/priv/sockets_priv.h
+index d8f9904..7268a17 100644
+--- a/src/include/lwip/priv/sockets_priv.h
++++ b/src/include/lwip/priv/sockets_priv.h
+@@ -45,56 +45,17 @@
+ #include "lwip/sockets.h"
+ #include "lwip/sys.h"
+ 
++/* move some definitions to the lwipsock.h for libnet to use, and
++ * at the same time avoid conflict between lwip/sockets.h and sys/socket.h
++ */
++#include "lwipsock.h"
++
+ #ifdef __cplusplus
+ extern "C" {
+ #endif
+ 
+ #define NUM_SOCKETS MEMP_NUM_NETCONN
+ 
+-/** This is overridable for the rare case where more than 255 threads
+- * select on the same socket...
+- */
+-#ifndef SELWAIT_T
+-#define SELWAIT_T u8_t
+-#endif
+-
+-union lwip_sock_lastdata {
+-  struct netbuf *netbuf;
+-  struct pbuf *pbuf;
+-};
+-
+-/** Contains all internal pointers and states used for a socket */
+-struct lwip_sock {
+-  /** sockets currently are built on netconns, each socket has one netconn */
+-  struct netconn *conn;
+-  /** data that was left from the previous read */
+-  union lwip_sock_lastdata lastdata;
+-#if LWIP_SOCKET_SELECT || LWIP_SOCKET_POLL
+-  /** number of times data was received, set by event_callback(),
+-      tested by the receive and select functions */
+-  s16_t rcvevent;
+-  /** number of times data was ACKed (free send buffer), set by event_callback(),
+-      tested by select */
+-  u16_t sendevent;
+-  /** error happened for this socket, set by event_callback(), tested by select */
+-  u16_t errevent;
+-  /** counter of how many threads are waiting for this socket using select */
+-  SELWAIT_T select_waiting;
+-#endif /* LWIP_SOCKET_SELECT || LWIP_SOCKET_POLL */
+-#if LWIP_NETCONN_FULLDUPLEX
+-  /* counter of how many threads are using a struct lwip_sock (not the 'int') */
+-  u8_t fd_used;
+-  /* status of pending close/delete actions */
+-  u8_t fd_free_pending;
+-#define LWIP_SOCK_FD_FREE_TCP  1
+-#define LWIP_SOCK_FD_FREE_FREE 2
+-#endif
+-};
+-
+-#ifndef set_errno
+-#define set_errno(err) do { if (err) { errno = (err); } } while(0)
+-#endif
+-
+ #if !LWIP_TCPIP_CORE_LOCKING
+ /** Maximum optlen used by setsockopt/getsockopt */
+ #define LWIP_SETGETSOCKOPT_MAXOPTLEN LWIP_MAX(16, sizeof(struct ifreq))
+diff --git a/src/include/lwip/priv/tcp_priv.h b/src/include/lwip/priv/tcp_priv.h
+index 72f9126..192edc4 100644
+--- a/src/include/lwip/priv/tcp_priv.h
++++ b/src/include/lwip/priv/tcp_priv.h
+@@ -323,25 +323,42 @@ struct tcp_seg {
+ #endif /* LWIP_WND_SCALE */
+ 
+ /* Global variables: */
+-extern struct tcp_pcb *tcp_input_pcb;
+-extern u32_t tcp_ticks;
+-extern u8_t tcp_active_pcbs_changed;
++extern PER_THREAD struct tcp_pcb *tcp_input_pcb;
++extern PER_THREAD u32_t tcp_ticks;
++extern PER_THREAD u8_t tcp_active_pcbs_changed;
+ 
+ /* The TCP PCB lists. */
+ union tcp_listen_pcbs_t { /* List of all TCP PCBs in LISTEN state. */
+   struct tcp_pcb_listen *listen_pcbs;
+   struct tcp_pcb *pcbs;
+ };
+-extern struct tcp_pcb *tcp_bound_pcbs;
+-extern union tcp_listen_pcbs_t tcp_listen_pcbs;
+-extern struct tcp_pcb *tcp_active_pcbs;  /* List of all TCP PCBs that are in a
++extern PER_THREAD struct tcp_pcb *tcp_bound_pcbs;
++extern PER_THREAD union tcp_listen_pcbs_t tcp_listen_pcbs;
++extern PER_THREAD struct tcp_pcb *tcp_active_pcbs;  /* List of all TCP PCBs that are in a
+               state in which they accept or send
+               data. */
+-extern struct tcp_pcb *tcp_tw_pcbs;      /* List of all TCP PCBs in TIME-WAIT. */
++extern PER_THREAD struct tcp_pcb *tcp_tw_pcbs;      /* List of all TCP PCBs in TIME-WAIT. */
+ 
+ #define NUM_TCP_PCB_LISTS_NO_TIME_WAIT  3
+ #define NUM_TCP_PCB_LISTS               4
+-extern struct tcp_pcb ** const tcp_pcb_lists[NUM_TCP_PCB_LISTS];
++extern PER_THREAD struct tcp_pcb ** tcp_pcb_lists[NUM_TCP_PCB_LISTS];
++
++#if USE_LIBOS
++#include "reg_sock.h"
++static inline int vdev_reg_done(enum reg_ring_type reg_type, const struct tcp_pcb *pcb)
++{
++  LWIP_ASSERT("Invalid parameter", pcb != NULL);
++
++  struct libnet_quintuple qtuple;
++  qtuple.protocol   = 0;
++  qtuple.src_ip     = pcb->local_ip.addr;
++  qtuple.src_port   = lwip_htons(pcb->local_port);
++  qtuple.dst_ip     = pcb->remote_ip.addr;
++  qtuple.dst_port   = lwip_htons(pcb->remote_port);
++
++  return vdev_reg_xmit(reg_type, &qtuple);
++}
++#endif
+ 
+ /* Axioms about the above lists:
+    1) Every TCP PCB that is not CLOSED is in one of the lists.
+@@ -355,6 +372,54 @@ extern struct tcp_pcb ** const tcp_pcb_lists[NUM_TCP_PCB_LISTS];
+ #define TCP_DEBUG_PCB_LISTS 0
+ #endif
+ #if TCP_DEBUG_PCB_LISTS
++#if USE_LIBOS
++#define TCP_REG(pcbs, npcb) do {\
++                            struct tcp_pcb *tcp_tmp_pcb; \
++                            LWIP_DEBUGF(TCP_DEBUG, ("TCP_REG %p local port %d\n", (npcb), (npcb)->local_port)); \
++                            for (tcp_tmp_pcb = *(pcbs); \
++          tcp_tmp_pcb != NULL; \
++        tcp_tmp_pcb = tcp_tmp_pcb->next) { \
++                                LWIP_ASSERT("TCP_REG: already registered\n", tcp_tmp_pcb != (npcb)); \
++                            } \
++                            LWIP_ASSERT("TCP_REG: pcb->state != CLOSED", ((pcbs) == &tcp_bound_pcbs) || ((npcb)->state != CLOSED)); \
++                            if (*pcbs)                                     \
++                               (*pcbs)->prev = npcb;                       \
++                            (npcb)->prev = NULL;                           \
++                            (npcb)->next = *(pcbs); \
++                            LWIP_ASSERT("TCP_REG: npcb->next != npcb", (npcb)->next != (npcb)); \
++                            *(pcbs) = (npcb); \
++                            LWIP_ASSERT("TCP_RMV: tcp_pcbs sane", tcp_pcbs_sane()); \
++              tcp_timer_needed(); \
++                            } while(0)
++#define TCP_RMV(pcbs, npcb) do { \
++                            if (pcb->state == LISTEN)                         \
++                              vdev_reg_done(REG_RING_TCP_LISTEN_CLOSE, npcb); \
++                            else                                              \
++                              vdev_reg_done(REG_RING_TCP_CONNECT_CLOSE, npcb);\
++                            struct tcp_pcb *tcp_tmp_pcb; \
++                            LWIP_ASSERT("TCP_RMV: pcbs != NULL", *(pcbs) != NULL); \
++                            LWIP_DEBUGF(TCP_DEBUG, ("TCP_RMV: removing %p from %p\n", (npcb), *(pcbs))); \
++                            if(*(pcbs) == (npcb)) { \
++                               *(pcbs) = (*pcbs)->next; \
++                               if (*pcbs)                                   \
++                                  (*pcbs)->prev = NULL;                     \
++                            } else { \
++                               struct tcp_pcb *prev, *next;                 \
++                               prev = npcb->prev;                           \
++                               next = npcb->next;                           \
++                               if (prev)                                    \
++                                  prev->next = next;                        \
++                               if (next)                                    \
++                                  next->prev = prev;                        \
++                               } \
++                            } \
++                            (npcb)->prev = NULL; \
++                            (npcb)->next = NULL; \
++                            LWIP_ASSERT("TCP_RMV: tcp_pcbs sane", tcp_pcbs_sane()); \
++                            LWIP_DEBUGF(TCP_DEBUG, ("TCP_RMV: removed %p from %p\n", (npcb), *(pcbs))); \
++                            } while(0)
++
++#else /* USE_LIBOS */
+ #define TCP_REG(pcbs, npcb) do {\
+                             struct tcp_pcb *tcp_tmp_pcb; \
+                             LWIP_DEBUGF(TCP_DEBUG, ("TCP_REG %p local port %"U16_F"\n", (void *)(npcb), (npcb)->local_port)); \
+@@ -387,8 +452,65 @@ extern struct tcp_pcb ** const tcp_pcb_lists[NUM_TCP_PCB_LISTS];
+                             LWIP_DEBUGF(TCP_DEBUG, ("TCP_RMV: removed %p from %p\n", (void *)(npcb), (void *)(*(pcbs)))); \
+                             } while(0)
+ 
++#endif /* USE_LIBOS */
+ #else /* LWIP_DEBUG */
+ 
++#if TCP_PCB_HASH
++#define TCP_REG_HASH(pcbs, npcb)                   \
++  do {                                             \
++    u32_t idx;                                     \
++    struct hlist_head *hd;                         \
++    struct tcp_hash_table *htb = pcbs;             \
++    idx = TUPLE4_HASH_FN((npcb)->local_ip.addr, (npcb)->local_port,  \
++                       (npcb)->remote_ip.addr, (npcb)->remote_port) & \
++                       (htb->size - 1);            \
++    hd = &htb->array[idx].chain;                   \
++    hlist_add_head(&(npcb)->tcp_node, hd);         \
++    tcp_timer_needed();                            \
++  } while (0)
++
++#define TCP_RMV_HASH(pcbs, npcb)                   \
++  do {                                             \
++    hlist_del_init(&(npcb)->tcp_node);             \
++  } while (0)
++#endif /* TCP_PCB_HASH */
++
++#if USE_LIBOS
++#define TCP_REG(pcbs, npcb)                        \
++  do {                                             \
++    if (*pcbs)                                     \
++      (*pcbs)->prev = npcb;                        \
++    (npcb)->prev = NULL;                           \
++    (npcb)->next = *pcbs;                          \
++    *(pcbs) = (npcb);                              \
++    tcp_timer_needed();                            \
++  } while (0)
++
++#define TCP_RMV(pcbs, npcb)                        \
++  do {                                             \
++    if (pcb->state == LISTEN)                         \
++      vdev_reg_done(REG_RING_TCP_LISTEN_CLOSE, npcb); \
++    else                                              \
++      vdev_reg_done(REG_RING_TCP_CONNECT_CLOSE, npcb);\
++    if(*(pcbs) == (npcb)) {                        \
++      (*(pcbs)) = (*pcbs)->next;                   \
++      if (*pcbs)                                   \
++        (*pcbs)->prev = NULL;                      \
++    }                                              \
++    else {                                         \
++      struct tcp_pcb *prev, *next;                 \
++      prev = npcb->prev;                           \
++      next = npcb->next;                           \
++      if (prev)                                    \
++        prev->next = next;                         \
++      if (next)                                    \
++        next->prev = prev;                         \
++    }                                              \
++    (npcb)->prev = NULL;                           \
++    (npcb)->next = NULL;                           \
++  } while(0)
++
++#else /* USE_LIBOS */
+ #define TCP_REG(pcbs, npcb)                        \
+   do {                                             \
+     (npcb)->next = *pcbs;                          \
+@@ -415,8 +537,32 @@ extern struct tcp_pcb ** const tcp_pcb_lists[NUM_TCP_PCB_LISTS];
+     (npcb)->next = NULL;                           \
+   } while(0)
+ 
++#endif /* USE_LIBOS */
+ #endif /* LWIP_DEBUG */
+ 
++
++#if TCP_PCB_HASH
++#define TCP_REG_ACTIVE_HASH(npcb)                  \
++  do {                                             \
++    TCP_REG_HASH(tcp_active_htable, npcb);         \
++    tcp_active_pcbs_changed = 1;                   \
++  } while (0)
++
++#define TCP_RMV_ACTIVE_HASH(npcb)                  \
++  do {                                             \
++    TCP_RMV_HASH(tcp_active_htable, npcb);         \
++    tcp_active_pcbs_changed = 1;                   \
++  } while (0)
++
++#define TCP_PCB_REMOVE_ACTIVE_HASH(pcb)            \
++  do {                                             \
++    tcp_pcb_remove_hash(tcp_active_htable, pcb);   \
++    tcp_active_pcbs_changed = 1;                   \
++  } while (0)
++
++void tcp_pcb_remove_hash(struct tcp_hash_table *htb, struct tcp_pcb *pcb);
++#endif /* TCP_PCB_HASH */
++
+ #define TCP_REG_ACTIVE(npcb)                       \
+   do {                                             \
+     TCP_REG(&tcp_active_pcbs, npcb);               \
+diff --git a/src/include/lwip/prot/ip4.h b/src/include/lwip/prot/ip4.h
+index 9347461..c9ad89c 100644
+--- a/src/include/lwip/prot/ip4.h
++++ b/src/include/lwip/prot/ip4.h
+@@ -81,6 +81,21 @@ struct ip_hdr {
+   PACK_STRUCT_FIELD(u16_t _id);
+   /* fragment offset field */
+   PACK_STRUCT_FIELD(u16_t _offset);
++
++/* avoid conflicts with netinet/ip.h */
++#ifdef IP_RF
++#undef IP_RF
++#endif
++#ifdef IP_DF
++#undef IP_DF
++#endif
++#ifdef IP_MF
++#undef IP_MF
++#endif
++#ifdef IP_OFFMASK
++#undef IP_OFFMASK
++#endif
++
+ #define IP_RF 0x8000U        /* reserved fragment flag */
+ #define IP_DF 0x4000U        /* don't fragment flag */
+ #define IP_MF 0x2000U        /* more fragments flag */
+diff --git a/src/include/lwip/sockets.h b/src/include/lwip/sockets.h
+index d70d36c..345e26c 100644
+--- a/src/include/lwip/sockets.h
++++ b/src/include/lwip/sockets.h
+@@ -57,6 +57,11 @@ extern "C" {
+ 
+ /* If your port already typedef's sa_family_t, define SA_FAMILY_T_DEFINED
+    to prevent this code from redefining it. */
++#if USE_LIBOS
++#define SA_FAMILY_T_DEFINED
++  typedef u16_t sa_family_t;
++#endif
++
+ #if !defined(sa_family_t) && !defined(SA_FAMILY_T_DEFINED)
+ typedef u8_t sa_family_t;
+ #endif
+@@ -69,7 +74,9 @@ typedef u16_t in_port_t;
+ #if LWIP_IPV4
+ /* members are in network byte order */
+ struct sockaddr_in {
++#if !USE_LIBOS
+   u8_t            sin_len;
++#endif
+   sa_family_t     sin_family;
+   in_port_t       sin_port;
+   struct in_addr  sin_addr;
+@@ -90,7 +97,9 @@ struct sockaddr_in6 {
+ #endif /* LWIP_IPV6 */
+ 
+ struct sockaddr {
++#if !USE_LIBOS
+   u8_t        sa_len;
++#endif
+   sa_family_t sa_family;
+   char        sa_data[14];
+ };
+@@ -189,6 +198,9 @@ struct ifreq {
+ #define SOCK_DGRAM      2
+ #define SOCK_RAW        3
+ 
++#if USE_LIBOS
++#include <asm/socket.h>
++#else
+ /*
+  * Option flags per-socket. These must match the SOF_ flags in ip.h (checked in init.c)
+  */
+@@ -221,6 +233,12 @@ struct ifreq {
+ #define SO_BINDTODEVICE 0x100b /* bind to device */
+ 
+ /*
++ * Level number for (get/set)sockopt() to apply to socket itself.
++ */
++#define  SOL_SOCKET  0xfff    /* options for socket level */
++#endif /* USE_LIBOS */
++
++/*
+  * Structure used for manipulating linger option.
+  */
+ struct linger {
+@@ -228,11 +246,6 @@ struct linger {
+   int l_linger;               /* linger time in seconds */
+ };
+ 
+-/*
+- * Level number for (get/set)sockopt() to apply to socket itself.
+- */
+-#define  SOL_SOCKET  0xfff    /* options for socket level */
+-
+ 
+ #define AF_UNSPEC       0
+ #define AF_INET         2
+@@ -276,11 +289,20 @@ struct linger {
+ /*
+  * Options for level IPPROTO_TCP
+  */
++#if USE_LIBOS
++/* come from netinet/tcp.h */
++#define TCP_NODELAY    0x01    /* don't delay send to coalesce packets */
++#define TCP_KEEPALIVE  0x24    /* send KEEPALIVE probes when idle for pcb->keep_idle milliseconds */
++#define TCP_KEEPIDLE   0x04    /* set pcb->keep_idle  - Same as TCP_KEEPALIVE, but use seconds for get/setsockopt */
++#define TCP_KEEPINTVL  0x05    /* set pcb->keep_intvl - Use seconds for get/setsockopt */
++#define TCP_KEEPCNT    0x06    /* set pcb->keep_cnt   - Use number of probes sent for get/setsockopt */
++#else /* USE_LIBOS */
+ #define TCP_NODELAY    0x01    /* don't delay send to coalesce packets */
+ #define TCP_KEEPALIVE  0x02    /* send KEEPALIVE probes when idle for pcb->keep_idle milliseconds */
+ #define TCP_KEEPIDLE   0x03    /* set pcb->keep_idle  - Same as TCP_KEEPALIVE, but use seconds for get/setsockopt */
+ #define TCP_KEEPINTVL  0x04    /* set pcb->keep_intvl - Use seconds for get/setsockopt */
+ #define TCP_KEEPCNT    0x05    /* set pcb->keep_cnt   - Use number of probes sent for get/setsockopt */
++#endif /* USE_LIBOS */
+ #endif /* LWIP_TCP */
+ 
+ #if LWIP_IPV6
+@@ -483,12 +505,30 @@ typedef struct fd_set
+   unsigned char fd_bits [(FD_SETSIZE+7)/8];
+ } fd_set;
+ 
+-#elif FD_SETSIZE < (LWIP_SOCKET_OFFSET + MEMP_NUM_NETCONN)
++#elif FD_SETSIZE < (LWIP_SOCKET_OFFSET + MEMP_NUM_NETCONN) && !USE_LIBOS
+ #error "external FD_SETSIZE too small for number of sockets"
+ #else
+ #define LWIP_SELECT_MAXNFDS FD_SETSIZE
+ #endif /* FD_SET */
+ 
++#if USE_LIBOS
++#if !defined(POLLIN) && !defined(POLLOUT)
++/* come from bits/poll.h */
++#define POLLIN     0x001
++#define POLLOUT    0x004
++#define POLLERR    0x008
++#define POLLNVAL   0x020
++/* Below values are unimplemented */
++#define POLLRDNORM 0x040
++#define POLLRDBAND 0x080
++#define POLLPRI    0x002
++#define POLLWRNORM 0x100
++#define POLLWRBAND 0x200
++#define POLLHUP    0x010
++#endif
++#endif /* USE_LIBOS */
++
++#if LWIP_SOCKET_POLL
+ /* poll-related defines and types */
+ /* @todo: find a better way to guard the definition of these defines and types if already defined */
+ #if !defined(POLLIN) && !defined(POLLOUT)
+@@ -511,6 +551,7 @@ struct pollfd
+   short revents;
+ };
+ #endif
++#endif /* LWIP_SOCKET_POLL */
+ 
+ /** LWIP_TIMEVAL_PRIVATE: if you want to use the struct timeval provided
+  * by your system, set this to 0 and include <sys/time.h> in cc.h */
+@@ -603,8 +644,15 @@ int lwip_select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptse
+ #if LWIP_SOCKET_POLL
+ int lwip_poll(struct pollfd *fds, nfds_t nfds, int timeout);
+ #endif
++
++#if USE_LIBOS
++int lwip_ioctl(int s, long cmd, ...);
++int lwip_fcntl(int s, int cmd, ...);
++#else
+ int lwip_ioctl(int s, long cmd, void *argp);
+ int lwip_fcntl(int s, int cmd, int val);
++#endif /* USE_LIBOS */
++
+ const char *lwip_inet_ntop(int af, const void *src, char *dst, socklen_t size);
+ int lwip_inet_pton(int af, const char *src, void *dst);
+ 
+@@ -670,10 +718,17 @@ int lwip_inet_pton(int af, const char *src, void *dst);
+ #define writev(s,iov,iovcnt)                      lwip_writev(s,iov,iovcnt)
+ /** @ingroup socket */
+ #define close(s)                                  lwip_close(s)
++
++#if USE_LIBOS
++#define fcntl(s,cmd...)                           lwip_fcntl(s,cmd)
++#define ioctl(s,cmd...)                           lwip_ioctl(s,cmd)
++#else
+ /** @ingroup socket */
+ #define fcntl(s,cmd,val)                          lwip_fcntl(s,cmd,val)
+ /** @ingroup socket */
+ #define ioctl(s,cmd,argp)                         lwip_ioctl(s,cmd,argp)
++#endif /* USE_LIBOS */
++
+ #endif /* LWIP_POSIX_SOCKETS_IO_NAMES */
+ #endif /* LWIP_COMPAT_SOCKETS != 2 */
+ 
+diff --git a/src/include/lwip/stats.h b/src/include/lwip/stats.h
+index b570dba..4470531 100644
+--- a/src/include/lwip/stats.h
++++ b/src/include/lwip/stats.h
+@@ -301,7 +301,7 @@ struct stats_ {
+ };
+ 
+ /** Global variable containing lwIP internal statistics. Add this to your debugger's watchlist. */
+-extern struct stats_ lwip_stats;
++extern PER_THREAD struct stats_ lwip_stats;
+ 
+ /** Init statistics */
+ void stats_init(void);
+@@ -467,6 +467,8 @@ void stats_init(void);
+ #define MIB2_STATS_INC(x)
+ #endif
+ 
++int get_mib2_stats(char *buf);
++
+ /* Display of statistics */
+ #if LWIP_STATS_DISPLAY
+ void stats_display(void);
+diff --git a/src/include/lwip/tcp.h b/src/include/lwip/tcp.h
+index daf7599..4f86b46 100644
+--- a/src/include/lwip/tcp.h
++++ b/src/include/lwip/tcp.h
+@@ -51,6 +51,11 @@
+ #include "lwip/ip6.h"
+ #include "lwip/ip6_addr.h"
+ 
++#if TCP_PCB_HASH
++#include "lwip/sys.h"
++#include "hlist.h"
++#endif
++
+ #ifdef __cplusplus
+ extern "C" {
+ #endif
+@@ -209,15 +214,27 @@ typedef u16_t tcpflags_t;
+ /**
+  * members common to struct tcp_pcb and struct tcp_listen_pcb
+  */
++#if USE_LIBOS
+ #define TCP_PCB_COMMON(type) \
+   type *next; /* for the linked list */ \
++  type *prev; /* for the linked list */ \
+   void *callback_arg; \
+   TCP_PCB_EXTARGS \
+   enum tcp_state state; /* TCP state */ \
+   u8_t prio; \
+   /* ports are in host byte order */ \
+   u16_t local_port
+-
++  
++#else /* USE_LIBOS */
++#define TCP_PCB_COMMON(type) \
++  type *next; /* for the linked list */ \
++  void *callback_arg; \
++  TCP_PCB_EXTARGS \
++  enum tcp_state state; /* TCP state */ \
++  u8_t prio; \
++  /* ports are in host byte order */ \
++  u16_t local_port
++#endif /* USE_LIBOS */
+ 
+ /** the TCP protocol control block for listening pcbs */
+ struct tcp_pcb_listen {
+@@ -244,6 +261,9 @@ struct tcp_pcb {
+   IP_PCB;
+ /** protocol specific PCB members */
+   TCP_PCB_COMMON(struct tcp_pcb);
++#if TCP_PCB_HASH
++  struct hlist_node tcp_node;
++#endif
+ 
+   /* ports are in host byte order */
+   u16_t remote_port;
+@@ -388,6 +408,58 @@ struct tcp_pcb {
+ #endif
+ };
+ 
++#if TCP_PCB_HASH
++#define TCP_HTABLE_SIZE MEMP_NUM_NETCONN*12
++
++struct tcp_hashbucket
++{
++  sys_mutex_t mutex;
++  struct hlist_head chain;
++};
++
++struct tcp_hash_table
++{
++  u32_t size;
++  struct tcp_hashbucket array[TCP_HTABLE_SIZE];
++};
++
++extern PER_THREAD struct tcp_hash_table *tcp_active_htable; /* key: lport/fport/lip/fip */
++
++#define JHASH_INITVAL		0xdeadbeef
++
++static inline unsigned int rol32(unsigned int word, unsigned int shift)
++{
++  return (word << shift) | (word >> (32 - shift));
++}
++
++#define __jhash_final(a, b, c)			\
++{						\
++  c ^= b; c -= rol32(b, 14);		\
++  a ^= c; a -= rol32(c, 11);		\
++  b ^= a; b -= rol32(a, 25);		\
++  c ^= b; c -= rol32(b, 16);		\
++  a ^= c; a -= rol32(c, 4);		\
++  b ^= a; b -= rol32(a, 14);		\
++  c ^= b; c -= rol32(b, 24);		\
++}
++
++static inline unsigned int jhash_3words(unsigned int a, unsigned int b, unsigned int c)
++{
++  a += JHASH_INITVAL;
++  b += JHASH_INITVAL;;
++
++  __jhash_final(a, b, c);
++
++  return c;
++}
++
++#define TUPLE4_HASH_FN(laddr, lport, faddr, fport)	 jhash_3words(laddr, faddr,lport|(fport<<16))
++
++#define tcppcb_hlist_for_each(tcppcb, node, list) \
++  hlist_for_each_entry(tcppcb, node, list, tcp_node)
++
++#endif /* TCP_PCB_HASH */
++
+ #if LWIP_EVENT_API
+ 
+ enum lwip_event {
+@@ -481,6 +553,26 @@ err_t            tcp_tcp_get_tcp_addrinfo(struct tcp_pcb *pcb, int local, ip_add
+ 
+ #define tcp_dbg_get_tcp_state(pcb) ((pcb)->state)
+ 
++enum tcp_list_state {
++  ACTIVE_LIST,
++  LISTEN_LIST,
++  TIME_WAIT_LIST,
++};
++
++struct tcp_pcb_dp {
++  uint32_t state;
++  uint32_t lip;
++  uint32_t rip;
++  uint16_t l_port;
++  uint16_t r_port;
++  uint32_t r_next;
++  uint32_t s_next;
++  uint32_t tcp_sub_state;
++};
++
++void tcp_get_conn(char *buf, int32_t len, uint32_t *conn_num);
++uint32_t tcp_get_conn_num(void);
++
+ /* for compatibility with older implementation */
+ #define tcp_new_ip6() tcp_new_ip_type(IPADDR_TYPE_V6)
+ 
+diff --git a/src/include/lwip/tcpip.h b/src/include/lwip/tcpip.h
+index 0b8880a..d2c2440 100644
+--- a/src/include/lwip/tcpip.h
++++ b/src/include/lwip/tcpip.h
+@@ -51,7 +51,7 @@ extern "C" {
+ 
+ #if LWIP_TCPIP_CORE_LOCKING
+ /** The global semaphore to lock the stack. */
+-extern sys_mutex_t lock_tcpip_core;
++extern PER_THREAD sys_mutex_t lock_tcpip_core;
+ #if !defined LOCK_TCPIP_CORE || defined __DOXYGEN__
+ /** Lock lwIP core mutex (needs @ref LWIP_TCPIP_CORE_LOCKING 1) */
+ #define LOCK_TCPIP_CORE()     sys_mutex_lock(&lock_tcpip_core)
+diff --git a/src/include/lwip/timeouts.h b/src/include/lwip/timeouts.h
+index b601f9e..b451554 100644
+--- a/src/include/lwip/timeouts.h
++++ b/src/include/lwip/timeouts.h
+@@ -119,6 +119,10 @@ struct sys_timeo** sys_timeouts_get_next_timeout(void);
+ void lwip_cyclic_timer(void *arg);
+ #endif
+ 
++#if USE_LIBOS
++void sys_timer_run(void);
++#endif /* USE_LIBOS */
++
+ #endif /* LWIP_TIMERS */
+ 
+ #ifdef __cplusplus
+diff --git a/src/include/lwiplog.h b/src/include/lwiplog.h
+new file mode 100644
+index 0000000..363e516
+--- /dev/null
++++ b/src/include/lwiplog.h
+@@ -0,0 +1,81 @@
++/*
++ * Copyright (c) 2001-2004 Swedish Institute of Computer Science.
++ * All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without modification,
++ * are permitted provided that the following conditions are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ * 3. The name of the author may not be used to endorse or promote products
++ *    derived from this software without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
++ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
++ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
++ * SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
++ * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
++ * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
++ * OF SUCH DAMAGE.
++ *
++ * This file is part of the lwIP TCP/IP stack.
++ *
++ * Author: Huawei Technologies
++ *
++ */
++
++#ifndef __LWIPLOG_H__
++#define __LWIPLOG_H__
++
++#include <stdio.h>
++#include <sys/syscall.h>
++
++#include <rte_log.h>
++
++#include "lwipopts.h"
++
++#define gettid()    syscall(__NR_gettid)
++
++#if USE_DPDK_LOG
++
++#define LWIP_LOG_WARN   LWIP_DBG_LEVEL_WARNING
++#define LWIP_LOG_ERROR  LWIP_DBG_LEVEL_SERIOUS
++#define LWIP_LOG_FATAL  LWIP_DBG_LEVEL_SEVERE
++
++#define LWIP_PLATFORM_LOG(level, fmt, ...) \
++do { \
++    if ((level) & LWIP_LOG_FATAL) { \
++        RTE_LOG(ERR, EAL, fmt, ##__VA_ARGS__); \
++        abort();                             \
++    } else if ((level) & LWIP_LOG_ERROR) { \
++        RTE_LOG(ERR, EAL, fmt, ##__VA_ARGS__); \
++    } else if ((level) & LWIP_LOG_WARN) { \
++        RTE_LOG(WARNING, EAL, fmt, ##__VA_ARGS__); \
++    } else { \
++        RTE_LOG(INFO, EAL, fmt, ##__VA_ARGS__); \
++    } \
++} while(0)
++
++
++#define LWIP_PLATFORM_DIAG(x)
++
++#define ESC_ARGS(...) __VA_ARGS__
++#define STRIP_BRACES(args) args
++
++#define LWIP_PLATFORM_ASSERT(x) \
++do { LWIP_PLATFORM_LOG(LWIP_LOG_FATAL, "Assertion \"%s\" failed at line %d in %s\n", \
++     x, __LINE__, __FILE__); abort();} while(0)
++
++#else
++
++#define LWIP_PLATFORM_LOG(debug, message)
++
++#endif /* USE_DPDK_LOG */
++
++#endif /* __LWIPLOG_H__ */
+diff --git a/src/include/lwipopts.h b/src/include/lwipopts.h
+index 4ab26f2..8893a5f 100644
+--- a/src/include/lwipopts.h
++++ b/src/include/lwipopts.h
+@@ -1,8 +1,8 @@
+ /*
+- * Copyright (c) 2001-2003 Swedish Institute of Computer Science.
+- * All rights reserved. 
+- * 
+- * Redistribution and use in source and binary forms, with or without modification, 
++ * Copyright (c) 2001-2004 Swedish Institute of Computer Science.
++ * All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without modification,
+  * are permitted provided that the following conditions are met:
+  *
+  * 1. Redistributions of source code must retain the above copyright notice,
+@@ -11,70 +11,193 @@
+  *    this list of conditions and the following disclaimer in the documentation
+  *    and/or other materials provided with the distribution.
+  * 3. The name of the author may not be used to endorse or promote products
+- *    derived from this software without specific prior written permission. 
++ *    derived from this software without specific prior written permission.
+  *
+- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED 
+- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
+- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT 
+- * SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, 
+- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT 
+- * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
+- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
+- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING 
+- * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY 
++ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
++ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
++ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
++ * SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
++ * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
++ * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
+  * OF SUCH DAMAGE.
+  *
+  * This file is part of the lwIP TCP/IP stack.
+- * 
+- * Author: Simon Goldschmidt
++ *
++ * Author: Huawei Technologies
+  *
+  */
+-#ifndef LWIP_HDR_LWIPOPTS_H__
+-#define LWIP_HDR_LWIPOPTS_H__
+-
+-/* Prevent having to link sys_arch.c (we don't test the API layers in unit tests) */
+-#define NO_SYS                          1
+-#define LWIP_NETCONN                    0
+-#define LWIP_SOCKET                     0
+-#define SYS_LIGHTWEIGHT_PROT            0
+-
+-#define LWIP_IPV6                       1
+-#define IPV6_FRAG_COPYHEADER            1
+-#define LWIP_IPV6_DUP_DETECT_ATTEMPTS   0
+-
+-/* Enable some protocols to test them */
+-#define LWIP_DHCP                       1
+-#define LWIP_AUTOIP                     1
+-
+-#define LWIP_IGMP                       1
+-#define LWIP_DNS                        1
+-
+-#define LWIP_ALTCP                      1
+-
+-/* Turn off checksum verification of fuzzed data */
+-#define CHECKSUM_CHECK_IP               0
+-#define CHECKSUM_CHECK_UDP              0
+-#define CHECKSUM_CHECK_TCP              0
+-#define CHECKSUM_CHECK_ICMP             0
+-#define CHECKSUM_CHECK_ICMP6            0
+-
+-/* Minimal changes to opt.h required for tcp unit tests: */
+-#define MEM_SIZE                        16000
+-#define TCP_SND_QUEUELEN                40
+-#define MEMP_NUM_TCP_SEG                TCP_SND_QUEUELEN
+-#define TCP_OVERSIZE                    1
+-#define TCP_SND_BUF                     (12 * TCP_MSS)
+-#define TCP_WND                         (10 * TCP_MSS)
+-#define LWIP_WND_SCALE                  1
+-#define TCP_RCV_SCALE                   2
+-#define PBUF_POOL_SIZE                  400 /* pbuf tests need ~200KByte */
+-
+-/* Minimal changes to opt.h required for etharp unit tests: */
+-#define ETHARP_SUPPORT_STATIC_ENTRIES   1
+-
+-#define LWIP_NUM_NETIF_CLIENT_DATA      1
+-#define LWIP_SNMP                       1
+-#define MIB2_STATS                      1
+-#define LWIP_MDNS_RESPONDER             1
+-
+-#endif /* LWIP_HDR_LWIPOPTS_H__ */
++
++#ifndef __LWIPOPTS_H__
++#define __LWIPOPTS_H__
++
++#define LWIP_TCPIP_CORE_LOCKING 1
++
++#define LWIP_NETCONN_SEM_PER_THREAD 0
++
++#define LWIP_TCP 1
++
++#define LWIP_SO_SENTIMEO 0
++
++#define LIP_SO_LINGER 0
++
++#define MEMP_USE_CUSTOM_POOLS 0
++#define MEM_USE_POOLS 0
++
++#define PER_TCP_PCB_BUFFER (16 * 128)
++
++#define MAX_CLIENTS (20000)
++
++#define RESERVED_CLIENTS (2000)
++
++#define MEMP_NUM_TCP_PCB (MAX_CLIENTS + RESERVED_CLIENTS)
++
++/* we use PBUF_POOL instead of PBUF_RAM in tcp_write, so reduce PBUF_RAM size,
++ * and do NOT let PBUF_POOL_BUFSIZE less then TCP_MSS
++*/
++#define MEM_SIZE (((PER_TCP_PCB_BUFFER + 128) * MEMP_NUM_TCP_SEG) >> 2)
++
++#define MEMP_NUM_TCP_PCB_LISTEN 3000
++
++#define MEMP_NUM_TCP_SEG (128 * 128 * 2)
++
++#define MEMP_NUM_NETCONN (MAX_CLIENTS + RESERVED_CLIENTS)
++
++#define MEMP_NUM_SYS_SEM (MAX_CLIENTS + RESERVED_CLIENTS)
++
++#define MEMP_NUM_SYS_MBOX (MAX_CLIENTS + RESERVED_CLIENTS)
++
++#define PBUF_POOL_SIZE (MAX_CLIENTS * 2)
++
++#define MEMP_MEM_MALLOC 0
++
++#define LWIP_ARP 1
++
++#define ETHARP_SUPPORT_STATIC_ENTRIES 1
++
++#define LWIP_IPV4 1
++
++#define IP_FORWARD 0
++
++#define IP_REASSEMBLY 1
++
++#define LWIP_UDP 0
++
++#define LWIP_TCP 1
++
++#define IP_HLEN 20
++
++#define TCP_HLEN 20
++
++#define FRAME_MTU 1500
++
++#define TCP_MSS (FRAME_MTU - IP_HLEN - TCP_HLEN)
++
++#define TCP_WND (40 * TCP_MSS)
++
++#define TCP_SND_BUF (5 * TCP_MSS)
++
++#define TCP_SND_QUEUELEN (8191)
++
++#define TCP_SNDLOWAT (TCP_SND_BUF / 5)
++
++#define TCP_SNDQUEUELOWAT (TCP_SND_QUEUELEN / 5)
++
++#define TCP_LISTEN_BACKLOG 1
++
++#define TCP_DEFAULT_LISTEN_BACKLOG 0xff
++
++#define TCP_OVERSIZE 0
++
++#define LWIP_NETIF_API 1
++
++#define DEFAULT_TCP_RECVMBOX_SIZE 128
++
++#define DEFAULT_ACCEPTMBOX_SIZE 1024
++
++#define LWIP_NETCONN 1
++
++#define LWIP_TCPIP_TIMEOUT 0
++
++#define LWIP_SOCKET 1
++
++#define LWIP_TCP_KEEPALIVE 1
++
++#define LWIP_STATS 1
++
++#define LWIP_STATS_DISPLAY 1
++
++#define CHECKSUM_GEN_IP 1 /*  master switch */
++
++#define CHECKSUM_GEN_TCP 1 /* master switch */
++
++#define CHECKSUM_CHECK_IP 1 /*  master switch */
++
++#define CHECKSUM_CHECK_TCP 1 /*  master switch */
++
++#define LWIP_TIMEVAL_PRIVATE 0
++
++#define USE_LIBOS 1
++
++#define LWIP_DEBUG 1
++
++#define LWIP_PERF 1
++
++#define LWIP_RECORD_PERF 0
++
++#define LWIP_SOCKET_POLL   0
++
++#define USE_LIBOS_ZC_RING 0
++
++#define SO_REUSE 1
++
++#define SIOCSHIWAT 1
++
++#define O_NONBLOCK 04000 /* same as define in bits/fcntl-linux.h */
++
++#define O_NDELAY O_NONBLOCK
++
++#define FIONBIO 0x5421 /* same as define in asm-generic/ioctls.h */
++
++#define LWIP_SUPPORT_CUSTOM_PBUF 1
++
++#define MEM_LIBC_MALLOC 0
++
++#define LWIP_TIMERS 1
++
++#define TCPIP_MBOX_SIZE (MEMP_NUM_TCPIP_MSG_API)
++
++#define TCP_PCB_HASH 1
++
++#define USE_DPDK_LOG 1
++
++#define LWIP_EPOOL_WAIT_MAX_EVENTS 30
++
++#define ARP_TABLE_SIZE 512
++
++/*
++   ---------------------------------------
++   ------- Syscall thread options --------
++   ---------------------------------------
++*/
++#define USE_SYSCALL_THREAD 1
++
++#define MAX_BLOCKING_ACCEPT_FD (100)
++
++#define MAX_BLOCKING_CONNECT_FD (100)
++
++#define MAX_BLOCKING_EPOLL_FD (100)
++
++#define MAX_SYSCALL_EVENTS (MAX_BLOCKING_ACCEPT_FD + MAX_BLOCKING_CONNECT_FD + MAX_BLOCKING_EPOLL_FD)
++
++#define MAX_HOST_FD (MAX_CLIENTS + RESERVED_CLIENTS)
++
++#if USE_LIBOS
++#define PER_THREAD __thread
++#else
++#define PER_THREAD
++#endif
++
++#endif /* __LWIPOPTS_H__ */
+diff --git a/src/include/lwipsock.h b/src/include/lwipsock.h
+new file mode 100644
+index 0000000..dbc67b9
+--- /dev/null
++++ b/src/include/lwipsock.h
+@@ -0,0 +1,155 @@
++/*
++ * Copyright (c) 2001-2004 Swedish Institute of Computer Science.
++ * All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without modification,
++ * are permitted provided that the following conditions are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ * 3. The name of the author may not be used to endorse or promote products
++ *    derived from this software without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
++ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
++ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
++ * SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
++ * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
++ * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
++ * OF SUCH DAMAGE.
++ *
++ * This file is part of the lwIP TCP/IP stack.
++ *
++ * Author: Huawei Technologies
++ *
++ */
++
++#ifndef __LWIPSOCK_H__
++#define __LWIPSOCK_H__
++
++#include "lwip/opt.h"
++#include "lwip/api.h"
++
++#include "posix_api.h"
++#include "eventpoll.h"
++
++/* move some definitions to the lwipsock.h for libnet to use, and
++ * at the same time avoid conflict between lwip/sockets.h and sys/socket.h
++ */
++
++/* --------------------------------------------------
++ * the following definition is copied from lwip/priv/tcpip_priv.h
++ * --------------------------------------------------
++ */
++
++/** This is overridable for the rare case where more than 255 threads
++ * select on the same socket...
++ */
++#ifndef SELWAIT_T
++#define SELWAIT_T u8_t
++#endif
++
++union lwip_sock_lastdata {
++  struct netbuf *netbuf;
++  struct pbuf *pbuf;
++};
++
++/** Contains all internal pointers and states used for a socket */
++struct lwip_sock {
++  /** sockets currently are built on netconns, each socket has one netconn */
++  struct netconn *conn;
++  /** data that was left from the previous read */
++  union lwip_sock_lastdata lastdata;
++#if LWIP_SOCKET_SELECT || LWIP_SOCKET_POLL
++  /** number of times data was received, set by event_callback(),
++      tested by the receive and select functions */
++  s16_t rcvevent;
++  /** number of times data was ACKed (free send buffer), set by event_callback(),
++      tested by select */
++  u16_t sendevent;
++  /** error happened for this socket, set by event_callback(), tested by select */
++  u16_t errevent;
++  /** counter of how many threads are waiting for this socket using select */
++  SELWAIT_T select_waiting;
++#endif /* LWIP_SOCKET_SELECT || LWIP_SOCKET_POLL */
++#if LWIP_NETCONN_FULLDUPLEX
++  /* counter of how many threads are using a struct lwip_sock (not the 'int') */
++  u8_t fd_used;
++  /* status of pending close/delete actions */
++  u8_t fd_free_pending;
++#define LWIP_SOCK_FD_FREE_TCP  1
++#define LWIP_SOCK_FD_FREE_FREE 2
++#endif
++
++#if USE_LIBOS
++  struct list_node list;
++  /* registered events */
++  uint32_t epoll;
++  /* available events */
++  uint32_t events;
++  epoll_data_t ep_data;
++  /* libos_epoll pointer in use */
++  struct libos_epoll *epoll_data;
++#endif
++};
++
++#ifndef set_errno
++#define set_errno(err) do { if (err) { errno = (err); } } while(0)
++#endif
++
++
++/* --------------------------------------------------
++ * --------------- LIBNET references ----------------
++ * --------------------------------------------------
++ */
++#if USE_LIBOS
++extern uint32_t sockets_num;
++extern struct lwip_sock *sockets;
++/**
++ * Map a externally used socket index to the internal socket representation.
++ *
++ * @param s externally used socket index
++ * @return struct lwip_sock for the socket or NULL if not found
++ */
++static inline struct lwip_sock *
++get_socket_without_errno(int s)
++{
++  struct lwip_sock *sock = NULL;
++
++  s -= LWIP_SOCKET_OFFSET;
++
++  if ((s < 0) || (s >= sockets_num)) {
++    LWIP_DEBUGF(SOCKETS_DEBUG, ("get_socket(%d): invalid\n", s + LWIP_SOCKET_OFFSET));
++    return NULL;
++  }
++
++  sock = &sockets[s];
++
++  if (!sock->conn) {
++    LWIP_DEBUGF(SOCKETS_DEBUG, ("get_socket(%d): not active\n", s + LWIP_SOCKET_OFFSET));
++    return NULL;
++  }
++
++  return sock;
++}
++#endif /* USE_LIBOS */
++
++struct lwip_sock *get_socket(int s);
++struct lwip_sock *get_socket_by_fd(int s);
++void lwip_sock_init(void);
++void lwip_exit(void);
++
++extern int is_host_ipv4(uint32_t ipv4);
++extern int rearm_host_fd(int fd);
++extern int rearm_accept_fd(int fd);
++extern void unarm_host_fd(int fd);
++extern void clean_host_fd(int fd);
++extern int arm_host_fd(struct libos_epoll *ep, int op, int fd, struct epoll_event *event);
++
++#endif /* __LWIPSOCK_H__ */
+diff --git a/src/include/memp_def.h b/src/include/memp_def.h
+new file mode 100644
+index 0000000..082f685
+--- /dev/null
++++ b/src/include/memp_def.h
+@@ -0,0 +1,66 @@
++/*
++ * Copyright (c) 2001-2004 Swedish Institute of Computer Science.
++ * All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without modification,
++ * are permitted provided that the following conditions are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ * 3. The name of the author may not be used to endorse or promote products
++ *    derived from this software without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
++ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
++ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
++ * SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
++ * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
++ * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
++ * OF SUCH DAMAGE.
++ *
++ * This file is part of the lwIP TCP/IP stack.
++ *
++ * Author: Huawei Technologies
++ *
++ */
++
++#ifndef __MEMP_DEF_H__
++#define __MEMP_DEF_H__
++
++#include "lwip/opt.h"
++#include "arch/cc.h"
++
++#define LWIP_MEMPOOL_BASE_DECLARE(name) \
++    extern void alloc_memp_##name##_base(void);
++
++#define LWIP_MEM_MEMORY_DECLARE(name) \
++    extern void alloc_memory_##name(void);
++
++#define LWIP_MEMPOOL_BASE_INIT(name) \
++    alloc_memp_##name##_base();
++
++#define LWIP_MEM_MEMORY_INIT(name) \
++    alloc_memory_##name();
++
++#define LWIP_MEMPOOL(name, num, size, desc) LWIP_MEMPOOL_BASE_DECLARE(name)
++#include <lwip/priv/memp_std.h>
++#undef LWIP_MEMPOOL
++
++static inline void hugepage_init(void)
++{
++#define LWIP_MEMPOOL(name,num,size,desc)  LWIP_MEMPOOL_BASE_INIT(name)
++#include "lwip/priv/memp_std.h"
++
++#if !MEM_LIBC_MALLOC
++	LWIP_MEM_MEMORY_DECLARE(ram_heap)
++    LWIP_MEM_MEMORY_INIT(ram_heap)
++#endif /* MEM_LIBC_MALLOC */
++}
++
++#endif /* __MEMP_DEF_H__ */
+diff --git a/src/include/posix_api.h b/src/include/posix_api.h
+new file mode 100644
+index 0000000..8aa8516
+--- /dev/null
++++ b/src/include/posix_api.h
+@@ -0,0 +1,88 @@
++/*
++ * Copyright (c) 2001-2004 Swedish Institute of Computer Science.
++ * All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without modification,
++ * are permitted provided that the following conditions are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ * 3. The name of the author may not be used to endorse or promote products
++ *    derived from this software without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
++ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
++ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
++ * SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
++ * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
++ * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
++ * OF SUCH DAMAGE.
++ *
++ * This file is part of the lwIP TCP/IP stack.
++ *
++ * Author: Huawei Technologies
++ *
++ */
++
++#ifndef __POSIX_API_H__
++#define __POSIX_API_H__
++
++#include <signal.h>
++#include <poll.h>
++#include <sys/epoll.h>
++#include <sys/eventfd.h>
++
++typedef struct {
++    void *handle;
++    int (*socket_fn)(int domain, int type, int protocol);
++    int (*accept_fn)(int s, struct sockaddr*, socklen_t*);
++    int (*accept4_fn)(int s, struct sockaddr *addr, socklen_t *addrlen, int flags);
++    int (*bind_fn)(int s, const struct sockaddr*, socklen_t);
++    int (*listen_fn)(int s, int backlog);
++    int (*connect_fn)(int s, const struct sockaddr *name, socklen_t namelen);
++    int (*getpeername_fn)(int s, struct sockaddr *name, socklen_t *namelen);
++    int (*getsockname_fn)(int s, struct sockaddr *name, socklen_t *namelen);
++    int (*setsockopt_fn)(int s, int level, int optname, const void *optval, socklen_t optlen);
++    int (*getsockopt_fn)(int s, int level, int optname, void *optval, socklen_t *optlen);
++    int (*shutdown_fn)(int s, int how);
++    int (*close_fn)(int fd);
++    pid_t (*fork_fn)(void);
++    ssize_t (*read_fn)(int fd, void *mem, size_t len);
++    ssize_t (*write_fn)(int fd, const void *data, size_t len);
++    ssize_t (*recv_fn)(int sockfd, void *buf, size_t len, int flags);
++    ssize_t (*send_fn)(int sockfd, const void *buf, size_t len, int flags);
++    ssize_t (*recv_msg)(int sockfd, const struct msghdr *msg, int flags);
++    ssize_t (*send_msg)(int sockfd, const struct msghdr *msg, int flags);
++    ssize_t (*recv_from)(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen);
++    ssize_t (*send_to)(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, 
++        socklen_t addrlen);
++    int (*fcntl_fn)(int fd, int cmd, ...);
++    int (*fcntl64_fn)(int fd, int cmd, ...);
++    int (*pipe_fn)(int pipefd[2]);
++    int (*epoll_create_fn)(int size);
++    int (*epoll_ctl_fn)(int epfd, int op, int fd, struct epoll_event *event);
++    int (*epoll_wait_fn)(int epfd, struct epoll_event *events, int maxevents, int timeout);
++    int (*epoll_close_fn)(int epfd);
++    int (*eventfd_fn)(unsigned int initval, int flags);
++    int (*is_epfd)(int fd);
++    struct lwip_sock* (*get_socket)(int fd);
++    int (*sigaction_fn)(int signum, const struct sigaction *act, struct sigaction *oldact);
++    int (*poll_fn)(struct pollfd *fds, nfds_t nfds, int timeout);
++    int (*ioctl_fn)(int fd, int cmd, ...);
++
++    int is_chld;
++} posix_api_t;
++
++posix_api_t *posix_api;
++
++int posix_api_init(void);
++void posix_api_free(void);
++void posix_api_fork(void);
++
++#endif /* __POSIX_API_H__ */
+diff --git a/src/include/reg_sock.h b/src/include/reg_sock.h
+new file mode 100644
+index 0000000..76d4c48
+--- /dev/null
++++ b/src/include/reg_sock.h
+@@ -0,0 +1,62 @@
++/*
++ * Copyright (c) 2001-2004 Swedish Institute of Computer Science.
++ * All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without modification,
++ * are permitted provided that the following conditions are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ * 3. The name of the author may not be used to endorse or promote products
++ *    derived from this software without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
++ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
++ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
++ * SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
++ * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
++ * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
++ * OF SUCH DAMAGE.
++ *
++ * This file is part of the lwIP TCP/IP stack.
++ *
++ * Author: Huawei Technologies
++ *
++ */
++
++#ifndef __REG_SOCK_H__
++#define __REG_SOCK_H__
++
++enum reg_ring_type {
++    REG_RING_TCP_LISTEN = 0,
++    REG_RING_TCP_LISTEN_CLOSE,
++    REG_RING_TCP_CONNECT,
++    REG_RING_TCP_CONNECT_CLOSE,
++    RING_REG_MAX,
++};
++
++struct libnet_quintuple {
++	uint32_t protocol;
++    /* net byte order */
++    uint16_t src_port;
++    uint16_t dst_port;
++    uint32_t src_ip;
++    uint32_t dst_ip;
++};
++
++struct reg_ring_msg {
++    enum reg_ring_type type;
++
++    uint32_t tid;
++    struct libnet_quintuple qtuple;
++};
++
++extern int vdev_reg_xmit(enum reg_ring_type type, struct libnet_quintuple *qtuple);
++
++#endif /* __REG_SOCK_H__ */
+\ No newline at end of file
+diff --git a/src/netif/dir.mk b/src/netif/dir.mk
+index 233c79a..f585d5e 100644
+--- a/src/netif/dir.mk
++++ b/src/netif/dir.mk
+@@ -1,3 +1,3 @@
+-SRC = ethernet.c
++SRC = ethernet.c 
+ 
+ $(eval $(call register_dir, netif, $(SRC)))
+-- 
+1.8.3.1
+

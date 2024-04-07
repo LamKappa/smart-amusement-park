@@ -1,0 +1,103 @@
+From b23520dcddbdf088ededeac7a0a1611db73db191 Mon Sep 17 00:00:00 2001
+From: kircher <majun65@huawei.com>
+Date: Mon, 19 Dec 2022 19:23:42 +0800
+Subject: [PATCH] skip unnecessary tcp_route
+
+---
+ src/core/tcp.c         |  1 +
+ src/core/tcp_out.c     | 20 ++++++++++++++++----
+ src/include/lwip/tcp.h |  1 +
+ src/include/lwipsock.h |  1 +
+ 4 files changed, 19 insertions(+), 4 deletions(-)
+
+diff --git a/src/core/tcp.c b/src/core/tcp.c
+index 252f27f..abfcc00 100644
+--- a/src/core/tcp.c
++++ b/src/core/tcp.c
+@@ -2294,6 +2294,7 @@ tcp_pcb_purge(struct tcp_pcb *pcb)
+     tcp_segs_free(pcb->unacked);
+     pcb->unacked = pcb->unsent = NULL;
+     pcb->last_unacked = pcb->last_unsent = NULL;
++    pcb->pcb_if = NULL;
+ #if TCP_OVERSIZE
+     pcb->unsent_oversize = 0;
+ #endif /* TCP_OVERSIZE */
+diff --git a/src/core/tcp_out.c b/src/core/tcp_out.c
+index 25aeb23..1c5734b 100644
+--- a/src/core/tcp_out.c
++++ b/src/core/tcp_out.c
+@@ -1425,7 +1425,12 @@ tcp_output(struct tcp_pcb *pcb)
+                  lwip_ntohl(seg->tcphdr->seqno), pcb->lastack));
+   }
+ 
+-  netif = tcp_route(pcb, &pcb->local_ip, &pcb->remote_ip);
++  if (pcb->pcb_if == NULL) {
++    netif = tcp_route(pcb, &pcb->local_ip, &pcb->remote_ip);
++    pcb->pcb_if = netif;
++  } else {
++    netif = pcb->pcb_if;
++  }
+   if (netif == NULL) {
+     return ERR_RTE;
+   }
+@@ -2220,7 +2225,7 @@ tcp_output_fill_options(const struct tcp_pcb *pcb, struct pbuf *p, u8_t optflags
+  * header checksum and calling ip_output_if while handling netif hints and stats.
+  */
+ static err_t
+-tcp_output_control_segment(const struct tcp_pcb *pcb, struct pbuf *p,
++tcp_output_control_segment(struct tcp_pcb *pcb, struct pbuf *p,
+                            const ip_addr_t *src, const ip_addr_t *dst)
+ {
+   err_t err;
+@@ -2228,7 +2233,14 @@ tcp_output_control_segment(const struct tcp_pcb *pcb, struct pbuf *p,
+ 
+   LWIP_ASSERT("tcp_output_control_segment: invalid pbuf", p != NULL);
+ 
+-  netif = tcp_route(pcb, src, dst);
++  if (pcb == NULL || pcb->pcb_if == NULL) {
++    netif = tcp_route(pcb, src, dst);
++    if (pcb) {
++      pcb->pcb_if = netif;
++    }
++  } else {
++    netif = pcb->pcb_if;
++  }
+   if (netif == NULL) {
+     err = ERR_RTE;
+   } else {
+@@ -2318,7 +2330,7 @@ tcp_rst(const struct tcp_pcb *pcb, u32_t seqno, u32_t ackno,
+ 
+   MIB2_STATS_INC(mib2.tcpoutrsts);
+ 
+-  tcp_output_control_segment(pcb, p, local_ip, remote_ip);
++  tcp_output_control_segment((struct tcp_pcb*)pcb, p, local_ip, remote_ip);
+   LWIP_DEBUGF(TCP_RST_DEBUG, ("tcp_rst: seqno %"U32_F" ackno %"U32_F".\n", seqno, ackno));
+ }
+ 
+diff --git a/src/include/lwip/tcp.h b/src/include/lwip/tcp.h
+index b0ae02c..2a61776 100644
+--- a/src/include/lwip/tcp.h
++++ b/src/include/lwip/tcp.h
+@@ -408,6 +408,7 @@ struct tcp_pcb {
+   u8_t snd_scale;
+   u8_t rcv_scale;
+ #endif
++  struct netif* pcb_if;
+ };
+ 
+ #if TCP_PCB_HASH
+diff --git a/src/include/lwipsock.h b/src/include/lwipsock.h
+index 62e5bf1..ec4d78c 100644
+--- a/src/include/lwipsock.h
++++ b/src/include/lwipsock.h
+@@ -111,6 +111,7 @@ struct lwip_sock {
+   /* stack thread all use */
+   struct list_node recv_list;
+   struct list_node send_list;
++  struct pbuf *lwip_lastdata;
+   struct pbuf *send_lastdata;
+   struct pbuf *send_pre_del;
+ 
+-- 
+2.33.0
+

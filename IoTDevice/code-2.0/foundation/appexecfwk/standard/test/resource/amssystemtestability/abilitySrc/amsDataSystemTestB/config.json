@@ -1,0 +1,50 @@
+{
+    "app":{
+        "bundleName": "com.ohos.amsst.AppDataB",
+        "vendor": "ohos",
+        "version": {
+            "code": 1,
+            "name": "1.0"
+        },
+       "apiVersion": {
+          "compatible": 3,
+          "target": 3
+       }
+    },
+    "deviceConfig": {
+        "default": {
+        }
+    },
+    "module": {
+        "package":"com.ohos.amsst.AppDataB.src",
+        "name":"AmsSystemTestDataB",
+        "deviceType": [
+            "tv",
+            "car"
+        ],
+        "distro": {
+            "deliveryWithInstall": true,
+            "moduleName": "testability",
+            "moduleType": "entry"
+        },
+        "abilities": [{
+            "name": "AmsStDataAbilityPageB",
+            "icon": "$media:snowball",
+            "label": "PageB Ability",
+            "launchType": "standard",
+            "orientation": "unspecified",
+            "type": "page",
+            "visible": true
+            },
+        {
+            "name": "AmsStDataAbilityDataB",
+            "icon": "$media:snowflakes",
+            "label": "DataB Ability",
+            "launchType": "standard",
+            "orientation": "unspecified",
+            "type": "data",
+            "visible": true,
+            "uri": "dataability://com.ohos.amsst.AppDataB.AmsStDataAbilityDataB"
+        }]
+    }
+}

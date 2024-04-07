@@ -1,0 +1,214 @@
+# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/test.gni")
+
+module_output_path = "appexecfwk_standard/moduletest/application_test/"
+
+#APP_INNERKITS_PATH = "//foundation/appexecfwk/standard/interfaces/innerkits"
+ABILITY_INNERKITS_PATH = "//foundation/aafwk/standard/interfaces/innerkits"
+
+###############################################################################
+config("module_private_config") {
+  visibility = [ ":*" ]
+  include_dirs = [
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core/include/appmgr",
+    "//foundation/aafwk/standard/interfaces/innerkits/want/include/ohos/aafwk_L2/content",
+    "//EOSP/communication/libsoftbus/../../../foundation/distributedschedule/dmsfwk/services/dtbschedmgr/include",
+    "//foundation/appexecfwk/standard/kits/appkit/native/test/mock/include",
+
+    #"//foundation/aafwk/standard/frameworks/kits/ability/native/test/mock/include",
+    "//foundation/appexecfwk/standard/kits/appkit/test/Mock/include",
+    "//foundation/appexecfwk/standard/kits/appkit/native/app/include",
+
+    #"//foundation/communication/utils/include",
+    #"//foundation/communication/ipc/ipc/native/src/core/include",
+    #"//foundation/communication/ipc/utils/include",
+  ]
+
+  defines = [
+    "APP_LOG_TAG = \"ApplicationModuleTest\"",
+    "LOG_DOMAIN = 0xD001152",
+  ]
+}
+
+ohos_moduletest("appexecfwk_appkit_native_app_module_test_first") {
+  module_out_path = module_output_path
+  sources = [
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core/src/appmgr/app_mgr_stub.cpp",
+    "Mock/include/mock_app_thread.cpp",
+    "Mock/include/mock_application.cpp",
+
+    #"Mock/include/mock_ipc_object_stub.cpp",
+    "Mock/include/sys_mgr_client_mock.cpp",
+    "moduletest/appexecfwk_appkit_native_app_module_test_first.cpp",
+  ]
+
+  configs = [ ":module_private_config" ]
+  cflags = []
+  if (target_cpu == "arm") {
+    cflags += [ "-DBINDER_IPC_32BIT" ]
+  }
+  deps = [
+    "${ABILITY_INNERKITS_PATH}/want:want",
+    "//foundation/aafwk/standard/frameworks/kits/ability/native:abilitykit_native",
+    "//foundation/aafwk/standard/interfaces/innerkits/ability_manager:ability_manager",
+    "//foundation/aafwk/standard/interfaces/innerkits/base:base",
+    "//foundation/appexecfwk/standard/common:libappexecfwk_common",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_base:appexecfwk_base",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core:appexecfwk_core",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/libeventhandler:libeventhandler",
+    "//foundation/appexecfwk/standard/kits:appkit_native",
+    "//foundation/distributedschedule/samgr/interfaces/innerkits/samgr_proxy:samgr_proxy",
+    "//third_party/googletest:gmock_main",
+    "//third_party/googletest:gtest_main",
+    "//utils/native/base:utils",
+  ]
+
+  external_deps = [
+    "hiviewdfx_hilog_native:libhilog",
+    "ipc:ipc_core",
+  ]
+}
+
+ohos_moduletest("appexecfwk_appkit_native_app_module_test_second") {
+  module_out_path = module_output_path
+  sources = [
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core/src/appmgr/app_mgr_stub.cpp",
+    "Mock/include/mock_app_thread.cpp",
+    "Mock/include/mock_application.cpp",
+
+    #"Mock/include/mock_ipc_object_stub.cpp",
+    "Mock/include/sys_mgr_client_mock.cpp",
+    "moduletest/appexecfwk_appkit_native_app_module_test_second.cpp",
+  ]
+
+  configs = [ ":module_private_config" ]
+  cflags = []
+  if (target_cpu == "arm") {
+    cflags += [ "-DBINDER_IPC_32BIT" ]
+  }
+  deps = [
+    "${ABILITY_INNERKITS_PATH}/want:want",
+    "//foundation/aafwk/standard/frameworks/kits/ability/native:abilitykit_native",
+    "//foundation/aafwk/standard/interfaces/innerkits/ability_manager:ability_manager",
+    "//foundation/aafwk/standard/interfaces/innerkits/base:base",
+    "//foundation/appexecfwk/standard/common:libappexecfwk_common",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_base:appexecfwk_base",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core:appexecfwk_core",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/libeventhandler:libeventhandler",
+    "//foundation/appexecfwk/standard/kits:appkit_native",
+    "//foundation/distributedschedule/samgr/interfaces/innerkits/samgr_proxy:samgr_proxy",
+    "//third_party/googletest:gmock_main",
+    "//third_party/googletest:gtest_main",
+    "//utils/native/base:utils",
+  ]
+
+  external_deps = [
+    "hiviewdfx_hilog_native:libhilog",
+    "ipc:ipc_core",
+  ]
+}
+
+ohos_moduletest("appexecfwk_appkit_native_app_module_test_third") {
+  module_out_path = module_output_path
+  sources = [
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core/src/appmgr/app_mgr_stub.cpp",
+    "Mock/include/mock_app_thread.cpp",
+    "Mock/include/mock_application.cpp",
+
+    #"Mock/include/mock_ipc_object_stub.cpp",
+    "Mock/include/sys_mgr_client_mock.cpp",
+    "moduletest/appexecfwk_appkit_native_app_module_test_third.cpp",
+  ]
+
+  configs = [ ":module_private_config" ]
+  cflags = []
+  if (target_cpu == "arm") {
+    cflags += [ "-DBINDER_IPC_32BIT" ]
+  }
+  deps = [
+    "${ABILITY_INNERKITS_PATH}/want:want",
+    "//foundation/aafwk/standard/frameworks/kits/ability/native:abilitykit_native",
+    "//foundation/aafwk/standard/interfaces/innerkits/ability_manager:ability_manager",
+    "//foundation/aafwk/standard/interfaces/innerkits/base:base",
+    "//foundation/appexecfwk/standard/common:libappexecfwk_common",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_base:appexecfwk_base",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core:appexecfwk_core",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/libeventhandler:libeventhandler",
+    "//foundation/appexecfwk/standard/kits:appkit_native",
+    "//foundation/distributedschedule/samgr/interfaces/innerkits/samgr_proxy:samgr_proxy",
+    "//third_party/googletest:gmock_main",
+    "//third_party/googletest:gtest_main",
+    "//utils/native/base:utils",
+  ]
+
+  external_deps = [
+    "hiviewdfx_hilog_native:libhilog",
+    "ipc:ipc_core",
+  ]
+}
+
+ohos_moduletest("appexecfwk_appkit_native_app_module_test_fourth") {
+  module_out_path = module_output_path
+  sources = [
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core/src/appmgr/app_mgr_stub.cpp",
+    "Mock/include/mock_app_thread.cpp",
+    "Mock/include/mock_application.cpp",
+
+    #"Mock/include/mock_ipc_object_stub.cpp",
+    "Mock/include/sys_mgr_client_mock.cpp",
+    "moduletest/appexecfwk_appkit_native_app_module_test_fourth.cpp",
+  ]
+
+  configs = [ ":module_private_config" ]
+  cflags = []
+  if (target_cpu == "arm") {
+    cflags += [ "-DBINDER_IPC_32BIT" ]
+  }
+  deps = [
+    "${ABILITY_INNERKITS_PATH}/want:want",
+    "//foundation/aafwk/standard/frameworks/kits/ability/native:abilitykit_native",
+    "//foundation/aafwk/standard/interfaces/innerkits/ability_manager:ability_manager",
+    "//foundation/aafwk/standard/interfaces/innerkits/base:base",
+    "//foundation/appexecfwk/standard/common:libappexecfwk_common",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_base:appexecfwk_base",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core:appexecfwk_core",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/libeventhandler:libeventhandler",
+    "//foundation/appexecfwk/standard/kits:appkit_native",
+    "//foundation/distributedschedule/samgr/interfaces/innerkits/samgr_proxy:samgr_proxy",
+    "//third_party/googletest:gmock_main",
+    "//third_party/googletest:gtest_main",
+    "//utils/native/base:utils",
+  ]
+
+  external_deps = [
+    "hiviewdfx_hilog_native:libhilog",
+    "ipc:ipc_core",
+  ]
+}
+
+###############################################################################
+
+group("moduletest") {
+  testonly = true
+  deps = []
+
+  deps += [
+    ":appexecfwk_appkit_native_app_module_test_first",
+    ":appexecfwk_appkit_native_app_module_test_fourth",
+    ":appexecfwk_appkit_native_app_module_test_second",
+    ":appexecfwk_appkit_native_app_module_test_third",
+  ]
+}
+###############################################################################

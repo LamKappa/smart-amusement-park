@@ -1,0 +1,116 @@
+From fdccb3a2c430c6270ff5272220cf471bf760fda7 Mon Sep 17 00:00:00 2001
+From: wuchangsheng <wuchangsheng2@huawei.com>
+Date: Sat, 21 Aug 2021 15:22:52 +0800
+Subject: [PATCH] del tcp_conn
+
+---
+ src/core/tcp.c         | 78 ------------------------------------------
+ src/include/lwip/tcp.h |  3 --
+ 2 files changed, 81 deletions(-)
+
+diff --git a/src/core/tcp.c b/src/core/tcp.c
+index 2cfbce2..0f3e830 100644
+--- a/src/core/tcp.c
++++ b/src/core/tcp.c
+@@ -2484,84 +2484,6 @@ tcp_tcp_get_tcp_addrinfo(struct tcp_pcb *pcb, int local, ip_addr_t *addr, u16_t
+   return ERR_VAL;
+ }
+ 
+-uint32_t tcp_get_conn_num(void)
+-{
+-    struct tcp_pcb *pcb = NULL;
+-    struct tcp_pcb_listen *pcbl = NULL;
+-    uint32_t conn_num = 0;
+-
+-    for (pcb = tcp_active_pcbs; pcb != NULL; pcb = pcb->next) {
+-        conn_num++;
+-    }
+-
+-    for (pcbl = tcp_listen_pcbs.listen_pcbs; pcbl != NULL; pcbl = pcbl->next) {
+-        conn_num++;
+-    }
+-
+-    for (pcb = tcp_tw_pcbs; pcb != NULL; pcb = pcb->next) {
+-        conn_num++;
+-    }
+-
+-    return conn_num;
+-}
+-
+-void tcp_get_conn(char *buf, int32_t len, uint32_t *conn_num)
+-{
+-  int tmp_len = 0;
+-  char *tmp_buf = buf;
+-  struct tcp_pcb_dp tdp;
+-  struct tcp_pcb *pcb = NULL;
+-  struct tcp_pcb_listen *pcbl = NULL;
+-
+-#define COPY_TDP(b, l) \
+-  do { \
+-    if (l + sizeof(tdp) <= len) { \
+-	  memcpy(b, &tdp, sizeof(tdp)); \
+-	  b += sizeof(tdp); \
+-	  l += sizeof(tdp); \
+-      *conn_num += 1; \
+-    } else \
+-      return; \
+-  } while(0);
+-
+-  *conn_num = 0;
+-
+-  for (pcb = tcp_active_pcbs; pcb != NULL; pcb = pcb->next) {
+-    tdp.state = ACTIVE_LIST;
+-    tdp.lip = pcb->local_ip.addr;
+-    tdp.rip = pcb->remote_ip.addr;
+-    tdp.l_port = pcb->local_port;
+-    tdp.r_port = pcb->remote_port;
+-    tdp.s_next = pcb->snd_queuelen;
+-    /* lwip not cache rcv buf. Set it to 0. */
+-    tdp.r_next = 0;
+-    tdp.tcp_sub_state = pcb->state;
+-    COPY_TDP(tmp_buf, tmp_len);
+-  }
+-
+-  for (pcbl = tcp_listen_pcbs.listen_pcbs; pcbl != NULL; pcbl = pcbl->next) {
+-    tdp.state = LISTEN_LIST;
+-    tdp.lip = pcbl->local_ip.addr;
+-    tdp.rip = pcbl->remote_ip.addr;
+-    tdp.l_port = pcbl->local_port;
+-    tdp.tcp_sub_state = pcbl->state;
+-    COPY_TDP(tmp_buf, tmp_len);
+-  }
+-
+-  for (pcb = tcp_tw_pcbs; pcb != NULL; pcb = pcb->next) {
+-    tdp.state = TIME_WAIT_LIST;
+-    tdp.lip = pcb->local_ip.addr;
+-    tdp.rip = pcb->remote_ip.addr;
+-    tdp.l_port = pcb->local_port;
+-    tdp.r_port = pcb->remote_port;
+-    tdp.s_next = pcb->snd_queuelen;
+-    /* lwip not cache rcv buf. Set it to 0. */
+-    tdp.r_next = 0;
+-    tdp.tcp_sub_state = pcb->state;
+-    COPY_TDP(tmp_buf, tmp_len);
+-  }
+-}
+-
+ #if TCP_QUEUE_OOSEQ
+ /* Free all ooseq pbufs (and possibly reset SACK state) */
+ void
+diff --git a/src/include/lwip/tcp.h b/src/include/lwip/tcp.h
+index 4f86b46..b36bf33 100644
+--- a/src/include/lwip/tcp.h
++++ b/src/include/lwip/tcp.h
+@@ -570,9 +570,6 @@ struct tcp_pcb_dp {
+   uint32_t tcp_sub_state;
+ };
+ 
+-void tcp_get_conn(char *buf, int32_t len, uint32_t *conn_num);
+-uint32_t tcp_get_conn_num(void);
+-
+ /* for compatibility with older implementation */
+ #define tcp_new_ip6() tcp_new_ip_type(IPADDR_TYPE_V6)
+ 
+-- 
+2.23.0
+

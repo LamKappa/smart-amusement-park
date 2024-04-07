@@ -1,0 +1,203 @@
+execute ota_builder with python...
+riscv32-unknown-elf-ld -nostdlib -nostartfiles -static --gc-sections -T/home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0/device/hisilicon/hispark_pegasus/sdk_liteos/build/link/flashboot_sha256.lds -Lbuild/libs -Lbuild/libs/boot_libs build/build_tmp/objs/flashboot/boot/commonboot/efuse/efuse_drv.o build/build_tmp/objs/flashboot/boot/commonboot/flash/flash_hw_process_flashboot.o build/build_tmp/objs/flashboot/common/nvm/hi_nvm.o build/build_tmp/objs/flashboot/common/partition_table/boot_partition_table.o build/build_tmp/objs/flashboot/drivers/efuse/efuse.o build/build_tmp/objs/flashboot/drivers/flash/hi_flashboot_flash.o build/build_tmp/objs/flashboot/drivers/gpio/hi_flashboot_gpio.o build/build_tmp/objs/flashboot/drivers/io/hi_flashboot_io.o build/build_tmp/objs/flashboot/drivers/lsadc/adc_drv.o build/build_tmp/objs/flashboot/lzmaram/lzmaram.o build/build_tmp/objs/flashboot/secure/crypto.o build/build_tmp/objs/flashboot/startup/main.o build/build_tmp/objs/flashboot/startup/riscv_init_flashboot.o build/build_tmp/objs/flashboot/startup/stack_protect.o build/build_tmp/objs/flashboot/third_party/u-boot-v2019.07/u-boot-v2019.07/lib/crc32.o build/build_tmp/objs/flashboot/third_party/u-boot-v2019.07/u-boot-v2019.07/lib/lzma/LzmaDec.o build/build_tmp/objs/flashboot/third_party/u-boot-v2019.07/u-boot-v2019.07/lib/lzma/LzmaTools.o build/build_tmp/objs/flashboot/upg/boot_start.o build/build_tmp/objs/flashboot/upg/boot_upg_check.o build/build_tmp/objs/flashboot/upg/boot_upg_check_secure.o build/build_tmp/objs/flashboot/upg/boot_upg_common.o build/build_tmp/objs/flashboot/upg/boot_upg_kernel.o build/build_tmp/objs/flashboot/upg/boot_upg_start_up.o build/build_tmp/objs/flashboot/upg/boot_upg_tool.o -o build/build_tmp/cache/flash_boot.elf --start-group --end-group
+riscv32-unknown-elf-ld -nostdlib -nostartfiles -static --gc-sections -T/home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0/device/hisilicon/hispark_pegasus/sdk_liteos/build/link/loaderboot_sha256.lds -Lbuild/libs -Lbuild/libs/boot_libs build/build_tmp/objs/loaderboot/boot/commonboot/efuse/efuse_drv.o build/build_tmp/objs/loaderboot/boot/commonboot/flash/flash_hw_process_flashboot.o build/build_tmp/objs/loaderboot/common/cmd_loop.o build/build_tmp/objs/loaderboot/common/efuse_opt.o build/build_tmp/objs/loaderboot/common/nvm/hi_nvm.o build/build_tmp/objs/loaderboot/common/partition_table/load_partition_table.o build/build_tmp/objs/loaderboot/common/transfer.o build/build_tmp/objs/loaderboot/drivers/efuse/efuse.o build/build_tmp/objs/loaderboot/drivers/flash/hi_loaderboot_flash.o build/build_tmp/objs/loaderboot/drivers/lsadc/adc_drv.o build/build_tmp/objs/loaderboot/secure/burn_file.o build/build_tmp/objs/loaderboot/secure/load_crypto.o build/build_tmp/objs/loaderboot/startup/main.o build/build_tmp/objs/loaderboot/startup/riscv_init_loaderboot.o build/build_tmp/objs/loaderboot/startup/stack_protect.o build/build_tmp/objs/loaderboot/third_party/u-boot-v2019.07/u-boot-v2019.07/lib/crc32.o build/build_tmp/objs/loaderboot/third_party/u-boot-v2019.07/u-boot-v2019.07/lib/lzma/LzmaDec.o build/build_tmp/objs/loaderboot/third_party/u-boot-v2019.07/u-boot-v2019.07/lib/lzma/LzmaTools.o -o build/build_tmp/cache/loader_boot.elf --start-group --end-group
+riscv32-unknown-elf-gcc -Iplatform/os/Huawei_LiteOS/kernel/include -Iconfig -DCONFIG_TEE_HUKS_SUPPORT -DCONFIG_CHIP_PKT_32K -DHI_BOARD_ASIC -DHI_ON_FLASH -E build/link/system_config.ld.S -o build/build_tmp/scripts/system_config.ld -P
+nvimg_builder(["build/build_tmp/scripts/system_config.ld"], ["build/link/system_config.ld.S"])
+product_name_list: ['sta']
+xml h file: /home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0/device/hisilicon/hispark_pegasus/sdk_liteos/tools/nvtool/h_file/nv
+/home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0/device/hisilicon/hispark_pegasus/sdk_liteos/tools/nvtool/out_nv_bin/sta
+app_subver_list: ['demo']
+current subver_name:demo
+root_dir: /home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0/device/hisilicon/hispark_pegasus/sdk_liteos/tools/nvtool
+mdm_xml: /home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0/device/hisilicon/hispark_pegasus/sdk_liteos/tools/nvtool/xml_file/mss_nvi_db.xml
+HNV NAME:mss_nvi_db.xml
+nv_tool: /home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0/device/hisilicon/hispark_pegasus/sdk_liteos/tools/nvtool/tools/nv/cdbm
+app_subver_temp_dir:/home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0/device/hisilicon/hispark_pegasus/sdk_liteos/tools/nvtool/out_nv_bin/sta/nv/Hi3861_wifiiot_app/outside_demo
+make app_subver_temp_dir
+mdmxml:/home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0/device/hisilicon/hispark_pegasus/sdk_liteos/tools/nvtool/xml_file/mss_nvi_db.xml
+src_xml_list: ['/home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0/device/hisilicon/hispark_pegasus/sdk_liteos/tools/nvtool/xml_file/mss_nvi_db.xml']
+combin_xml:/home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0/device/hisilicon/hispark_pegasus/sdk_liteos/tools/nvtool/out_nv_bin/sta/nv/Hi3861_wifiiot_app/mss_nvi_db.xml
+root_list [<Element 'HISTUDIO' at 0x7f04b11b3e50>]
+hi_nv_modify_by_cfg
+cfg_file: nv
+
+cmd_line= ('/home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0/device/hisilicon/hispark_pegasus/sdk_liteos/tools/nvtool/tools/nv/cdbm', '/home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0/device/hisilicon/hispark_pegasus/sdk_liteos/tools/nvtool/out_nv_bin/sta/nv/Hi3861_wifiiot_app/outside_demo/nv.xml', '/home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0/device/hisilicon/hispark_pegasus/sdk_liteos/tools/nvtool/h_file/nv', '/home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0/device/hisilicon/hispark_pegasus/sdk_liteos/tools/nvtool/out_nv_bin/sta/nv/Hi3861_wifiiot_app/outside_demo/nv')
+/home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0/device/hisilicon/hispark_pegasus/sdk_liteos/tools/nvtool/out_nv_bin/sta/nv/Hi3861_wifiiot_app/outside_demo/nv.xml
+/home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0/device/hisilicon/hispark_pegasus/sdk_liteos/tools/nvtool/h_file/nv
+/home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0/device/hisilicon/hispark_pegasus/sdk_liteos/tools/nvtool/out_nv_bin/sta/nv/Hi3861_wifiiot_app/outside_demo/nv
+===========Init HDB Start===========
+*********strDataTypeDefPath:/home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0/device/hisilicon/hispark_pegasus/sdk_liteos/tools/nvtool/h_file/nv/../nv/nv_modem_struct_def.txt
+*********strDataTypeDefPath:/home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0/device/hisilicon/hispark_pegasus/sdk_liteos/tools/nvtool/h_file/nv/../nv/nv_modem_struct_def.txt
+*********strDataTypeDefPath:/home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0/device/hisilicon/hispark_pegasus/sdk_liteos/tools/nvtool/h_file/nv/../nv/nv_factory_struct_def.txt
+===========Init HDB finish===========
+===========Write NV Buffer To File===========
+===========Write NV Buffer Finish===========
+RETURN VALUE:0
+dst_hnv= /home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0/device/hisilicon/hispark_pegasus/sdk_liteos/tools/nvtool/out_nv_bin/sta/nv/hnv/Hi3861_wifiiot_app.hnv
+Factory NV total num:10
+NV_FILE_STRU :28
+Factory NV total size:824
+Normal NV total num:13
+NV_FILE_STRU :28
+Normal NV total size:766
+build hnv OK:/home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0/device/hisilicon/hispark_pegasus/sdk_liteos/tools/nvtool/out_nv_bin/sta/nv/hnv/Hi3861_wifiiot_app.hnv
+ENDING
+riscv32-unknown-elf-gcc -Iplatform/os/Huawei_LiteOS/kernel/include -Iconfig -DCONFIG_TEE_HUKS_SUPPORT -DCONFIG_CHIP_PKT_32K -DHI_BOARD_ASIC -DHI_ON_FLASH -DFLASH_FIRM_START=4248512 -E build/link/link.ld.S -o build/build_tmp/scripts/link.lds -P
+riscv32-unknown-elf-ld -nostartfiles -nostdlib -static --gc-sections -L/home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0/device/hisilicon/hispark_pegasus/sdk_liteos/build/scripts/../../../../../huawei/hms/hilink/ohos/l0/hi3861/lib/wifi -L/opt/gcc_riscv32/bin/../lib/gcc/riscv32-unknown-elf/7.3.0 -Lbuild/build_tmp/libs/app/wifiiot_app -Lbuild/build_tmp/libs/components/at -Lbuild/build_tmp/libs/platform/drivers -Lbuild/build_tmp/libs/platform/system -Lbuild/build_tmp/scripts -Lbuild/libs -Lbuild/libs/hi3861/release/no_mesh -Lbuild/scripts -Lohos/libs -Tbuild/build_tmp/scripts/link.lds -Map=output/bin/Hi3861_wifiiot_app.map -o output/bin/Hi3861_wifiiot_app.out --start-group --no-whole-archive --whole-archive -lHwKeystoreSDK -lPIR -lPIR_mqtt_server -ladc -lat -lauthmanager -lbootstrap -lbroadcast -lc_flash -lcfg -lcjson_static -lcmsis -lcpup -ldiag -ldiscovery -ldrv -ldump_static -lflash -lfoundation_dbm_kv_store -lgcc -lgpio -lhal_file_static -lhal_iothardware -lhal_sysparam -lhal_token_static -lhal_update_static -lhal_wifiaware -lhichainsdk -lhievent_lite -lhilog_lite -lhiview_lite -lhota -li2c -lio -liperf -llitekernel_flash -lltoswpa -llwip -lm_flash -lmbedtls -lnative_file -loled -lpahomqtt_static -lparttab -lposix -lpwm -lres_cfg -lsamgr -lsamgr_adapter -lsamgr_source -lsdio -lsec_flash -lsht40 -lspiffs -lsysparam -lsystem -ltoken_static -ltrans_service -ltsensor -luart -lupg -lutils_kv_store -lwifi -lwifi_flash -lwifiaware -lwifiiot_app -lwifiservice -lwpa --end-group
+riscv32-unknown-elf-objcopy -O binary output/bin/Hi3861_wifiiot_app.out build/build_tmp/cache/Hi3861_wifiiot_app.bin
+baseimg_builder(["build/build_tmp/cache/Hi3861_wifiiot_app_base.bin", "build/build_tmp/cache/Hi3861_wifiiot_app_kernel.bin"], ["build/build_tmp/cache/Hi3861_wifiiot_app.bin"])
+cleanup(["build/build_tmp/cache/Hi3861_wifiiot_app_base.bin", "build/build_tmp/cache/Hi3861_wifiiot_app_kernel.bin"], ["build/build_tmp/cache/Hi3861_wifiiot_app.bin"])
+ota_builder(["build/build_tmp/cache/Hi3861_wifiiot_app_ota_temp.bin"], ["build/build_tmp/cache/Hi3861_wifiiot_app_base.bin", "build/build_tmp/cache/Hi3861_wifiiot_app_kernel.bin"])
+********************package kernel&nv upgrade file********************
+upg kernel file    in: build/build_tmp/cache/Hi3861_wifiiot_app_kernel.bin
+upg normal nv file in: build/build_tmp/nv/Hi3861_wifiiot_app_normal.hnv
+upg file          out: build/build_tmp/cache/Hi3861_wifiiot_app_ota_temp.bin
+[common_head_offset=0][common_head_size=96]
+[common_key_offset=96][common_key_size=288]
+[common_head_sign_offset=384][common_head_sign_size=256]
+[section_head_offset=640][section_head_size=64]
+[upg_file_sign_offset=704][upg_file_sign_size=256]
+[padding_offset=641608][padding_size=8]
+[upg fill user info]chip:b'Hi3861'
+-------------build/build_tmp/cache/Hi3861_wifiiot_app_ota_temp.bin image info print start-------------
+[image_id=0x3c78961e][struct_version=0x0]]
+[section_offset=0x280][section_len=0x9c7d0]
+[file_type=0xf0][file_version=0x0][encrypt_flag=0x42]
+[file_len=0x9ca50][key_len=0x120]
+[file_attr=0x44]
+[hash_alg=0x0][sign_alg=0x3f][sign_param=0x0]
+[aes_key[0-1-14-15]=[0x0][0x0][0x0][0x0]]
+[aes_iv [0-1-14-15]=[0x0][0x0][0x0][0x0]]
+[common key][00]=[0x0]
+[common key][01]=[0x0]
+[common key][30]=[0x0]
+[common key][31]=[0x0]
+[common sign][00]=[0xf2]
+[common sign][01]=[0x55]
+[common sign][30]=[0x7e]
+[common sign][31]=[0xcc]
+[section sign][00]=[0x2b]
+[section sign][01]=[0x4e]
+[section sign][30]=[0xf3]
+[section sign][31]=[0x33]
+[image_id=0x3c78961e][struct_version=0x0]]
+[hash_alg=0x0][sign_alg=0x3f][sign_param=0x0]
+[section_count=0x2]
+[section0_compress=0x0][section0_offset=0x3c0][section0_len=0x9b688]
+[section1_compress=0x0][section1_offset=0x9ba48][section1_len=0x1000]
+-------------build/build_tmp/cache/Hi3861_wifiiot_app_ota_temp.bin image info print end--------------
+riscv32-unknown-elf-objdump -d output/bin/Hi3861_wifiiot_app.out > output/bin/Hi3861_wifiiot_app.asm
+burn_bin_builder(["output/bin/Hi3861_wifiiot_app_burn.bin", "output/bin/Hi3861_wifiiot_app_allinone.bin"], ["build/build_tmp/cache/Hi3861_wifiiot_app_ota_temp.bin", "output/bin/Hi3861_loader_signed.bin"])
+********************package hiburn file********************
+hbin flash boot file in : output/bin/Hi3861_boot_signed.bin
+hbin factory nv file in : build/build_tmp/nv/Hi3861_wifiiot_app_factory.hnv
+hbin normal nv file  in : build/build_tmp/cache/Hi3861_wifiiot_app_ota_temp.bin
+hbin upg file        in : build/build_tmp/nv/Hi3861_wifiiot_app_factory.hnv
+hbin file           out : output/bin/Hi3861_wifiiot_app_burn.bin
+-------------output/bin/Hi3861_wifiiot_app_burn.bin image info print start-------------
+[bin_size]=[0xa9a50]
+[image_id=0x3c78961e][struct_version=0x0]]
+[section_offset=0x280][section_len=0x9c7d0]
+[file_type=0xf0][file_version=0x0][encrypt_flag=0x42]
+[file_len=0x9ca50][key_len=0x120]
+[hash_alg=0x0][sign_alg=0x3f][sign_param=0x0]
+[aes_key[0,1,14,15]=[0x0][0x0][0x0][0x0]]
+[aes_iv[0,1,14,15]=[0x0][0x0][0x0][0x0]]
+-------------output/bin/Hi3861_wifiiot_app_burn.bin image info print end--------------
+['output/bin/Hi3861_loader_signed.bin', 'output/bin/Hi3861_wifiiot_app_burn.bin']
+[0, 0]
+[0, 2097152]
+[15360, 694864]
+[0, 1]
+4022250975
+boot_ota_builder(["output/bin/Hi3861_wifiiot_app_flash_boot_ota.bin"], ["output/bin/Hi3861_boot_signed.bin"])
+********************package boot upgrade file********************
+boot upg file  in: output/bin/Hi3861_boot_signed.bin
+boot upg file out: output/bin/Hi3861_wifiiot_app_flash_boot_ota.bin
+[common_head_offset=0][common_head_size=96]
+[common_key_offset=96][common_key_size=288]
+[common_head_sign_offset=384][common_head_sign_size=256]
+[section_head_offset=640][section_head_size=64]
+[upg_file_sign_offset=704][upg_file_sign_size=256]
+[padding_offset=0][padding_size=0]
+[upg fill user info]chip:b'Hi3861'
+-------------output/bin/Hi3861_wifiiot_app_flash_boot_ota.bin image info print start-------------
+[image_id=0x3c78961e][struct_version=0x0]]
+[section_offset=0x280][section_len=0x60a0]
+[file_type=0xe1][file_version=0x0][encrypt_flag=0x42]
+[file_len=0x6320][key_len=0x120]
+[file_attr=0x44]
+[hash_alg=0x0][sign_alg=0x3f][sign_param=0x0]
+[aes_key[0-1-14-15]=[0x0][0x0][0x0][0x0]]
+[aes_iv [0-1-14-15]=[0x0][0x0][0x0][0x0]]
+[common key][00]=[0x0]
+[common key][01]=[0x0]
+[common key][30]=[0x0]
+[common key][31]=[0x0]
+[common sign][00]=[0xc9]
+[common sign][01]=[0x21]
+[common sign][30]=[0x2f]
+[common sign][31]=[0x82]
+[section sign][00]=[0x3]
+[section sign][01]=[0x99]
+[section sign][30]=[0xe6]
+[section sign][31]=[0xec]
+[image_id=0x3c78961e][struct_version=0x0]]
+[hash_alg=0x0][sign_alg=0x3f][sign_param=0x0]
+[section_count=0x1]
+[section0_compress=0x0][section0_offset=0x3c0][section0_len=0x5f60]
+[section1_compress=0x0][section1_offset=0x0][section1_len=0x0]
+-------------output/bin/Hi3861_wifiiot_app_flash_boot_ota.bin image info print end--------------
+compress_ota_builder(["output/bin/Hi3861_wifiiot_app_ota.bin"], ["build/build_tmp/cache/Hi3861_wifiiot_app_ota_temp.bin"])
+********************package compress upgrade file********************
+compress upg file in:  build/build_tmp/cache/Hi3861_wifiiot_app_ota_temp.bin
+compress upg file out: output/bin/Hi3861_wifiiot_app_ota.bin
+lzma compress tool : /home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0/device/hisilicon/hispark_pegasus/sdk_liteos/build/scripts/../../tools/lzma_tool/lzma_tool
+lzma    src   file : build/build_tmp/cache/Hi3861_wifiiot_app_ota_temp.bin
+lzma    out   file : build/build_tmp/cache/Hi3861_wifiiot_app_ota_temp.lzma
+
+LZMA 19.00 (x64) : Igor Pavlov : Public domain : 2019-02-21
+
+Input size:  641616 (0 MiB)
+                                                                Output size: 402561 (0 MiB)
+[upgbin-compressbin]0x9ca50-0x139000
+[common_head_offset=0][common_head_size=96]
+[common_key_offset=96][common_key_size=288]
+[common_head_sign_offset=384][common_head_sign_size=256]
+[section_head_offset=640][section_head_size=64]
+[upg_file_sign_offset=704][upg_file_sign_size=256]
+[padding_offset=403521][padding_size=15]
+[upg fill user info]chip:b'Hi3861'
+-------------output/bin/Hi3861_wifiiot_app_ota.bin image info print start-------------
+[image_id=0x3c78961e][struct_version=0x0]]
+[section_offset=0x280][section_len=0x625d0]
+[file_type=0xf0][file_version=0x0][encrypt_flag=0x42]
+[file_len=0x62850][key_len=0x120]
+[file_attr=0x44]
+[hash_alg=0x0][sign_alg=0x3f][sign_param=0x0]
+[aes_key[0-1-14-15]=[0x0][0x0][0x0][0x0]]
+[aes_iv [0-1-14-15]=[0x0][0x0][0x0][0x0]]
+[common key][00]=[0x0]
+[common key][01]=[0x0]
+[common key][30]=[0x0]
+[common key][31]=[0x0]
+[common sign][00]=[0x71]
+[common sign][01]=[0x3e]
+[common sign][30]=[0x96]
+[common sign][31]=[0x4a]
+[section sign][00]=[0x96]
+[section sign][01]=[0x92]
+[section sign][30]=[0x88]
+[section sign][31]=[0xd0]
+[image_id=0x3c78961e][struct_version=0x0]]
+[hash_alg=0x0][sign_alg=0x3f][sign_param=0x0]
+[section_count=0x1]
+[section0_compress=0x1][section0_offset=0x3c0][section0_len=0x62481]
+[section1_compress=0x0][section1_offset=0x0][section1_len=0x0]
+-------------output/bin/Hi3861_wifiiot_app_ota.bin image info print end--------------
+[95m
+< ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ >
+                              BUILD SUCCESS                              
+< ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ >
+[0m
+See build log from: /home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0/device/hisilicon/hispark_pegasus/sdk_liteos/build/build_tmp/logs/build_kernel.log

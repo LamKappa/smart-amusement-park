@@ -1,0 +1,102 @@
+From b867f6901773def31884a9ae527a1282d274a85d Mon Sep 17 00:00:00 2001
+From: wuchangsheng <wuchangsheng2@huawei.com>
+Date: Sat, 10 Jul 2021 22:27:19 +0800
+Subject: [PATCH] fix epoll_ctl EPOLLET mode error
+---
+ src/api/sockets.c | 33 +++++++++++++++++++++++----------
+ 1 file changed, 23 insertions(+), 10 deletions(-)
+
+diff --git a/src/api/sockets.c b/src/api/sockets.c
+index 658f762..eccc7f9 100644
+--- a/src/api/sockets.c
++++ b/src/api/sockets.c
+@@ -714,6 +714,13 @@ free_socket(struct lwip_sock *sock, int is_tcp)
+   /* Protect socket array */
+   SYS_ARCH_PROTECT(lev);
+ 
++#if USE_LIBOS
++  sock->epoll = LIBOS_EPOLLNONE;
++  sock->events = 0;
++  sock->epoll_data = NULL;
++  list_del_node_null(&sock->list);
++#endif
++
+   freed = free_socket_locked(sock, is_tcp, &conn, &lastdata);
+   SYS_ARCH_UNPROTECT(lev);
+   /* don't use 'sock' after this line, as another task might have allocated it */
+@@ -1003,13 +1010,6 @@ lwip_close(int s)
+     return -1;
+   }
+ 
+-#if USE_LIBOS
+-  sock->epoll = LIBOS_EPOLLNONE;
+-  sock->events = 0;
+-  sock->epoll_data = NULL;
+-  list_del_node_null(&sock->list);
+-#endif
+-
+   free_socket(sock, is_tcp);
+   set_errno(0);
+   return 0;
+@@ -1191,7 +1191,7 @@ lwip_recv_tcp(struct lwip_sock *sock, void *mem, size_t len, int flags)
+     if (sock->lastdata.pbuf) {
+       p = sock->lastdata.pbuf;
+ #if USE_LIBOS
+-      if ((flags & MSG_PEEK) == 0) {
++      if (((flags & MSG_PEEK) == 0) && ((sock->epoll & EPOLLET) == 0)) {
+         if ((NETCONNTYPE_GROUP(netconn_type(sock->conn)) == NETCONN_TCP)) {
+           del_epoll_event(sock->conn, EPOLLIN);
+         }
+@@ -2889,6 +2889,9 @@ event_callback(struct netconn *conn, enum netconn_evt evt, u16_t len)
+         check_waiters = 0;
+       }
+ #if USE_LIBOS
++      if (sock->epoll & EPOLLET) {
++        list_del_node_null(&sock->list);
++      }
+       add_epoll_event(conn, EPOLLIN);
+ #endif
+       break;
+@@ -2896,7 +2899,9 @@ event_callback(struct netconn *conn, enum netconn_evt evt, u16_t len)
+       sock->rcvevent--;
+       check_waiters = 0;
+ #if USE_LIBOS
+-      del_epoll_event(conn, EPOLLIN);
++      if ((sock->epoll & EPOLLET) == 0) {
++        del_epoll_event(conn, EPOLLIN);
++      }
+ #endif
+       break;
+     case NETCONN_EVT_SENDPLUS:
+@@ -2905,6 +2910,9 @@ event_callback(struct netconn *conn, enum netconn_evt evt, u16_t len)
+       }
+       sock->sendevent = 1;
+ #if USE_LIBOS
++      if (sock->epoll & EPOLLET) {
++        list_del_node_null(&sock->list);
++      }
+       add_epoll_event(conn, EPOLLOUT);
+ #endif
+       break;
+@@ -2912,12 +2920,17 @@ event_callback(struct netconn *conn, enum netconn_evt evt, u16_t len)
+       sock->sendevent = 0;
+       check_waiters = 0;
+ #if USE_LIBOS
+-      del_epoll_event(conn, EPOLLOUT);
++      if ((sock->epoll & EPOLLET) == 0) {
++        del_epoll_event(conn, EPOLLOUT);
++      }
+ #endif
+       break;
+     case NETCONN_EVT_ERROR:
+       sock->errevent = 1;
+ #if USE_LIBOS
++      if (sock->epoll & EPOLLET) {
++        list_del_node_null(&sock->list);
++      }
+       add_epoll_event(conn, EPOLLERR);
+ #endif
+       break;
+-- 
+2.23.0
+

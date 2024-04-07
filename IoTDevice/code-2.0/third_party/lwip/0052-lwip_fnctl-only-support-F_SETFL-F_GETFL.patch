@@ -1,0 +1,30 @@
+From 40bd7d38bd7a15d22459c4b35cfc7480205a57d9 Mon Sep 17 00:00:00 2001
+From: jiangheng12 <jiangheng14@huawei.com>
+Date: Wed, 22 Feb 2023 20:20:35 +0800
+Subject: [PATCH] lwip_cnctl only support F_SETFL,F_GETFL, other opt return 0
+ for compitable
+
+---
+ src/api/sockets.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/src/api/sockets.c b/src/api/sockets.c
+index 9b3f514..2cb6f22 100644
+--- a/src/api/sockets.c
++++ b/src/api/sockets.c
+@@ -4107,7 +4107,12 @@ lwip_fcntl(int s, int cmd, int val)
+       break;
+     default:
+       LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_fcntl(%d, UNIMPL: %d, %d)\n", s, cmd, val));
++#if USE_LIBOS
++      sock_set_errno(sock, 0); /* not yet implemented, but we return 0 for compatilbe with app */
++      ret = 0;
++#else
+       sock_set_errno(sock, ENOSYS); /* not yet implemented */
++#endif
+       break;
+   }
+   done_socket(sock);
+-- 
+2.23.0
+

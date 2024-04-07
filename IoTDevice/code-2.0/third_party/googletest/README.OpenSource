@@ -1,0 +1,11 @@
+[
+  {
+    "Name": "googletest",
+    "License": "BSD 3-Clause License",
+    "License File": "LICENSE",
+    "Version Number": "1.8.1",
+    "Owner": "zhangchunbao@huawei.com",
+    "Upstream URL": "https://github.com/google/googletest/releases/tag/release-1.8.1",
+    "Description": "The 1.8.x is the last release supporting pre-C++11 compilers. The 1.8.x will not accept any requests for any new features and any bugfix requests will only be accepted if proven critical"
+  }
+]

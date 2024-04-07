@@ -1,0 +1,40 @@
+{
+    "app":{
+        "bundleName": "com.ohos.amsst.AppKitAbilityManager",
+        "vendor": "ix",
+        "version": {
+            "code": 1,
+            "name": "1.0"
+        },
+       "apiVersion": {
+          "compatible": 3,
+          "target": 3
+       }
+    },
+    "deviceConfig": {
+        "default": {
+        }
+    },
+    "module": {
+        "package":"com.ohos.KitAbilityManager.src",
+        "name":"MainAbility",
+        "deviceType": [
+            "tv",
+            "car"
+        ],
+        "distro": {
+            "deliveryWithInstall": true,
+            "moduleName": "testability",
+            "moduleType": "entry"
+        },
+        "abilities": [{
+            "name": "KitTestAbilityManagerSecond",
+            "icon": "$media:snowflakes",
+            "label": "Kittest Ability",
+            "launchType": "singletop",
+            "orientation": "unspecified",
+            "type": "page",
+            "visible": true
+        }]
+    }
+}

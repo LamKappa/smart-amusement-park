@@ -1,0 +1,5 @@
+[compile exit status]:1
+[compile console output]:
+Error: fail to open source file: ./27_include_invalid_file_ei/bar.hcs
+Error: File:./27_include_invalid_file_ei/case.hcs Line:3
+	include file ./27_include_invalid_file_ei/bar.hcs is invalid

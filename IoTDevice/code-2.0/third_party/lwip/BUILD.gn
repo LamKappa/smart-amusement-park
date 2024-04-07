@@ -1,0 +1,59 @@
+# Copyright (c) 2023 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/lite/config/component/lite_component.gni")
+import("//build/lite/ndk/ndk.gni")
+import("lwip.gni")
+
+lite_library("liblwip") {
+  target_type = "static_library"
+  sources = [
+    "src/core/altcp_alloc.c",
+    "src/core/altcp_tcp.c",
+    "src/core/def.c",
+    "src/core/dns.c",
+    "src/core/inet_chksum.c",
+    "src/core/init.c",
+    "src/core/ip.c",
+    "src/core/ipv4/autoip.c",
+    "src/core/ipv4/dhcp.c",
+    "src/core/ipv4/etharp.c",
+    "src/core/ipv4/icmp.c",
+    "src/core/ipv4/igmp.c",
+    "src/core/ipv4/ip4.c",
+    "src/core/ipv4/ip4_addr.c",
+    "src/core/ipv4/ip4_frag.c",
+    "src/core/ipv6/dhcp6.c",
+    "src/core/ipv6/ethip6.c",
+    "src/core/ipv6/icmp6.c",
+    "src/core/ipv6/inet6.c",
+    "src/core/ipv6/ip6.c",
+    "src/core/ipv6/ip6_addr.c",
+    "src/core/ipv6/ip6_frag.c",
+    "src/core/ipv6/mld6.c",
+    "src/core/ipv6/nd6.c",
+    "src/core/lowpower.c",
+    "src/core/mem.c",
+    "src/core/memp.c",
+    "src/core/net_group.c",
+    "src/core/netif.c",
+    "src/core/pbuf.c",
+    "src/core/raw.c",
+    "src/core/stats.c",
+    "src/core/sys.c",
+    "src/core/tcp.c",
+    "src/core/tcp_out.c",
+    "src/core/timeouts.c",
+    "src/core/udp.c",
+  ]
+}

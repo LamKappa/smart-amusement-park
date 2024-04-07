@@ -1,0 +1,11 @@
+{
+  "name": "deccjsunit",
+  "version": "1.0.2",
+  "description": "Harmony JSUnit",
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+  }
+}

@@ -1,0 +1,147 @@
+# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+SUBSYSTEM_DIR = "//foundation/aafwk/standard/frameworks/kits/ability/native"
+SUBSYSTEM_APPEXEXFWK_DIR = "//foundation/appexecfwk/standard"
+INNERKITS_PATH = "//foundation/aafwk/standard/interfaces/innerkits"
+
+config("ability_config") {
+  visibility = [ ":*" ]
+  include_dirs = [
+    "${INNERKITS_PATH}/base/include",
+    "//utils/native/base/include",
+    "${SUBSYSTEM_DIR}/include",
+    "${SUBSYSTEM_APPEXEXFWK_DIR}/kits/appkit/native/app/include",
+    "${SUBSYSTEM_APPEXEXFWK_DIR}/interfaces/innerkits/appexecfwk_core/include/appmgr",
+    "${INNERKITS_PATH}/want/include/ohos/aafwk/content",
+    "${INNERKITS_PATH}/ability_manager/include",
+    "//foundation/aafwk/standard/services/abilitymgr/include",
+    "//foundation/appexecfwk/standard/common/log/include",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core/include/bundlemgr",
+    "//foundation/appexecfwk/standard/kits/appkit/native/app/include",
+    "//foundation/distributedschedule/dmsfwk/services/dtbschedmgr/include",
+    "//base/global/resmgr_standard/interfaces/innerkits/include",
+    "//foundation/aafwk/standard/interfaces/kits/napi/aafwk/context",
+    "//foundation/aafwk/standard/interfaces/kits/napi/aafwk/featureAbility",
+    "//foundation/ace/napi/interfaces/kits",
+    "//third_party/node/src",
+    "//foundation/multimodalinput/input/interfaces/native/innerkits/event/include",
+  ]
+
+  cflags = []
+  if (target_cpu == "arm") {
+    cflags += [ "-DBINDER_IPC_32BIT" ]
+  }
+  defines = [
+    "APP_LOG_TAG = \"Ability\"",
+    "LOG_DOMAIN = 0xD002200",
+  ]
+}
+
+config("ability_public_config") {
+  visibility = [ ":*" ]
+  include_dirs = [
+    "${INNERKITS_PATH}/base/include",
+    "//foundation/appexecfwk/standard/kits/appkit/native/app/include",
+    "${SUBSYSTEM_DIR}/include",
+    "//foundation/aafwk/standard/interfaces/innerkits/base/include/ohos/aafwk/base",
+    "//base/global/resmgr_standard/interfaces/innerkits/include",
+    "//foundation/multimodalinput/input/interfaces/native/innerkits/event/include",
+  ]
+}
+
+ohos_shared_library("abilitykit_native") {
+  sources = [
+    "${SUBSYSTEM_APPEXEXFWK_DIR}/interfaces/innerkits/appexecfwk_core/src/appmgr/process_info.cpp",
+    "${SUBSYSTEM_DIR}/src/ability.cpp",
+    "${SUBSYSTEM_DIR}/src/ability_context.cpp",
+    "${SUBSYSTEM_DIR}/src/ability_handler.cpp",
+    "${SUBSYSTEM_DIR}/src/ability_impl.cpp",
+    "${SUBSYSTEM_DIR}/src/ability_impl_factory.cpp",
+    "${SUBSYSTEM_DIR}/src/ability_lifecycle.cpp",
+    "${SUBSYSTEM_DIR}/src/ability_lifecycle_executor.cpp",
+    "${SUBSYSTEM_DIR}/src/ability_loader.cpp",
+    "${SUBSYSTEM_DIR}/src/ability_local_record.cpp",
+    "${SUBSYSTEM_DIR}/src/ability_process.cpp",
+    "${SUBSYSTEM_DIR}/src/ability_thread.cpp",
+    "${SUBSYSTEM_DIR}/src/ability_window.cpp",
+    "${SUBSYSTEM_DIR}/src/data_ability_helper.cpp",
+    "${SUBSYSTEM_DIR}/src/data_ability_impl.cpp",
+    "${SUBSYSTEM_DIR}/src/data_uri_utils.cpp",
+    "${SUBSYSTEM_DIR}/src/dummy_data_ability_predicates.cpp",
+    "${SUBSYSTEM_DIR}/src/dummy_values_bucket.cpp",
+    "${SUBSYSTEM_DIR}/src/page_ability_impl.cpp",
+    "${SUBSYSTEM_DIR}/src/service_ability_impl.cpp",
+    "//foundation/aafwk/standard/interfaces/kits/napi/aafwk/context/napi_context.cpp",
+    "//foundation/aafwk/standard/interfaces/kits/napi/aafwk/featureAbility/feature_ability.cpp",
+    "//foundation/aafwk/standard/interfaces/kits/napi/aafwk/featureAbility/want_wrapper.cpp",
+    "//foundation/appexecfwk/standard/kits/appkit/native/app/src/ability_start_setting.cpp",
+    "//foundation/appexecfwk/standard/kits/appkit/native/app/src/application_context.cpp",
+    "//foundation/appexecfwk/standard/kits/appkit/native/app/src/context_container.cpp",
+    "//foundation/appexecfwk/standard/kits/appkit/native/app/src/context_deal.cpp",
+    "//foundation/appexecfwk/standard/kits/appkit/native/app/src/sys_mgr_client.cpp",
+  ]
+  configs = [ ":ability_config" ]
+  public_configs = [ ":ability_public_config" ]
+
+  deps = [
+    "${INNERKITS_PATH}/base:base",
+    "${INNERKITS_PATH}/want:want",
+
+    # "//foundation/graphic/standard/prebuilts/librarys/display_gralloc:libdisplay_gralloc",
+    "//base/global/resmgr_standard/frameworks/resmgr:global_resmgr",
+    "//foundation/aafwk/standard/interfaces/innerkits/ability_manager:ability_manager",
+    "//foundation/ace/napi:ace_napi",
+    "//foundation/appexecfwk/standard/common:libappexecfwk_common",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_base:appexecfwk_base",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/libeventhandler:libeventhandler",
+    "//foundation/distributedschedule/dmsfwk/interfaces/innerkits/uri:zuri",
+    "//foundation/distributedschedule/samgr/interfaces/innerkits/samgr_proxy:samgr_proxy",
+    "//foundation/multimodalinput/input/interfaces/native/innerkits/event:mmi_event",
+    "//utils/native/base:utils",
+  ]
+
+  external_deps = [
+    "hiviewdfx_hilog_native:libhilog",
+    "ipc:ipc_core",
+  ]
+
+  public_deps = [ "//foundation/graphic/standard:libwms_client" ]
+
+  subsystem_name = "aafwk"
+  part_name = "aafwk_standard"
+}
+
+ohos_shared_library("dummy_classes") {
+  sources = [
+    "${SUBSYSTEM_DIR}/src/dummy_data_ability_predicates.cpp",
+    "${SUBSYSTEM_DIR}/src/dummy_result_set.cpp",
+    "${SUBSYSTEM_DIR}/src/dummy_values_bucket.cpp",
+  ]
+  configs = [ ":ability_config" ]
+  public_configs = [ ":ability_public_config" ]
+
+  deps = [
+    "//foundation/appexecfwk/standard/common:libappexecfwk_common",
+    "//utils/native/base:utils",
+  ]
+
+  external_deps = [
+    "hiviewdfx_hilog_native:libhilog",
+    "ipc:ipc_core",
+  ]
+
+  subsystem_name = "aafwk"
+  part_name = "aafwk_standard"
+}

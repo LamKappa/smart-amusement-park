@@ -1,0 +1,42 @@
+{
+    "app":{
+        "bundleName": "com.ohos.amsst.service.appF",
+        "vendor": "ohos",
+        "version": {
+            "code": 1,
+            "name": "1.0"
+        },
+       "apiVersion": {
+          "compatible": 3,
+          "target": 3
+       }
+    },
+    "deviceConfig": {
+        "default": {
+        }
+    },
+    "module": {
+        "package":"com.hos.AmsSystemTestServiceF.src",
+        "name":"AmsSystemTestServiceF",
+        "deviceType": [
+            "tv",
+            "car"
+        ],
+        "distro": {
+            "deliveryWithInstall": true,
+            "moduleName": "testability",
+            "moduleType": "entry"
+        },
+        "abilities": [
+        {
+            "name": "AmsStServiceAbilityF3",
+            "icon": "$media:snowball",
+            "label": "AmsStServiceAbilityF3 Ability",
+            "launchType": "standard",
+            "orientation": "unspecified",
+            "type": "data",
+            "uri": "dataability://com.ohos.amsst.service.appF.dataability",
+            "visible": true
+        }]
+    }
+}
