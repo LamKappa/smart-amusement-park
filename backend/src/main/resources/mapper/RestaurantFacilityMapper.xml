@@ -11,7 +11,6 @@
         <result property="longitude" column="longitude" jdbcType="VARCHAR"/>
         <result property="latitude" column="latitude" jdbcType="VARCHAR"/>
         <result property="type" column="type" jdbcType="VARCHAR"/>
-        <result property="imageUrl" column="image_url" jdbcType="VARCHAR"/>
         <result property="startTime" column="start_time" jdbcType="TIME"/>
         <result property="closeTime" column="close_time" jdbcType="TIME"/>
         <result property="status" column="status" jdbcType="INTEGER"/>
@@ -23,7 +22,7 @@
     <sql id="Base_Column_List">
         id,name,introduction,
         longitude,latitude,type,
-        image_url,start_time,close_time,
+        start_time,close_time,
         status,create_time,update_time,
         is_deleted
     </sql>

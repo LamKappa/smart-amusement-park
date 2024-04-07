@@ -2,6 +2,8 @@ package com.chinasoft.backend.service;
 
 import com.chinasoft.backend.model.entity.RestaurantFacility;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.chinasoft.backend.model.request.RestaurantFilterRequest;
+import com.chinasoft.backend.model.vo.RestaurantFacilityVO;
 
 import java.util.List;
 
@@ -12,7 +14,6 @@ import java.util.List;
 */
 public interface RestaurantFacilityService extends IService<RestaurantFacility> {
 
-    List<RestaurantFacility> getRestaurantName(String name);
+    List<RestaurantFacilityVO> getRestaurantFacility(RestaurantFilterRequest restaurantFilterRequest);
 
-    List<RestaurantFacility> getRestaurantType(String type);
 }

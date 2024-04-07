@@ -36,11 +36,6 @@ public class BaseFacility implements Serializable {
     private String latitude;
 
     /**
-     * 照片URL
-     */
-    private String imageUrl;
-
-    /**
      * 开放开始时间
      */
     private Date startTime;

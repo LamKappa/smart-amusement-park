@@ -14,7 +14,6 @@
         <result property="expectTime" column="expect_time" jdbcType="INTEGER"/>
         <result property="type" column="type" jdbcType="VARCHAR"/>
         <result property="crowdType" column="crowd_type" jdbcType="VARCHAR"/>
-        <result property="imageUrl" column="image_url" jdbcType="VARCHAR"/>
         <result property="startTime" column="start_time" jdbcType="TIME"/>
         <result property="closeTime" column="close_time" jdbcType="TIME"/>
         <result property="status" column="status" jdbcType="INTEGER"/>
@@ -30,7 +29,7 @@
         id,name,introduction,
         longitude,latitude,per_user_count,
         expect_time,type,crowd_type,
-        image_url,start_time,close_time,
+        start_time,close_time,
         status,create_time,update_time,
         is_deleted,instruction,height_low,
         height_up
