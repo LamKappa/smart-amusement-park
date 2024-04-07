@@ -4,21 +4,25 @@ import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.chinasoft.backend.common.ErrorCode;
+import com.chinasoft.backend.constant.UserConstant;
 import com.chinasoft.backend.exception.BusinessException;
 import com.chinasoft.backend.mapper.UserMapper;
 import com.chinasoft.backend.model.entity.User;
 import com.chinasoft.backend.service.UserService;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.regex.Pattern;
 
 /**
  * @author mxs
  */
 @Service
+@Slf4j
 public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         implements UserService {
 
@@ -85,6 +89,42 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
 
     }
+
+
+    /**
+     * 用户登录
+     */
+    @Override
+    public User userLogin(String phone, String password, HttpServletRequest request) {
+        // 1. 校验
+        if (StringUtils.isAnyBlank(phone, password)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+        }
+        if (!Pattern.matches("^1[3-9]\\d{9}$", phone)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户手机号格式错误");
+        }
+        if (password.length() < 8 || password.length() > 16) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户密码过短或过长");
+        }
+        // 2. 加密
+        String encryptPassword = DigestUtils.md5DigestAsHex((SALT + password).getBytes());
+        // 查询用户是否存在
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("phone", phone);
+        queryWrapper.eq("password", encryptPassword);
+        User user = userMapper.selectOne(queryWrapper);
+        user.setPassword(null);
+        // 用户不存在
+        if (user == null) {
+            log.info("user login failed, userAccount cannot match userPassword");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在或密码错误");
+        }
+        // 3. 记录用户的登录态
+        request.getSession().setAttribute(UserConstant.USER_LOGIN_STATE, user);
+        return user;
+    }
+
+
 }
 
 

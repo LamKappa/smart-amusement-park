@@ -4,6 +4,8 @@ import lombok.Data;
 
 @Data
 public class UserRegisterRequest {
+    private static final long serialVersionUID = 3191241716373120793L;
+
     /**
      * 用户名
      */
