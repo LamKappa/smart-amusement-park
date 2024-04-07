@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.sql.Time;
 import java.util.Date;
 
 /**
@@ -38,12 +39,12 @@ public class BaseFacility implements Serializable {
     /**
      * 开放开始时间
      */
-    private Date startTime;
+    private Time startTime;
 
     /**
      * 开放结束时间
      */
-    private Date closeTime;
+    private Time closeTime;
 
     /**
      * 状态（0-正常，1-异常）

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.sql.Time;
 import java.util.Date;
 
 /**
@@ -61,12 +62,12 @@ public class AmusementFacility implements Serializable {
     /**
      * 开放时间
      */
-    private Date startTime;
+    private Time startTime;
 
     /**
      * 关闭时间
      */
-    private Date closeTime;
+    private Time closeTime;
 
     /**
      * 状态 0-正常 1-异常（如果是在检修的时候status为1，注意夜晚闭馆未开放的时候status为0）

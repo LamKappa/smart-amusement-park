@@ -62,7 +62,7 @@ public class MqttServiceImpl implements MqttService {
         // Integer facilityId = ioTData.getFacilityId();
         // Integer facilityType = ioTData.getFacilityType();
         // Integer detection = ioTData.getDetection();
-
+        
 
         // 获取每一个设施五分钟的数据，并计算预计等待时间和存储到数据库
         for (Integer facilityId : map.keySet()) {

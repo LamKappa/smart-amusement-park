@@ -96,7 +96,9 @@ public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityM
             CrowdingLevel crowdingLevelQuery = new CrowdingLevel();
             crowdingLevelQuery.setFacilityId(facility.getId());
             CrowdingLevel crowdingLevel = crowdingLevelService.getById(crowdingLevelQuery);
-            facilityVO.setExpectWaitTime(crowdingLevel.getExpectWaitTime());
+            if (crowdingLevel != null) {
+                facilityVO.setExpectWaitTime(crowdingLevel.getExpectWaitTime());
+            }
             // 将VO对象加入列表
             facilityVOList.add(facilityVO);
         }
