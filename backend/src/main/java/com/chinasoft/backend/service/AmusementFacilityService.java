@@ -2,6 +2,8 @@ package com.chinasoft.backend.service;
 
 import com.chinasoft.backend.model.entity.AmusementFacility;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.chinasoft.backend.model.request.AmusementFilterRequest;
+import com.chinasoft.backend.model.vo.AmusementFacilityVO;
 
 import java.util.List;
 
@@ -12,11 +14,6 @@ import java.util.List;
 */
 public interface AmusementFacilityService extends IService<AmusementFacility> {
 
-    List<AmusementFacility> getAmusementName(String name);
+    List<AmusementFacilityVO> getAmusementFacility(AmusementFilterRequest amusementFilterRequest);
 
-    List<AmusementFacility> getAmusementType(String type);
-
-    List<AmusementFacility> getAmusementHeight(Integer height);
-
-    List<AmusementFacility> getAmusementCrowd(String crowd);
 }

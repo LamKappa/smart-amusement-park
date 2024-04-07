@@ -1,19 +1,14 @@
-package com.chinasoft.backend.model.entity;
+package com.chinasoft.backend.model.vo;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.Data;
 
-import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
-/**
- * 餐饮设施表
- *
- * @TableName restaurant_facility
- */
-@TableName(value = "restaurant_facility")
 @Data
-public class RestaurantFacility implements Serializable {
+public class RestaurantFacilityVO {
     /**
      * 设施ID
      */
@@ -61,21 +56,7 @@ public class RestaurantFacility implements Serializable {
     private Integer status;
 
     /**
-     * 添加时间
+     * 设施图片
      */
-    private Date createTime;
-
-    /**
-     * 修改时间
-     */
-    private Date updateTime;
-
-    /**
-     * 逻辑删除标志（0-未删除，1-已删除）
-     */
-    @TableLogic
-    private Integer isDeleted;
-
-    @TableField(exist = false)
-    private static final long serialVersionUID = 1L;
+    private List<String> imageUrls;
 }

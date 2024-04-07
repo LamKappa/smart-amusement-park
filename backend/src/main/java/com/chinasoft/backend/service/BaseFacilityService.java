@@ -2,6 +2,8 @@ package com.chinasoft.backend.service;
 
 import com.chinasoft.backend.model.entity.BaseFacility;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.chinasoft.backend.model.request.BaseFilterRequest;
+import com.chinasoft.backend.model.vo.BaseFacilityVO;
 
 import java.util.List;
 
@@ -12,5 +14,6 @@ import java.util.List;
 */
 public interface BaseFacilityService extends IService<BaseFacility> {
 
-    List<BaseFacility> getBaseName(String name);
+
+    List<BaseFacilityVO> getBaseFacility(BaseFilterRequest baseFilterRequest);
 }

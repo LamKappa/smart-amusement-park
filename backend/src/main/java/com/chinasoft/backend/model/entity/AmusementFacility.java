@@ -59,11 +59,6 @@ public class AmusementFacility implements Serializable {
     private String crowdType;
 
     /**
-     * 设施照片
-     */
-    private String imageUrl;
-
-    /**
      * 开放时间
      */
     private Date startTime;

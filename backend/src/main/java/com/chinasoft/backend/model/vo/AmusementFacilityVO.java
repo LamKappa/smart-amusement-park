@@ -2,10 +2,12 @@ package com.chinasoft.backend.model.vo;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import lombok.Data;
 
 import java.util.Date;
 import java.util.List;
 
+@Data
 public class AmusementFacilityVO {
     /**
      *
@@ -52,11 +54,6 @@ public class AmusementFacilityVO {
      * 适合人群（成人、老少皆宜、家长监护）
      */
     private String crowdType;
-
-    /**
-     * 设施照片
-     */
-    private String imageUrl;
 
     /**
      * 开放时间

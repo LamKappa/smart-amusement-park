@@ -2,13 +2,22 @@ package com.chinasoft.backend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.chinasoft.backend.mapper.FacilityImageMapper;
 import com.chinasoft.backend.model.entity.AmusementFacility;
+import com.chinasoft.backend.model.entity.FacilityImage;
 import com.chinasoft.backend.model.entity.RestaurantFacility;
+import com.chinasoft.backend.model.request.RestaurantFilterRequest;
+import com.chinasoft.backend.model.vo.AmusementFacilityVO;
+import com.chinasoft.backend.model.vo.RestaurantFacilityVO;
 import com.chinasoft.backend.service.RestaurantFacilityService;
 import com.chinasoft.backend.mapper.RestaurantFacilityMapper;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
 * @author 皎皎
@@ -19,34 +28,59 @@ import java.util.List;
 public class RestaurantFacilityServiceImpl extends ServiceImpl<RestaurantFacilityMapper, RestaurantFacility>
     implements RestaurantFacilityService{
 
-    @Override
-    public List<RestaurantFacility> getRestaurantName(String name) {
-        QueryWrapper<RestaurantFacility> queryWrapper = new QueryWrapper<>();
-
-        // 检查name是否为空或空字符串
-        if (name == null || name.isEmpty()) {
-            // 如果为空，则返回所有数据，不添加查询条件
-            return this.baseMapper.selectList(queryWrapper);
-        } else {
-            // 如果name非空，则添加查询条件
-            queryWrapper.eq("name", name);
-            return this.baseMapper.selectList(queryWrapper);
-        }
-    }
+    @Autowired
+    FacilityImageMapper facilityImageMapper;
 
     @Override
-    public List<RestaurantFacility> getRestaurantType(String type) {
+    public List<RestaurantFacilityVO> getRestaurantFacility(RestaurantFilterRequest restaurantFilterRequest) {
         QueryWrapper<RestaurantFacility> queryWrapper = new QueryWrapper<>();
 
-        // 检查type是否为空或空字符串
-        if (type == null || type.isEmpty()) {
-            // 如果为空，则返回所有数据，不添加查询条件
-            return this.baseMapper.selectList(queryWrapper);
-        } else {
-            // 如果type非空，则添加查询条件
-            queryWrapper.like("type", type);
-            return this.baseMapper.selectList(queryWrapper);
+        // 检查name是否非空
+        if (restaurantFilterRequest.getName() != null && !restaurantFilterRequest.getName().isEmpty()) {
+            queryWrapper.eq("name", restaurantFilterRequest.getName());
         }
+
+        // 检查type是否非空
+        if (restaurantFilterRequest.getType() != null && !restaurantFilterRequest.getType().isEmpty()) {
+            queryWrapper.like("type", restaurantFilterRequest.getType());
+        }
+
+        // 搜索图片
+        List<RestaurantFacility> facilities = this.baseMapper.selectList(queryWrapper);
+
+        List<RestaurantFacilityVO> facilityVOList = new ArrayList<>();
+
+        for (RestaurantFacility facility : facilities) {
+
+            RestaurantFacilityVO facilityVO = new RestaurantFacilityVO();
+
+            Integer facilityType = 1;
+
+            // 将facility的信息复制到VO对象
+            BeanUtils.copyProperties(facility, facilityVO);
+
+            // 创建 QueryWrapper 实例
+            QueryWrapper<FacilityImage> queryWrapper2 = new QueryWrapper<>();
+
+            // 设置查询条件
+            queryWrapper2.eq("facility_type", facilityType)
+                    .eq("facility_id", facility.getId());
+
+            List<FacilityImage> facilityImages = facilityImageMapper.selectList(queryWrapper2);
+
+            // 提取 image_url 列表
+            List<String> imageUrls = facilityImages.stream()
+                    .map(FacilityImage::getImageUrl)
+                    .collect(Collectors.toList());
+
+            // 将imageUrls放入VO对象
+            facilityVO.setImageUrls(imageUrls);
+
+            // 将VO对象加入列表
+            facilityVOList.add(facilityVO);
+        }
+
+        return facilityVOList;
     }
 }
 
