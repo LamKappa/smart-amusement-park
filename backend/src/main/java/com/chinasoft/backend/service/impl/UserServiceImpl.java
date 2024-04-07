@@ -113,6 +113,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         queryWrapper.eq("phone", phone);
         queryWrapper.eq("password", encryptPassword);
         User user = userMapper.selectOne(queryWrapper);
+        // 脱敏
         user.setPassword(null);
         // 用户不存在
         if (user == null) {
@@ -124,7 +125,25 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         return user;
     }
 
-
+    /**
+     * 获取当前登录用户
+     */
+    @Override
+    public User getLoginUser(HttpServletRequest request) {
+        // 先判断是否已登录
+        Object userObj = request.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
+        User currentUser = (User) userObj;
+        if (currentUser == null || currentUser.getId() == null) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
+        }
+        // 从数据库查询
+        long userId = currentUser.getId();
+        currentUser = this.getById(userId);
+        if (currentUser == null) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
+        }
+        return currentUser;
+    }
 }
 
 

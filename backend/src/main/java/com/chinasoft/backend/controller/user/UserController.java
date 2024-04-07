@@ -10,10 +10,7 @@ import com.chinasoft.backend.model.request.user.UserRegisterRequest;
 import com.chinasoft.backend.service.UserService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -68,4 +65,14 @@ public class UserController {
         User user = userService.userLogin(phone, password, request);
         return ResultUtils.success(user);
     }
+
+    /**
+     * 获取当前登录用户
+     */
+    @GetMapping("/getLoginUser")
+    public BaseResponse<User> getLoginUser(HttpServletRequest request) {
+        User user = userService.getLoginUser(request);
+        return ResultUtils.success(user);
+    }
+
 }
