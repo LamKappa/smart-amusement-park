@@ -16,9 +16,7 @@ import org.springframework.util.DigestUtils;
 import java.util.regex.Pattern;
 
 /**
- * @author 86178
- * @description 针对表【user】的数据库操作Service实现
- * @createDate 2024-04-03 14:44:10
+ * @author mxs
  */
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User>
