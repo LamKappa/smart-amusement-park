@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chinasoft.backend.mapper.CrowdingLevelMapper">
+
+    <resultMap id="BaseResultMap" type="com.chinasoft.backend.model.entity.CrowdingLevel">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="facilityId" column="facility_id" jdbcType="BIGINT"/>
+            <result property="facilityType" column="facility_type" jdbcType="INTEGER"/>
+            <result property="expectWaitTime" column="expect_wait_time" jdbcType="INTEGER"/>
+            <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+            <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+            <result property="isDeleted" column="is_deleted" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,facility_id,facility_type,
+        expect_wait_time,create_time,update_time,
+        is_deleted
+    </sql>
+</mapper>

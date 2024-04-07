@@ -1,14 +1,14 @@
 package com.chinasoft.backend;
 
-import com.chinasoft.backend.model.entity.AmusementFacility;
-import com.chinasoft.backend.model.entity.BaseFacility;
-import com.chinasoft.backend.model.entity.FacilityImage;
-import com.chinasoft.backend.model.entity.RestaurantFacility;
+import com.chinasoft.backend.model.entity.*;
 import com.chinasoft.backend.service.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.RedisTemplate;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 @SpringBootTest
@@ -28,6 +28,9 @@ class BackendApplicationTests {
 
     @Autowired
     FacilityImageService facilityImageService;
+
+    @Autowired
+    RedisTemplate redisTemplate;
 
     @Test
     void contextLoads() {
@@ -62,5 +65,27 @@ class BackendApplicationTests {
     void testFacilityImage() {
         List<FacilityImage> list = facilityImageService.list();
         System.out.println(list);
+    }
+
+    @Test
+    void testRedis() {
+        HashMap<String, IoTData> map = new HashMap<>();
+        List<IoTData> list = new ArrayList<>();
+
+        IoTData ioTData = new IoTData();
+        ioTData.setDeviceId(1);
+        ioTData.setFacilityId(2);
+        ioTData.setFacilityType(3);
+        ioTData.setDetection(4);
+        list.add(ioTData);
+
+        map.put("hello", ioTData);
+
+        // HashOperations hashOperations = redisTemplate.opsForHash();
+        // hashOperations.putAll("map", map);
+        // System.out.println(hashOperations.get("map", "hello"));
+        // ListOperations valueOperations = redisTemplate.opsForHash();
+        // valueOperations
+        // System.out.println(valueOperations.get("hello"));
     }
 }

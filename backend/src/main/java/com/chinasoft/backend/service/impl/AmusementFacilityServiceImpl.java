@@ -2,13 +2,13 @@ package com.chinasoft.backend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.chinasoft.backend.mapper.AmusementFacilityMapper;
 import com.chinasoft.backend.mapper.FacilityImageMapper;
 import com.chinasoft.backend.model.entity.AmusementFacility;
 import com.chinasoft.backend.model.entity.FacilityImage;
 import com.chinasoft.backend.model.request.AmusementFilterRequest;
 import com.chinasoft.backend.model.vo.AmusementFacilityVO;
 import com.chinasoft.backend.service.AmusementFacilityService;
-import com.chinasoft.backend.mapper.AmusementFacilityMapper;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,15 +18,16 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
-* @author 皎皎
-* @description 针对表【amusement_facility】的数据库操作Service实现
-* @createDate 2024-04-05 09:47:45
-*/
+ * @author 皎皎
+ * @description 针对表【amusement_facility】的数据库操作Service实现
+ * @createDate 2024-04-05 09:47:45
+ */
 @Service
 public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityMapper, AmusementFacility>
-    implements AmusementFacilityService{
+        implements AmusementFacilityService {
 
-    @Autowired FacilityImageMapper facilityImageMapper;
+    @Autowired
+    FacilityImageMapper facilityImageMapper;
 
     @Override
     public List<AmusementFacilityVO> getAmusementFacility(AmusementFilterRequest amusementFilterRequest) {
