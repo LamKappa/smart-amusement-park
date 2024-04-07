@@ -26,7 +26,7 @@ static void Task(void *arg){
 
     facilityId = 2;
     facilityType = 0;
-    deviceId = 1;
+    deviceId = 2;
     printf("[RIP_mqtt_server] facility: %d\r\n", facilityId);
     printf("[RIP_mqtt_server] tag: %d\r\n", facilityType);
     printf("[RIP_mqtt_server] device: %d\r\n", deviceId);

@@ -34430,731 +34430,731 @@ Linker script and memory map
  .text.RIP_mqtt_server
                 0x00000000004930be       0x6a ohos/libs/libPIR_mqtt_server.a(libPIR_mqtt_server.main.o)
                 0x00000000004930be                RIP_mqtt_server
- .text.Task     0x0000000000493128       0x9c ohos/libs/libPIR_mqtt_server.a(libPIR_mqtt_server.main.o)
+ .text.Task     0x0000000000493128       0x9a ohos/libs/libPIR_mqtt_server.a(libPIR_mqtt_server.main.o)
  .text.mqtt_connect
-                0x00000000004931c4      0x1ca ohos/libs/libPIR_mqtt_server.a(libPIR_mqtt_server.mqtt_task.o)
-                0x00000000004931c4                mqtt_connect
+                0x00000000004931c2      0x1ca ohos/libs/libPIR_mqtt_server.a(libPIR_mqtt_server.mqtt_task.o)
+                0x00000000004931c2                mqtt_connect
  .text.connect_wifi
-                0x000000000049338e       0xf2 ohos/libs/libPIR_mqtt_server.a(libPIR_mqtt_server.wifi_connect_util.o)
-                0x000000000049338e                connect_wifi
- .text.GetName  0x0000000000493480       0x2c ohos/libs/libbootstrap.a(libbootstrap.bootstrap_service.o)
+                0x000000000049338c       0xf2 ohos/libs/libPIR_mqtt_server.a(libPIR_mqtt_server.wifi_connect_util.o)
+                0x000000000049338c                connect_wifi
+ .text.GetName  0x000000000049347e       0x2c ohos/libs/libbootstrap.a(libbootstrap.bootstrap_service.o)
  .text.Initialize
-                0x00000000004934ac       0x2a ohos/libs/libbootstrap.a(libbootstrap.bootstrap_service.o)
+                0x00000000004934aa       0x2a ohos/libs/libbootstrap.a(libbootstrap.bootstrap_service.o)
  .text.GetTaskConfig
-                0x00000000004934d6       0x38 ohos/libs/libbootstrap.a(libbootstrap.bootstrap_service.o)
- .text.Init     0x000000000049350e       0x64 ohos/libs/libbootstrap.a(libbootstrap.bootstrap_service.o)
+                0x00000000004934d4       0x38 ohos/libs/libbootstrap.a(libbootstrap.bootstrap_service.o)
+ .text.Init     0x000000000049350c       0x64 ohos/libs/libbootstrap.a(libbootstrap.bootstrap_service.o)
  .text.MessageHandle
-                0x0000000000493572       0x98 ohos/libs/libbootstrap.a(libbootstrap.bootstrap_service.o)
+                0x0000000000493570       0x98 ohos/libs/libbootstrap.a(libbootstrap.bootstrap_service.o)
  .text.OHOS_SystemInit
-                0x000000000049360a       0xd0 ohos/libs/libbootstrap.a(libbootstrap.system_init.o)
-                0x000000000049360a                OHOS_SystemInit
- .text.GetName  0x00000000004936da       0x2c ohos/libs/libbroadcast.a(libbroadcast.broadcast_service.o)
+                0x0000000000493608       0xd0 ohos/libs/libbootstrap.a(libbootstrap.system_init.o)
+                0x0000000000493608                OHOS_SystemInit
+ .text.GetName  0x00000000004936d8       0x2c ohos/libs/libbroadcast.a(libbroadcast.broadcast_service.o)
  .text.Initialize
-                0x0000000000493706       0x28 ohos/libs/libbroadcast.a(libbroadcast.broadcast_service.o)
+                0x0000000000493704       0x28 ohos/libs/libbroadcast.a(libbroadcast.broadcast_service.o)
  .text.MessageHandle
-                0x000000000049372e       0x26 ohos/libs/libbroadcast.a(libbroadcast.broadcast_service.o)
+                0x000000000049372c       0x26 ohos/libs/libbroadcast.a(libbroadcast.broadcast_service.o)
  .text.GetTaskConfig
-                0x0000000000493754       0x3a ohos/libs/libbroadcast.a(libbroadcast.broadcast_service.o)
- .text.Init     0x000000000049378e       0x34 ohos/libs/libbroadcast.a(libbroadcast.broadcast_service.o)
- .text.GetName  0x00000000004937c2       0x2c ohos/libs/libbroadcast.a(libbroadcast.pub_sub_feature.o)
+                0x0000000000493752       0x3a ohos/libs/libbroadcast.a(libbroadcast.broadcast_service.o)
+ .text.Init     0x000000000049378c       0x34 ohos/libs/libbroadcast.a(libbroadcast.broadcast_service.o)
+ .text.GetName  0x00000000004937c0       0x2c ohos/libs/libbroadcast.a(libbroadcast.pub_sub_feature.o)
  .text.OnInitialize
-                0x00000000004937ee       0x28 ohos/libs/libbroadcast.a(libbroadcast.pub_sub_feature.o)
- .text.OnStop   0x0000000000493816       0x24 ohos/libs/libbroadcast.a(libbroadcast.pub_sub_feature.o)
- .text.Init     0x000000000049383a       0x7e ohos/libs/libbroadcast.a(libbroadcast.pub_sub_feature.o)
+                0x00000000004937ec       0x28 ohos/libs/libbroadcast.a(libbroadcast.pub_sub_feature.o)
+ .text.OnStop   0x0000000000493814       0x24 ohos/libs/libbroadcast.a(libbroadcast.pub_sub_feature.o)
+ .text.Init     0x0000000000493838       0x7e ohos/libs/libbroadcast.a(libbroadcast.pub_sub_feature.o)
  .text.OnMessage
-                0x00000000004938b8       0x70 ohos/libs/libbroadcast.a(libbroadcast.pub_sub_feature.o)
+                0x00000000004938b6       0x70 ohos/libs/libbroadcast.a(libbroadcast.pub_sub_feature.o)
  .text.IsTopicEqual.isra.0
-                0x0000000000493928       0x2a ohos/libs/libbroadcast.a(libbroadcast.pub_sub_feature.o)
+                0x0000000000493926       0x2a ohos/libs/libbroadcast.a(libbroadcast.pub_sub_feature.o)
  .text.GetRelation
-                0x0000000000493952       0x62 ohos/libs/libbroadcast.a(libbroadcast.pub_sub_feature.o)
+                0x0000000000493950       0x62 ohos/libs/libbroadcast.a(libbroadcast.pub_sub_feature.o)
  .text.ImmediatelyPublish
-                0x00000000004939b4       0x9c ohos/libs/libbroadcast.a(libbroadcast.pub_sub_implement.o)
- .text.Publish  0x0000000000493a50       0x76 ohos/libs/libbroadcast.a(libbroadcast.pub_sub_implement.o)
+                0x00000000004939b2       0x9c ohos/libs/libbroadcast.a(libbroadcast.pub_sub_implement.o)
+ .text.Publish  0x0000000000493a4e       0x76 ohos/libs/libbroadcast.a(libbroadcast.pub_sub_implement.o)
  .text.DefaultHandle
-                0x0000000000493ac6       0x5c ohos/libs/libbroadcast.a(libbroadcast.pub_sub_implement.o)
+                0x0000000000493ac4       0x5c ohos/libs/libbroadcast.a(libbroadcast.pub_sub_implement.o)
  .text.Unsubscribe
-                0x0000000000493b22       0x94 ohos/libs/libbroadcast.a(libbroadcast.pub_sub_implement.o)
+                0x0000000000493b20       0x94 ohos/libs/libbroadcast.a(libbroadcast.pub_sub_implement.o)
  .text.ModifyConsumer
-                0x0000000000493bb6       0x84 ohos/libs/libbroadcast.a(libbroadcast.pub_sub_implement.o)
+                0x0000000000493bb4       0x84 ohos/libs/libbroadcast.a(libbroadcast.pub_sub_implement.o)
  .text.Subscribe
-                0x0000000000493c3a       0xb8 ohos/libs/libbroadcast.a(libbroadcast.pub_sub_implement.o)
+                0x0000000000493c38       0xb8 ohos/libs/libbroadcast.a(libbroadcast.pub_sub_implement.o)
  .text.AddTopic
-                0x0000000000493cf2       0x8a ohos/libs/libbroadcast.a(libbroadcast.pub_sub_implement.o)
+                0x0000000000493cf0       0x8a ohos/libs/libbroadcast.a(libbroadcast.pub_sub_implement.o)
  .text.BCE_CreateInstance
-                0x0000000000493d7c       0x32 ohos/libs/libbroadcast.a(libbroadcast.pub_sub_implement.o)
-                0x0000000000493d7c                BCE_CreateInstance
+                0x0000000000493d7a       0x32 ohos/libs/libbroadcast.a(libbroadcast.pub_sub_implement.o)
+                0x0000000000493d7a                BCE_CreateInstance
  .text.osKernelLock
-                0x0000000000493dae       0x44 ohos/libs/libcmsis.a(libcmsis.cmsis_liteos.o)
-                0x0000000000493dae                osKernelLock
+                0x0000000000493dac       0x44 ohos/libs/libcmsis.a(libcmsis.cmsis_liteos.o)
+                0x0000000000493dac                osKernelLock
  .text.osKernelUnlock
-                0x0000000000493df2       0x4c ohos/libs/libcmsis.a(libcmsis.cmsis_liteos.o)
-                0x0000000000493df2                osKernelUnlock
+                0x0000000000493df0       0x4c ohos/libs/libcmsis.a(libcmsis.cmsis_liteos.o)
+                0x0000000000493df0                osKernelUnlock
  .text.osKernelGetTickCount
-                0x0000000000493e3e       0x40 ohos/libs/libcmsis.a(libcmsis.cmsis_liteos.o)
-                0x0000000000493e3e                osKernelGetTickCount
+                0x0000000000493e3c       0x40 ohos/libs/libcmsis.a(libcmsis.cmsis_liteos.o)
+                0x0000000000493e3c                osKernelGetTickCount
  .text.osKernelGetTickFreq
-                0x0000000000493e7e       0x32 ohos/libs/libcmsis.a(libcmsis.cmsis_liteos.o)
-                0x0000000000493e7e                osKernelGetTickFreq
+                0x0000000000493e7c       0x32 ohos/libs/libcmsis.a(libcmsis.cmsis_liteos.o)
+                0x0000000000493e7c                osKernelGetTickFreq
  .text.osThreadNew
-                0x0000000000493eb0       0x86 ohos/libs/libcmsis.a(libcmsis.cmsis_liteos.o)
-                0x0000000000493eb0                osThreadNew
+                0x0000000000493eae       0x86 ohos/libs/libcmsis.a(libcmsis.cmsis_liteos.o)
+                0x0000000000493eae                osThreadNew
  .text.osThreadGetId
-                0x0000000000493f36       0x30 ohos/libs/libcmsis.a(libcmsis.cmsis_liteos.o)
-                0x0000000000493f36                osThreadGetId
+                0x0000000000493f34       0x30 ohos/libs/libcmsis.a(libcmsis.cmsis_liteos.o)
+                0x0000000000493f34                osThreadGetId
  .text.osThreadGetArgument
-                0x0000000000493f66       0x3a ohos/libs/libcmsis.a(libcmsis.cmsis_liteos.o)
-                0x0000000000493f66                osThreadGetArgument
+                0x0000000000493f64       0x3a ohos/libs/libcmsis.a(libcmsis.cmsis_liteos.o)
+                0x0000000000493f64                osThreadGetArgument
  .text.osThreadGetCount
-                0x0000000000493fa0       0x4c ohos/libs/libcmsis.a(libcmsis.cmsis_liteos.o)
-                0x0000000000493fa0                osThreadGetCount
+                0x0000000000493f9e       0x4c ohos/libs/libcmsis.a(libcmsis.cmsis_liteos.o)
+                0x0000000000493f9e                osThreadGetCount
  .text.osMutexNew
-                0x0000000000493fec       0x46 ohos/libs/libcmsis.a(libcmsis.cmsis_liteos.o)
-                0x0000000000493fec                osMutexNew
+                0x0000000000493fea       0x46 ohos/libs/libcmsis.a(libcmsis.cmsis_liteos.o)
+                0x0000000000493fea                osMutexNew
  .text.osMutexAcquire
-                0x0000000000494032       0x58 ohos/libs/libcmsis.a(libcmsis.cmsis_liteos.o)
-                0x0000000000494032                osMutexAcquire
+                0x0000000000494030       0x58 ohos/libs/libcmsis.a(libcmsis.cmsis_liteos.o)
+                0x0000000000494030                osMutexAcquire
  .text.osMutexRelease
-                0x000000000049408a       0x38 ohos/libs/libcmsis.a(libcmsis.cmsis_liteos.o)
-                0x000000000049408a                osMutexRelease
+                0x0000000000494088       0x38 ohos/libs/libcmsis.a(libcmsis.cmsis_liteos.o)
+                0x0000000000494088                osMutexRelease
  .text.osMessageQueueNew
-                0x00000000004940c2       0x5c ohos/libs/libcmsis.a(libcmsis.cmsis_liteos.o)
-                0x00000000004940c2                osMessageQueueNew
+                0x00000000004940c0       0x5c ohos/libs/libcmsis.a(libcmsis.cmsis_liteos.o)
+                0x00000000004940c0                osMessageQueueNew
  .text.osMessageQueuePut
-                0x000000000049411e       0x6c ohos/libs/libcmsis.a(libcmsis.cmsis_liteos.o)
-                0x000000000049411e                osMessageQueuePut
+                0x000000000049411c       0x6c ohos/libs/libcmsis.a(libcmsis.cmsis_liteos.o)
+                0x000000000049411c                osMessageQueuePut
  .text.osMessageQueueGet
-                0x000000000049418a       0x6a ohos/libs/libcmsis.a(libcmsis.cmsis_liteos.o)
-                0x000000000049418a                osMessageQueueGet
+                0x0000000000494188       0x6a ohos/libs/libcmsis.a(libcmsis.cmsis_liteos.o)
+                0x0000000000494188                osMessageQueueGet
  .text.osMessageQueueDelete
-                0x00000000004941f4       0x58 ohos/libs/libcmsis.a(libcmsis.cmsis_liteos.o)
-                0x00000000004941f4                osMessageQueueDelete
+                0x00000000004941f2       0x58 ohos/libs/libcmsis.a(libcmsis.cmsis_liteos.o)
+                0x00000000004941f2                osMessageQueueDelete
  .text.HalFileOpen
-                0x000000000049424c       0x28 ohos/libs/libhal_file_static.a(libhal_file_static.hal_file.o)
-                0x000000000049424c                HalFileOpen
+                0x000000000049424a       0x28 ohos/libs/libhal_file_static.a(libhal_file_static.hal_file.o)
+                0x000000000049424a                HalFileOpen
  .text.HalFileRead
-                0x0000000000494274       0x28 ohos/libs/libhal_file_static.a(libhal_file_static.hal_file.o)
-                0x0000000000494274                HalFileRead
+                0x0000000000494272       0x28 ohos/libs/libhal_file_static.a(libhal_file_static.hal_file.o)
+                0x0000000000494272                HalFileRead
  .text.HalFileWrite
-                0x000000000049429c       0x28 ohos/libs/libhal_file_static.a(libhal_file_static.hal_file.o)
-                0x000000000049429c                HalFileWrite
+                0x000000000049429a       0x28 ohos/libs/libhal_file_static.a(libhal_file_static.hal_file.o)
+                0x000000000049429a                HalFileWrite
  .text.HalFileSeek
-                0x00000000004942c4       0x28 ohos/libs/libhal_file_static.a(libhal_file_static.hal_file.o)
-                0x00000000004942c4                HalFileSeek
+                0x00000000004942c2       0x28 ohos/libs/libhal_file_static.a(libhal_file_static.hal_file.o)
+                0x00000000004942c2                HalFileSeek
  .text.IoTGpioInit
-                0x00000000004942ec       0x68 ohos/libs/libhal_iothardware.a(libhal_iothardware.hal_iot_gpio.o)
-                0x00000000004942ec                IoTGpioInit
+                0x00000000004942ea       0x68 ohos/libs/libhal_iothardware.a(libhal_iothardware.hal_iot_gpio.o)
+                0x00000000004942ea                IoTGpioInit
  .text.IoTGpioSetDir
-                0x0000000000494354       0x28 ohos/libs/libhal_iothardware.a(libhal_iothardware.hal_iot_gpio.o)
-                0x0000000000494354                IoTGpioSetDir
+                0x0000000000494352       0x28 ohos/libs/libhal_iothardware.a(libhal_iothardware.hal_iot_gpio.o)
+                0x0000000000494352                IoTGpioSetDir
  .text.IoTGpioSetOutputVal
-                0x000000000049437c       0x28 ohos/libs/libhal_iothardware.a(libhal_iothardware.hal_iot_gpio.o)
-                0x000000000049437c                IoTGpioSetOutputVal
+                0x000000000049437a       0x28 ohos/libs/libhal_iothardware.a(libhal_iothardware.hal_iot_gpio.o)
+                0x000000000049437a                IoTGpioSetOutputVal
  .text.IoTI2cWrite
-                0x00000000004943a4       0x32 ohos/libs/libhal_iothardware.a(libhal_iothardware.hal_iot_i2c.o)
-                0x00000000004943a4                IoTI2cWrite
+                0x00000000004943a2       0x32 ohos/libs/libhal_iothardware.a(libhal_iothardware.hal_iot_i2c.o)
+                0x00000000004943a2                IoTI2cWrite
  .text.IoTI2cRead
-                0x00000000004943d6       0x32 ohos/libs/libhal_iothardware.a(libhal_iothardware.hal_iot_i2c.o)
-                0x00000000004943d6                IoTI2cRead
+                0x00000000004943d4       0x32 ohos/libs/libhal_iothardware.a(libhal_iothardware.hal_iot_i2c.o)
+                0x00000000004943d4                IoTI2cRead
  .text.IoTI2cInit
-                0x0000000000494408       0x28 ohos/libs/libhal_iothardware.a(libhal_iothardware.hal_iot_i2c.o)
-                0x0000000000494408                IoTI2cInit
+                0x0000000000494406       0x28 ohos/libs/libhal_iothardware.a(libhal_iothardware.hal_iot_i2c.o)
+                0x0000000000494406                IoTI2cInit
  .text.HiEventInit
-                0x0000000000494430       0x4e ohos/libs/libhievent_lite.a(libhievent_lite.hiview_event.o)
+                0x000000000049442e       0x4e ohos/libs/libhievent_lite.a(libhievent_lite.hiview_event.o)
  .text.GetEventCache
-                0x000000000049447e       0x72 ohos/libs/libhievent_lite.a(libhievent_lite.hiview_output_event.o)
+                0x000000000049447c       0x72 ohos/libs/libhievent_lite.a(libhievent_lite.hiview_output_event.o)
  .text.Output2Flash
-                0x00000000004944f0      0x11e ohos/libs/libhievent_lite.a(libhievent_lite.hiview_output_event.o)
+                0x00000000004944ee      0x11e ohos/libs/libhievent_lite.a(libhievent_lite.hiview_output_event.o)
  .text.OutputEvent2Flash
-                0x000000000049460e       0x2c ohos/libs/libhievent_lite.a(libhievent_lite.hiview_output_event.o)
+                0x000000000049460c       0x2c ohos/libs/libhievent_lite.a(libhievent_lite.hiview_output_event.o)
  .text.InitFaultEventOutput
-                0x000000000049463a       0x78 ohos/libs/libhievent_lite.a(libhievent_lite.hiview_output_event.o)
+                0x0000000000494638       0x78 ohos/libs/libhievent_lite.a(libhievent_lite.hiview_output_event.o)
  .text.InitUeEventOutput
-                0x00000000004946b2       0x78 ohos/libs/libhievent_lite.a(libhievent_lite.hiview_output_event.o)
+                0x00000000004946b0       0x78 ohos/libs/libhievent_lite.a(libhievent_lite.hiview_output_event.o)
  .text.InitStatEventOutput
-                0x000000000049472a       0x78 ohos/libs/libhievent_lite.a(libhievent_lite.hiview_output_event.o)
+                0x0000000000494728       0x78 ohos/libs/libhievent_lite.a(libhievent_lite.hiview_output_event.o)
  .text.InitCoreEventOutput
-                0x00000000004947a2       0x4c ohos/libs/libhievent_lite.a(libhievent_lite.hiview_output_event.o)
-                0x00000000004947a2                InitCoreEventOutput
+                0x00000000004947a0       0x4c ohos/libs/libhievent_lite.a(libhievent_lite.hiview_output_event.o)
+                0x00000000004947a0                InitCoreEventOutput
  .text.InitEventOutput
-                0x00000000004947ee       0x30 ohos/libs/libhievent_lite.a(libhievent_lite.hiview_output_event.o)
-                0x00000000004947ee                InitEventOutput
+                0x00000000004947ec       0x30 ohos/libs/libhievent_lite.a(libhievent_lite.hiview_output_event.o)
+                0x00000000004947ec                InitEventOutput
  .text.EventContentFmt
-                0x000000000049481e       0xb8 ohos/libs/libhievent_lite.a(libhievent_lite.hiview_output_event.o)
-                0x000000000049481e                EventContentFmt
+                0x000000000049481c       0xb8 ohos/libs/libhievent_lite.a(libhievent_lite.hiview_output_event.o)
+                0x000000000049481c                EventContentFmt
  .text.OutputEventRealtime
-                0x00000000004948d6       0xec ohos/libs/libhievent_lite.a(libhievent_lite.hiview_output_event.o)
+                0x00000000004948d4       0xec ohos/libs/libhievent_lite.a(libhievent_lite.hiview_output_event.o)
  .text.CheckParameters
-                0x00000000004949c2       0x58 ohos/libs/libhilog_lite.a(libhilog_lite.hiview_log.o)
+                0x00000000004949c0       0x58 ohos/libs/libhilog_lite.a(libhilog_lite.hiview_log.o)
  .text.HiLogRegisterModule
-                0x0000000000494a1a       0x96 ohos/libs/libhilog_lite.a(libhilog_lite.hiview_log.o)
-                0x0000000000494a1a                HiLogRegisterModule
+                0x0000000000494a18       0x96 ohos/libs/libhilog_lite.a(libhilog_lite.hiview_log.o)
+                0x0000000000494a18                HiLogRegisterModule
  .text.HiLogGetModuleName
-                0x0000000000494ab0       0x4a ohos/libs/libhilog_lite.a(libhilog_lite.hiview_log.o)
-                0x0000000000494ab0                HiLogGetModuleName
+                0x0000000000494aae       0x4a ohos/libs/libhilog_lite.a(libhilog_lite.hiview_log.o)
+                0x0000000000494aae                HiLogGetModuleName
  .text.HiLogPrintf
-                0x0000000000494afa      0x102 ohos/libs/libhilog_lite.a(libhilog_lite.hiview_log.o)
-                0x0000000000494afa                HiLogPrintf
+                0x0000000000494af8      0x102 ohos/libs/libhilog_lite.a(libhilog_lite.hiview_log.o)
+                0x0000000000494af8                HiLogPrintf
  .text.HiLogInit
-                0x0000000000494bfc      0x120 ohos/libs/libhilog_lite.a(libhilog_lite.hiview_log.o)
+                0x0000000000494bfa      0x120 ohos/libs/libhilog_lite.a(libhilog_lite.hiview_log.o)
  .text.SetLimitThreshold
-                0x0000000000494d1c       0x3e ohos/libs/libhilog_lite.a(libhilog_lite.hiview_log_limit.o)
+                0x0000000000494d1a       0x3e ohos/libs/libhilog_lite.a(libhilog_lite.hiview_log_limit.o)
  .text.InitLogLimit
-                0x0000000000494d5a       0x8a ohos/libs/libhilog_lite.a(libhilog_lite.hiview_log_limit.o)
-                0x0000000000494d5a                InitLogLimit
+                0x0000000000494d58       0x8a ohos/libs/libhilog_lite.a(libhilog_lite.hiview_log_limit.o)
+                0x0000000000494d58                InitLogLimit
  .text.LogIsLimited
-                0x0000000000494de4       0xc2 ohos/libs/libhilog_lite.a(libhilog_lite.hiview_log_limit.o)
-                0x0000000000494de4                LogIsLimited
+                0x0000000000494de2       0xc2 ohos/libs/libhilog_lite.a(libhilog_lite.hiview_log_limit.o)
+                0x0000000000494de2                LogIsLimited
  .text.OutputLog2BinFile
-                0x0000000000494ea6      0x13a ohos/libs/libhilog_lite.a(libhilog_lite.hiview_output_log.o)
+                0x0000000000494ea4      0x13a ohos/libs/libhilog_lite.a(libhilog_lite.hiview_output_log.o)
  .text.LogCommonFmt
-                0x0000000000494fe0       0x92 ohos/libs/libhilog_lite.a(libhilog_lite.hiview_output_log.o)
+                0x0000000000494fde       0x92 ohos/libs/libhilog_lite.a(libhilog_lite.hiview_output_log.o)
  .text.LogValuesFmtHash
-                0x0000000000495072       0x84 ohos/libs/libhilog_lite.a(libhilog_lite.hiview_output_log.o)
+                0x0000000000495070       0x84 ohos/libs/libhilog_lite.a(libhilog_lite.hiview_output_log.o)
  .text.LogValuesFmt
-                0x00000000004950f6      0x128 ohos/libs/libhilog_lite.a(libhilog_lite.hiview_output_log.o)
+                0x00000000004950f4      0x128 ohos/libs/libhilog_lite.a(libhilog_lite.hiview_output_log.o)
  .text.LogDebugValuesFmt
-                0x000000000049521e       0xce ohos/libs/libhilog_lite.a(libhilog_lite.hiview_output_log.o)
+                0x000000000049521c       0xce ohos/libs/libhilog_lite.a(libhilog_lite.hiview_output_log.o)
  .text.InitCoreLogOutput
-                0x00000000004952ec       0x72 ohos/libs/libhilog_lite.a(libhilog_lite.hiview_output_log.o)
-                0x00000000004952ec                InitCoreLogOutput
+                0x00000000004952ea       0x72 ohos/libs/libhilog_lite.a(libhilog_lite.hiview_output_log.o)
+                0x00000000004952ea                InitCoreLogOutput
  .text.InitLogOutput
-                0x000000000049535e       0x68 ohos/libs/libhilog_lite.a(libhilog_lite.hiview_output_log.o)
-                0x000000000049535e                InitLogOutput
+                0x000000000049535c       0x68 ohos/libs/libhilog_lite.a(libhilog_lite.hiview_output_log.o)
+                0x000000000049535c                InitLogOutput
  .text.LogContentFmt
-                0x00000000004953c6       0x96 ohos/libs/libhilog_lite.a(libhilog_lite.hiview_output_log.o)
-                0x00000000004953c6                LogContentFmt
+                0x00000000004953c4       0x96 ohos/libs/libhilog_lite.a(libhilog_lite.hiview_output_log.o)
+                0x00000000004953c4                LogContentFmt
  .text.OutputLogRealtime
-                0x000000000049545c       0xba ohos/libs/libhilog_lite.a(libhilog_lite.hiview_output_log.o)
+                0x000000000049545a       0xba ohos/libs/libhilog_lite.a(libhilog_lite.hiview_output_log.o)
  .text.OutputLog2TextFile
-                0x0000000000495516      0x104 ohos/libs/libhilog_lite.a(libhilog_lite.hiview_output_log.o)
+                0x0000000000495514      0x104 ohos/libs/libhilog_lite.a(libhilog_lite.hiview_output_log.o)
  .text.OutputLog
-                0x000000000049561a      0x106 ohos/libs/libhilog_lite.a(libhilog_lite.hiview_output_log.o)
-                0x000000000049561a                OutputLog
+                0x0000000000495618      0x106 ohos/libs/libhilog_lite.a(libhilog_lite.hiview_output_log.o)
+                0x0000000000495618                OutputLog
  .text.GetReadCursor
-                0x0000000000495720       0x5a ohos/libs/libhiview_lite.a(libhiview_lite.hiview_cache.o)
+                0x000000000049571e       0x5a ohos/libs/libhiview_lite.a(libhiview_lite.hiview_cache.o)
  .text.InitHiviewStaticCache
-                0x000000000049577a       0x50 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_cache.o)
-                0x000000000049577a                InitHiviewStaticCache
+                0x0000000000495778       0x50 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_cache.o)
+                0x0000000000495778                InitHiviewStaticCache
  .text.InitHiviewCache
-                0x00000000004957ca       0x56 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_cache.o)
-                0x00000000004957ca                InitHiviewCache
+                0x00000000004957c8       0x56 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_cache.o)
+                0x00000000004957c8                InitHiviewCache
  .text.WriteToCache
-                0x0000000000495820      0x100 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_cache.o)
-                0x0000000000495820                WriteToCache
+                0x000000000049581e      0x100 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_cache.o)
+                0x000000000049581e                WriteToCache
  .text.ReadFromCache
-                0x0000000000495920       0xb8 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_cache.o)
-                0x0000000000495920                ReadFromCache
+                0x000000000049591e       0xb8 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_cache.o)
+                0x000000000049591e                ReadFromCache
  .text.DiscardCacheData
-                0x00000000004959d8       0x2a ohos/libs/libhiview_lite.a(libhiview_lite.hiview_cache.o)
-                0x00000000004959d8                DiscardCacheData
+                0x00000000004959d6       0x2a ohos/libs/libhiview_lite.a(libhiview_lite.hiview_cache.o)
+                0x00000000004959d6                DiscardCacheData
  .text.HiviewConfigInit
-                0x0000000000495a02       0x46 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_config.o)
+                0x0000000000495a00       0x46 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_config.o)
  .text.IsHiviewEvent
-                0x0000000000495a48       0x36 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_file.o)
+                0x0000000000495a46       0x36 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_file.o)
  .text.WriteFileHeader
-                0x0000000000495a7e       0x7e ohos/libs/libhiview_lite.a(libhiview_lite.hiview_file.o)
-                0x0000000000495a7e                WriteFileHeader
+                0x0000000000495a7c       0x7e ohos/libs/libhiview_lite.a(libhiview_lite.hiview_file.o)
+                0x0000000000495a7c                WriteFileHeader
  .text.ReadFileHeader
-                0x0000000000495afc       0xb2 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_file.o)
-                0x0000000000495afc                ReadFileHeader
+                0x0000000000495afa       0xb2 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_file.o)
+                0x0000000000495afa                ReadFileHeader
  .text.InitHiviewFile
-                0x0000000000495bae       0xda ohos/libs/libhiview_lite.a(libhiview_lite.hiview_file.o)
-                0x0000000000495bae                InitHiviewFile
+                0x0000000000495bac       0xda ohos/libs/libhiview_lite.a(libhiview_lite.hiview_file.o)
+                0x0000000000495bac                InitHiviewFile
  .text.GetFileFreeSize
-                0x0000000000495c88       0x3e ohos/libs/libhiview_lite.a(libhiview_lite.hiview_file.o)
-                0x0000000000495c88                GetFileFreeSize
+                0x0000000000495c86       0x3e ohos/libs/libhiview_lite.a(libhiview_lite.hiview_file.o)
+                0x0000000000495c86                GetFileFreeSize
  .text.WriteToFile
-                0x0000000000495cc6      0x146 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_file.o)
-                0x0000000000495cc6                WriteToFile
- .text.GetName  0x0000000000495e0c       0x2c ohos/libs/libhiview_lite.a(libhiview_lite.hiview_service.o)
+                0x0000000000495cc4      0x146 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_file.o)
+                0x0000000000495cc4                WriteToFile
+ .text.GetName  0x0000000000495e0a       0x2c ohos/libs/libhiview_lite.a(libhiview_lite.hiview_service.o)
  .text.MessageHandle
-                0x0000000000495e38       0x4a ohos/libs/libhiview_lite.a(libhiview_lite.hiview_service.o)
+                0x0000000000495e36       0x4a ohos/libs/libhiview_lite.a(libhiview_lite.hiview_service.o)
  .text.GetTaskConfig
-                0x0000000000495e82       0x3c ohos/libs/libhiview_lite.a(libhiview_lite.hiview_service.o)
+                0x0000000000495e80       0x3c ohos/libs/libhiview_lite.a(libhiview_lite.hiview_service.o)
  .text.InitHiviewComponent
-                0x0000000000495ebe       0x3e ohos/libs/libhiview_lite.a(libhiview_lite.hiview_service.o)
- .text.Init     0x0000000000495efc       0x50 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_service.o)
- .text.Output   0x0000000000495f4c       0x3a ohos/libs/libhiview_lite.a(libhiview_lite.hiview_service.o)
+                0x0000000000495ebc       0x3e ohos/libs/libhiview_lite.a(libhiview_lite.hiview_service.o)
+ .text.Init     0x0000000000495efa       0x50 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_service.o)
+ .text.Output   0x0000000000495f4a       0x3a ohos/libs/libhiview_lite.a(libhiview_lite.hiview_service.o)
  .text.Initialize
-                0x0000000000495f86       0x50 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_service.o)
+                0x0000000000495f84       0x50 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_service.o)
  .text.HiviewRegisterInitFunc
-                0x0000000000495fd6       0x34 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_service.o)
-                0x0000000000495fd6                HiviewRegisterInitFunc
+                0x0000000000495fd4       0x34 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_service.o)
+                0x0000000000495fd4                HiviewRegisterInitFunc
  .text.HiviewRegisterMsgHandle
-                0x000000000049600a       0x34 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_service.o)
-                0x000000000049600a                HiviewRegisterMsgHandle
+                0x0000000000496008       0x34 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_service.o)
+                0x0000000000496008                HiviewRegisterMsgHandle
  .text.HiviewSendMessage
-                0x000000000049603e       0x5c ohos/libs/libhiview_lite.a(libhiview_lite.hiview_service.o)
-                0x000000000049603e                HiviewSendMessage
+                0x000000000049603c       0x5c ohos/libs/libhiview_lite.a(libhiview_lite.hiview_service.o)
+                0x000000000049603c                HiviewSendMessage
  .text.HIVIEW_MemAlloc
-                0x000000000049609a       0x2a ohos/libs/libhiview_lite.a(libhiview_lite.hiview_util.o)
-                0x000000000049609a                HIVIEW_MemAlloc
+                0x0000000000496098       0x2a ohos/libs/libhiview_lite.a(libhiview_lite.hiview_util.o)
+                0x0000000000496098                HIVIEW_MemAlloc
  .text.HIVIEW_MemFree
-                0x00000000004960c4       0x2a ohos/libs/libhiview_lite.a(libhiview_lite.hiview_util.o)
-                0x00000000004960c4                HIVIEW_MemFree
+                0x00000000004960c2       0x2a ohos/libs/libhiview_lite.a(libhiview_lite.hiview_util.o)
+                0x00000000004960c2                HIVIEW_MemFree
  .text.HIVIEW_GetCurrentTime
-                0x00000000004960ee       0x3e ohos/libs/libhiview_lite.a(libhiview_lite.hiview_util.o)
-                0x00000000004960ee                HIVIEW_GetCurrentTime
+                0x00000000004960ec       0x3e ohos/libs/libhiview_lite.a(libhiview_lite.hiview_util.o)
+                0x00000000004960ec                HIVIEW_GetCurrentTime
  .text.HIVIEW_MutexInit
-                0x000000000049612c       0x2a ohos/libs/libhiview_lite.a(libhiview_lite.hiview_util.o)
-                0x000000000049612c                HIVIEW_MutexInit
+                0x000000000049612a       0x2a ohos/libs/libhiview_lite.a(libhiview_lite.hiview_util.o)
+                0x000000000049612a                HIVIEW_MutexInit
  .text.HIVIEW_MutexLock
-                0x0000000000496156       0x2a ohos/libs/libhiview_lite.a(libhiview_lite.hiview_util.o)
-                0x0000000000496156                HIVIEW_MutexLock
+                0x0000000000496154       0x2a ohos/libs/libhiview_lite.a(libhiview_lite.hiview_util.o)
+                0x0000000000496154                HIVIEW_MutexLock
  .text.HIVIEW_MutexUnlock
-                0x0000000000496180       0x28 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_util.o)
-                0x0000000000496180                HIVIEW_MutexUnlock
+                0x000000000049617e       0x28 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_util.o)
+                0x000000000049617e                HIVIEW_MutexUnlock
  .text.HIVIEW_GetTaskId
-                0x00000000004961a8       0x28 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_util.o)
-                0x00000000004961a8                HIVIEW_GetTaskId
+                0x00000000004961a6       0x28 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_util.o)
+                0x00000000004961a6                HIVIEW_GetTaskId
  .text.HIVIEW_UartPrint
-                0x00000000004961d0       0x32 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_util.o)
-                0x00000000004961d0                HIVIEW_UartPrint
+                0x00000000004961ce       0x32 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_util.o)
+                0x00000000004961ce                HIVIEW_UartPrint
  .text.HIVIEW_FileOpen
-                0x0000000000496202       0x2c ohos/libs/libhiview_lite.a(libhiview_lite.hiview_util.o)
-                0x0000000000496202                HIVIEW_FileOpen
+                0x0000000000496200       0x2c ohos/libs/libhiview_lite.a(libhiview_lite.hiview_util.o)
+                0x0000000000496200                HIVIEW_FileOpen
  .text.HIVIEW_FileRead
-                0x000000000049622e       0x26 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_util.o)
-                0x000000000049622e                HIVIEW_FileRead
+                0x000000000049622c       0x26 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_util.o)
+                0x000000000049622c                HIVIEW_FileRead
  .text.HIVIEW_FileWrite
-                0x0000000000496254       0x26 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_util.o)
-                0x0000000000496254                HIVIEW_FileWrite
+                0x0000000000496252       0x26 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_util.o)
+                0x0000000000496252                HIVIEW_FileWrite
  .text.HIVIEW_FileSeek
-                0x000000000049627a       0x26 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_util.o)
-                0x000000000049627a                HIVIEW_FileSeek
+                0x0000000000496278       0x26 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_util.o)
+                0x0000000000496278                HIVIEW_FileSeek
  .text.Change32Endian
-                0x00000000004962a0       0x44 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_util.o)
-                0x00000000004962a0                Change32Endian
+                0x000000000049629e       0x44 ohos/libs/libhiview_lite.a(libhiview_lite.hiview_util.o)
+                0x000000000049629e                Change32Endian
  .text.Change16Endian
-                0x00000000004962e4       0x2e ohos/libs/libhiview_lite.a(libhiview_lite.hiview_util.o)
-                0x00000000004962e4                Change16Endian
+                0x00000000004962e2       0x2e ohos/libs/libhiview_lite.a(libhiview_lite.hiview_util.o)
+                0x00000000004962e2                Change16Endian
  .text.UtilsFileOpen
-                0x0000000000496312       0x28 ohos/libs/libnative_file.a(libnative_file.file.o)
-                0x0000000000496312                UtilsFileOpen
+                0x0000000000496310       0x28 ohos/libs/libnative_file.a(libnative_file.file.o)
+                0x0000000000496310                UtilsFileOpen
  .text.UtilsFileRead
-                0x000000000049633a       0x28 ohos/libs/libnative_file.a(libnative_file.file.o)
-                0x000000000049633a                UtilsFileRead
+                0x0000000000496338       0x28 ohos/libs/libnative_file.a(libnative_file.file.o)
+                0x0000000000496338                UtilsFileRead
  .text.UtilsFileWrite
-                0x0000000000496362       0x28 ohos/libs/libnative_file.a(libnative_file.file.o)
-                0x0000000000496362                UtilsFileWrite
+                0x0000000000496360       0x28 ohos/libs/libnative_file.a(libnative_file.file.o)
+                0x0000000000496360                UtilsFileWrite
  .text.UtilsFileSeek
-                0x000000000049638a       0x28 ohos/libs/libnative_file.a(libnative_file.file.o)
-                0x000000000049638a                UtilsFileSeek
+                0x0000000000496388       0x28 ohos/libs/libnative_file.a(libnative_file.file.o)
+                0x0000000000496388                UtilsFileSeek
  .text.OledWriteByte
-                0x00000000004963b2       0x3a ohos/libs/liboled.a(liboled.oled.o)
+                0x00000000004963b0       0x3a ohos/libs/liboled.a(liboled.oled.o)
  .text.OledWriteData
-                0x00000000004963ec       0x2e ohos/libs/liboled.a(liboled.oled.o)
+                0x00000000004963ea       0x2e ohos/libs/liboled.a(liboled.oled.o)
  .text.OledWriteCmd
-                0x000000000049641a       0x2c ohos/libs/liboled.a(liboled.oled.o)
+                0x0000000000496418       0x2c ohos/libs/liboled.a(liboled.oled.o)
  .text.OledWriteDatas.constprop.0
-                0x0000000000496446       0x58 ohos/libs/liboled.a(liboled.oled.o)
+                0x0000000000496444       0x58 ohos/libs/liboled.a(liboled.oled.o)
  .text.OLED_WR_Byte
-                0x000000000049649e       0x32 ohos/libs/liboled.a(liboled.oled.o)
-                0x000000000049649e                OLED_WR_Byte
+                0x000000000049649c       0x32 ohos/libs/liboled.a(liboled.oled.o)
+                0x000000000049649c                OLED_WR_Byte
  .text.OLED_Refresh_Gram
-                0x00000000004964d0       0x8a ohos/libs/liboled.a(liboled.oled.o)
-                0x00000000004964d0                OLED_Refresh_Gram
+                0x00000000004964ce       0x8a ohos/libs/liboled.a(liboled.oled.o)
+                0x00000000004964ce                OLED_Refresh_Gram
  .text.OLED_Clear
-                0x000000000049655a       0x4e ohos/libs/liboled.a(liboled.oled.o)
-                0x000000000049655a                OLED_Clear
+                0x0000000000496558       0x4e ohos/libs/liboled.a(liboled.oled.o)
+                0x0000000000496558                OLED_Clear
  .text.OLED_DrawPoint
-                0x00000000004965a8       0x76 ohos/libs/liboled.a(liboled.oled.o)
-                0x00000000004965a8                OLED_DrawPoint
+                0x00000000004965a6       0x76 ohos/libs/liboled.a(liboled.oled.o)
+                0x00000000004965a6                OLED_DrawPoint
  .text.OLED_ShowChar
-                0x000000000049661e      0x10a ohos/libs/liboled.a(liboled.oled.o)
-                0x000000000049661e                OLED_ShowChar
+                0x000000000049661c      0x10a ohos/libs/liboled.a(liboled.oled.o)
+                0x000000000049661c                OLED_ShowChar
  .text.OLED_ShowString
-                0x0000000000496728       0x84 ohos/libs/liboled.a(liboled.oled.o)
-                0x0000000000496728                OLED_ShowString
+                0x0000000000496726       0x84 ohos/libs/liboled.a(liboled.oled.o)
+                0x0000000000496726                OLED_ShowString
  .text.OLED_Init
-                0x00000000004967ac      0x128 ohos/libs/liboled.a(liboled.oled.o)
-                0x00000000004967ac                OLED_Init
+                0x00000000004967aa      0x128 ohos/libs/liboled.a(liboled.oled.o)
+                0x00000000004967aa                OLED_Init
  .text.OledDemo
-                0x00000000004968d4       0x68 ohos/libs/liboled.a(liboled.oled_demo.o)
+                0x00000000004968d2       0x68 ohos/libs/liboled.a(liboled.oled_demo.o)
  .text.OledTask
-                0x000000000049693c      0x19e ohos/libs/liboled.a(liboled.oled_demo.o)
+                0x000000000049693a      0x19e ohos/libs/liboled.a(liboled.oled_demo.o)
  .text.MQTTSerialize_connectLength
-                0x0000000000496ada       0xba ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTConnectClient.o)
-                0x0000000000496ada                MQTTSerialize_connectLength
+                0x0000000000496ad8       0xba ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTConnectClient.o)
+                0x0000000000496ad8                MQTTSerialize_connectLength
  .text.MQTTSerialize_connect
-                0x0000000000496b94      0x14a ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTConnectClient.o)
-                0x0000000000496b94                MQTTSerialize_connect
+                0x0000000000496b92      0x14a ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTConnectClient.o)
+                0x0000000000496b92                MQTTSerialize_connect
  .text.MQTTDeserialize_connack
-                0x0000000000496cde       0x64 ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTConnectClient.o)
-                0x0000000000496cde                MQTTDeserialize_connack
+                0x0000000000496cdc       0x64 ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTConnectClient.o)
+                0x0000000000496cdc                MQTTDeserialize_connack
  .text.MQTTSerialize_zero
-                0x0000000000496d42       0x4e ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTConnectClient.o)
-                0x0000000000496d42                MQTTSerialize_zero
+                0x0000000000496d40       0x4e ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTConnectClient.o)
+                0x0000000000496d40                MQTTSerialize_zero
  .text.MQTTSerialize_disconnect
-                0x0000000000496d90       0x2a ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTConnectClient.o)
-                0x0000000000496d90                MQTTSerialize_disconnect
- .text.bufchar  0x0000000000496dba       0x5c ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTPacket.o)
-                0x0000000000496dba                bufchar
+                0x0000000000496d8e       0x2a ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTConnectClient.o)
+                0x0000000000496d8e                MQTTSerialize_disconnect
+ .text.bufchar  0x0000000000496db8       0x5c ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTPacket.o)
+                0x0000000000496db8                bufchar
  .text.MQTTPacket_encode
-                0x0000000000496e16       0x50 ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTPacket.o)
-                0x0000000000496e16                MQTTPacket_encode
+                0x0000000000496e14       0x50 ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTPacket.o)
+                0x0000000000496e14                MQTTPacket_encode
  .text.MQTTPacket_decode
-                0x0000000000496e66       0x6a ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTPacket.o)
-                0x0000000000496e66                MQTTPacket_decode
+                0x0000000000496e64       0x6a ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTPacket.o)
+                0x0000000000496e64                MQTTPacket_decode
  .text.MQTTPacket_len
-                0x0000000000496ed0       0x50 ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTPacket.o)
-                0x0000000000496ed0                MQTTPacket_len
+                0x0000000000496ece       0x50 ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTPacket.o)
+                0x0000000000496ece                MQTTPacket_len
  .text.MQTTPacket_decodeBuf
-                0x0000000000496f20       0x38 ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTPacket.o)
-                0x0000000000496f20                MQTTPacket_decodeBuf
+                0x0000000000496f1e       0x38 ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTPacket.o)
+                0x0000000000496f1e                MQTTPacket_decodeBuf
  .text.readChar
-                0x0000000000496f58       0x30 ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTPacket.o)
-                0x0000000000496f58                readChar
+                0x0000000000496f56       0x30 ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTPacket.o)
+                0x0000000000496f56                readChar
  .text.writeChar
-                0x0000000000496f88       0x30 ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTPacket.o)
-                0x0000000000496f88                writeChar
+                0x0000000000496f86       0x30 ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTPacket.o)
+                0x0000000000496f86                writeChar
  .text.writeInt
-                0x0000000000496fb8       0x48 ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTPacket.o)
-                0x0000000000496fb8                writeInt
+                0x0000000000496fb6       0x48 ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTPacket.o)
+                0x0000000000496fb6                writeInt
  .text.writeCString
-                0x0000000000497000       0x48 ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTPacket.o)
-                0x0000000000497000                writeCString
+                0x0000000000496ffe       0x48 ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTPacket.o)
+                0x0000000000496ffe                writeCString
  .text.writeMQTTString
-                0x0000000000497048       0x60 ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTPacket.o)
-                0x0000000000497048                writeMQTTString
+                0x0000000000497046       0x60 ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTPacket.o)
+                0x0000000000497046                writeMQTTString
  .text.MQTTstrlen
-                0x00000000004970a8       0x34 ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTPacket.o)
-                0x00000000004970a8                MQTTstrlen
+                0x00000000004970a6       0x34 ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTPacket.o)
+                0x00000000004970a6                MQTTstrlen
  .text.MQTTPacket_read
-                0x00000000004970dc       0x6c ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTPacket.o)
-                0x00000000004970dc                MQTTPacket_read
+                0x00000000004970da       0x6c ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTPacket.o)
+                0x00000000004970da                MQTTPacket_read
  .text.MQTTSerialize_publishLength
-                0x0000000000497148       0x40 ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTSerializePublish.o)
-                0x0000000000497148                MQTTSerialize_publishLength
+                0x0000000000497146       0x40 ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTSerializePublish.o)
+                0x0000000000497146                MQTTSerialize_publishLength
  .text.MQTTSerialize_publish
-                0x0000000000497188       0xb4 ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTSerializePublish.o)
-                0x0000000000497188                MQTTSerialize_publish
+                0x0000000000497186       0xb4 ohos/libs/libpahomqtt_static.a(libpahomqtt_static.MQTTSerializePublish.o)
+                0x0000000000497186                MQTTSerialize_publish
  .text.transport_sendPacketBuffer
-                0x000000000049723c       0x2a ohos/libs/libpahomqtt_static.a(libpahomqtt_static.transport.o)
-                0x000000000049723c                transport_sendPacketBuffer
+                0x000000000049723a       0x2a ohos/libs/libpahomqtt_static.a(libpahomqtt_static.transport.o)
+                0x000000000049723a                transport_sendPacketBuffer
  .text.transport_getdata
-                0x0000000000497266       0x36 ohos/libs/libpahomqtt_static.a(libpahomqtt_static.transport.o)
-                0x0000000000497266                transport_getdata
+                0x0000000000497264       0x36 ohos/libs/libpahomqtt_static.a(libpahomqtt_static.transport.o)
+                0x0000000000497264                transport_getdata
  .text.transport_open
-                0x000000000049729c      0x13c ohos/libs/libpahomqtt_static.a(libpahomqtt_static.transport.o)
-                0x000000000049729c                transport_open
+                0x000000000049729a      0x13c ohos/libs/libpahomqtt_static.a(libpahomqtt_static.transport.o)
+                0x000000000049729a                transport_open
  .text.transport_close
-                0x00000000004973d8       0x3e ohos/libs/libpahomqtt_static.a(libpahomqtt_static.transport.o)
-                0x00000000004973d8                transport_close
+                0x00000000004973d6       0x3e ohos/libs/libpahomqtt_static.a(libpahomqtt_static.transport.o)
+                0x00000000004973d6                transport_close
  .text.GetImplement
-                0x0000000000497416       0x2c ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
+                0x0000000000497414       0x2c ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
  .text.GetServiceName
-                0x0000000000497442       0x32 ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
- .text.Init     0x0000000000497474       0xfe ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
+                0x0000000000497440       0x32 ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
+ .text.Init     0x0000000000497472       0xfe ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
  .text.GetSystemAvailableCapabilities
-                0x0000000000497572       0x34 ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
+                0x0000000000497570       0x34 ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
  .text.HasSystemCapability
-                0x00000000004975a6       0x48 ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
+                0x00000000004975a4       0x48 ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
  .text.AddSystemCapability
-                0x00000000004975ee       0x4a ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
+                0x00000000004975ec       0x4a ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
  .text.GetService
-                0x0000000000497638       0x64 ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
+                0x0000000000497636       0x64 ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
  .text.GetFeatureApi
-                0x000000000049769c       0x4e ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
+                0x000000000049769a       0x4e ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
  .text.GetDefaultFeatureApi
-                0x00000000004976ea       0x2a ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
+                0x00000000004976e8       0x2a ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
  .text.UnregisterFeatureApi
-                0x0000000000497714       0x46 ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
+                0x0000000000497712       0x46 ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
  .text.UnregisterDefaultFeatureApi
-                0x000000000049775a       0x2a ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
+                0x0000000000497758       0x2a ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
  .text.RegisterFeatureApi
-                0x0000000000497784       0x5c ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
+                0x0000000000497782       0x5c ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
  .text.RegisterDefaultFeatureApi
-                0x00000000004977e0       0x2c ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
+                0x00000000004977de       0x2c ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
  .text.UnregisterFeature
-                0x000000000049780c       0x38 ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
+                0x000000000049780a       0x38 ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
  .text.RegisterFeature
-                0x0000000000497844       0x6a ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
+                0x0000000000497842       0x6a ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
  .text.UnregisterService
-                0x00000000004978ae       0x9a ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
+                0x00000000004978ac       0x9a ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
  .text.RegisterService
-                0x0000000000497948       0xa8 ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
+                0x0000000000497946       0xa8 ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
  .text.GetUninitializedPos
-                0x00000000004979f0       0x70 ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
+                0x00000000004979ee       0x70 ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
  .text.GetSpecifiedTaskPool
-                0x0000000000497a60       0x8c ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
+                0x0000000000497a5e       0x8c ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
  .text.InitializeSingleService
-                0x0000000000497aec       0x5e ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
+                0x0000000000497aea       0x5e ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
  .text.SendBootRequest
-                0x0000000000497b4a       0x5a ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
+                0x0000000000497b48       0x5a ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
  .text.InitCompleted
-                0x0000000000497ba4       0xc8 ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
+                0x0000000000497ba2       0xc8 ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
  .text.HandleInitRequest
-                0x0000000000497c6c       0xaa ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
+                0x0000000000497c6a       0xaa ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
  .text.AddTaskPool.isra.0
-                0x0000000000497d16      0x12e ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
+                0x0000000000497d14      0x12e ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
  .text.InitializeAllServices
-                0x0000000000497e44       0xc0 ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
+                0x0000000000497e42       0xc0 ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
  .text.SAMGR_Bootstrap
-                0x0000000000497f04      0x114 ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
-                0x0000000000497f04                SAMGR_Bootstrap
+                0x0000000000497f02      0x114 ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
+                0x0000000000497f02                SAMGR_Bootstrap
  .text.SAMGR_GetInstance
-                0x0000000000498018       0x38 ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
-                0x0000000000498018                SAMGR_GetInstance
+                0x0000000000498016       0x38 ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
+                0x0000000000498016                SAMGR_GetInstance
  .text.SAMGR_GetServiceByID
-                0x0000000000498050       0x58 ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
-                0x0000000000498050                SAMGR_GetServiceByID
+                0x000000000049804e       0x58 ohos/libs/libsamgr.a(libsamgr.samgr_lite.o)
+                0x000000000049804e                SAMGR_GetServiceByID
  .text.SAMGR_RegisterServiceApi
-                0x00000000004980a8       0x26 ohos/libs/libsamgr.a(libsamgr.service_registry.o)
-                0x00000000004980a8                SAMGR_RegisterServiceApi
+                0x00000000004980a6       0x26 ohos/libs/libsamgr.a(libsamgr.service_registry.o)
+                0x00000000004980a6                SAMGR_RegisterServiceApi
  .text.SAMGR_FindServiceApi
-                0x00000000004980ce       0x26 ohos/libs/libsamgr.a(libsamgr.service_registry.o)
-                0x00000000004980ce                SAMGR_FindServiceApi
+                0x00000000004980cc       0x26 ohos/libs/libsamgr.a(libsamgr.service_registry.o)
+                0x00000000004980cc                SAMGR_FindServiceApi
  .text.SAMGR_RegisterSystemCapabilityApi
-                0x00000000004980f4       0x26 ohos/libs/libsamgr.a(libsamgr.service_registry.o)
-                0x00000000004980f4                SAMGR_RegisterSystemCapabilityApi
+                0x00000000004980f2       0x26 ohos/libs/libsamgr.a(libsamgr.service_registry.o)
+                0x00000000004980f2                SAMGR_RegisterSystemCapabilityApi
  .text.SAMGR_QuerySystemCapabilityApi
-                0x000000000049811a       0x26 ohos/libs/libsamgr.a(libsamgr.service_registry.o)
-                0x000000000049811a                SAMGR_QuerySystemCapabilityApi
+                0x0000000000498118       0x26 ohos/libs/libsamgr.a(libsamgr.service_registry.o)
+                0x0000000000498118                SAMGR_QuerySystemCapabilityApi
  .text.SAMGR_GetSystemCapabilitiesApi
-                0x0000000000498140       0x26 ohos/libs/libsamgr.a(libsamgr.service_registry.o)
-                0x0000000000498140                SAMGR_GetSystemCapabilitiesApi
+                0x000000000049813e       0x26 ohos/libs/libsamgr.a(libsamgr.service_registry.o)
+                0x000000000049813e                SAMGR_GetSystemCapabilitiesApi
  .text.SAMGR_Malloc
-                0x0000000000498166       0x32 ohos/libs/libsamgr_adapter.a(libsamgr_adapter.memory_adapter.o)
-                0x0000000000498166                SAMGR_Malloc
+                0x0000000000498164       0x32 ohos/libs/libsamgr_adapter.a(libsamgr_adapter.memory_adapter.o)
+                0x0000000000498164                SAMGR_Malloc
  .text.SAMGR_Free
-                0x0000000000498198       0x2c ohos/libs/libsamgr_adapter.a(libsamgr_adapter.memory_adapter.o)
-                0x0000000000498198                SAMGR_Free
+                0x0000000000498196       0x2c ohos/libs/libsamgr_adapter.a(libsamgr_adapter.memory_adapter.o)
+                0x0000000000498196                SAMGR_Free
  .text.QUEUE_Create
-                0x00000000004981c4       0x3a ohos/libs/libsamgr_adapter.a(libsamgr_adapter.queue_adapter.o)
-                0x00000000004981c4                QUEUE_Create
+                0x00000000004981c2       0x3a ohos/libs/libsamgr_adapter.a(libsamgr_adapter.queue_adapter.o)
+                0x00000000004981c2                QUEUE_Create
  .text.QUEUE_Put
-                0x00000000004981fe       0x38 ohos/libs/libsamgr_adapter.a(libsamgr_adapter.queue_adapter.o)
-                0x00000000004981fe                QUEUE_Put
+                0x00000000004981fc       0x38 ohos/libs/libsamgr_adapter.a(libsamgr_adapter.queue_adapter.o)
+                0x00000000004981fc                QUEUE_Put
  .text.QUEUE_Pop
-                0x0000000000498236       0x3c ohos/libs/libsamgr_adapter.a(libsamgr_adapter.queue_adapter.o)
-                0x0000000000498236                QUEUE_Pop
+                0x0000000000498234       0x3c ohos/libs/libsamgr_adapter.a(libsamgr_adapter.queue_adapter.o)
+                0x0000000000498234                QUEUE_Pop
  .text.QUEUE_Destroy
-                0x0000000000498272       0x30 ohos/libs/libsamgr_adapter.a(libsamgr_adapter.queue_adapter.o)
-                0x0000000000498272                QUEUE_Destroy
+                0x0000000000498270       0x30 ohos/libs/libsamgr_adapter.a(libsamgr_adapter.queue_adapter.o)
+                0x0000000000498270                QUEUE_Destroy
  .text.MUTEX_InitValue
-                0x00000000004982a2       0x2a ohos/libs/libsamgr_adapter.a(libsamgr_adapter.thread_adapter.o)
-                0x00000000004982a2                MUTEX_InitValue
+                0x00000000004982a0       0x2a ohos/libs/libsamgr_adapter.a(libsamgr_adapter.thread_adapter.o)
+                0x00000000004982a0                MUTEX_InitValue
  .text.MUTEX_Lock
-                0x00000000004982cc       0x2e ohos/libs/libsamgr_adapter.a(libsamgr_adapter.thread_adapter.o)
-                0x00000000004982cc                MUTEX_Lock
+                0x00000000004982ca       0x2e ohos/libs/libsamgr_adapter.a(libsamgr_adapter.thread_adapter.o)
+                0x00000000004982ca                MUTEX_Lock
  .text.MUTEX_Unlock
-                0x00000000004982fa       0x2c ohos/libs/libsamgr_adapter.a(libsamgr_adapter.thread_adapter.o)
-                0x00000000004982fa                MUTEX_Unlock
+                0x00000000004982f8       0x2c ohos/libs/libsamgr_adapter.a(libsamgr_adapter.thread_adapter.o)
+                0x00000000004982f8                MUTEX_Unlock
  .text.MUTEX_GlobalLock
-                0x0000000000498326       0x28 ohos/libs/libsamgr_adapter.a(libsamgr_adapter.thread_adapter.o)
-                0x0000000000498326                MUTEX_GlobalLock
+                0x0000000000498324       0x28 ohos/libs/libsamgr_adapter.a(libsamgr_adapter.thread_adapter.o)
+                0x0000000000498324                MUTEX_GlobalLock
  .text.MUTEX_GlobalUnlock
-                0x000000000049834e       0x28 ohos/libs/libsamgr_adapter.a(libsamgr_adapter.thread_adapter.o)
-                0x000000000049834e                MUTEX_GlobalUnlock
+                0x000000000049834c       0x28 ohos/libs/libsamgr_adapter.a(libsamgr_adapter.thread_adapter.o)
+                0x000000000049834c                MUTEX_GlobalUnlock
  .text.THREAD_Create
-                0x0000000000498376       0x44 ohos/libs/libsamgr_adapter.a(libsamgr_adapter.thread_adapter.o)
-                0x0000000000498376                THREAD_Create
+                0x0000000000498374       0x44 ohos/libs/libsamgr_adapter.a(libsamgr_adapter.thread_adapter.o)
+                0x0000000000498374                THREAD_Create
  .text.THREAD_Total
-                0x00000000004983ba       0x28 ohos/libs/libsamgr_adapter.a(libsamgr_adapter.thread_adapter.o)
-                0x00000000004983ba                THREAD_Total
+                0x00000000004983b8       0x28 ohos/libs/libsamgr_adapter.a(libsamgr_adapter.thread_adapter.o)
+                0x00000000004983b8                THREAD_Total
  .text.THREAD_GetThreadLocal
-                0x00000000004983e2       0x28 ohos/libs/libsamgr_adapter.a(libsamgr_adapter.thread_adapter.o)
-                0x00000000004983e2                THREAD_GetThreadLocal
+                0x00000000004983e0       0x28 ohos/libs/libsamgr_adapter.a(libsamgr_adapter.thread_adapter.o)
+                0x00000000004983e0                THREAD_GetThreadLocal
  .text.THREAD_SetThreadLocal
-                0x000000000049840a       0x24 ohos/libs/libsamgr_adapter.a(libsamgr_adapter.thread_adapter.o)
-                0x000000000049840a                THREAD_SetThreadLocal
+                0x0000000000498408       0x24 ohos/libs/libsamgr_adapter.a(libsamgr_adapter.thread_adapter.o)
+                0x0000000000498408                THREAD_SetThreadLocal
  .text.WDT_Reset
-                0x000000000049842e       0x26 ohos/libs/libsamgr_adapter.a(libsamgr_adapter.time_adapter.o)
-                0x000000000049842e                WDT_Reset
+                0x000000000049842c       0x26 ohos/libs/libsamgr_adapter.a(libsamgr_adapter.time_adapter.o)
+                0x000000000049842c                WDT_Reset
  .text.WDT_Start
-                0x0000000000498454       0x28 ohos/libs/libsamgr_adapter.a(libsamgr_adapter.time_adapter.o)
-                0x0000000000498454                WDT_Start
+                0x0000000000498452       0x28 ohos/libs/libsamgr_adapter.a(libsamgr_adapter.time_adapter.o)
+                0x0000000000498452                WDT_Start
  .text.WDT_Stop
-                0x000000000049847c       0x26 ohos/libs/libsamgr_adapter.a(libsamgr_adapter.time_adapter.o)
-                0x000000000049847c                WDT_Stop
+                0x000000000049847a       0x26 ohos/libs/libsamgr_adapter.a(libsamgr_adapter.time_adapter.o)
+                0x000000000049847a                WDT_Stop
  .text.SAMGR_GetProcessTime
-                0x00000000004984a2       0x4a ohos/libs/libsamgr_adapter.a(libsamgr_adapter.time_adapter.o)
-                0x00000000004984a2                SAMGR_GetProcessTime
+                0x00000000004984a0       0x4a ohos/libs/libsamgr_adapter.a(libsamgr_adapter.time_adapter.o)
+                0x00000000004984a0                SAMGR_GetProcessTime
  .text.VECTOR_Make
-                0x00000000004984ec       0x34 ohos/libs/libsamgr_source.a(libsamgr_source.common.o)
-                0x00000000004984ec                VECTOR_Make
+                0x00000000004984ea       0x34 ohos/libs/libsamgr_source.a(libsamgr_source.common.o)
+                0x00000000004984ea                VECTOR_Make
  .text.VECTOR_Clear
-                0x0000000000498520       0x3e ohos/libs/libsamgr_source.a(libsamgr_source.common.o)
-                0x0000000000498520                VECTOR_Clear
+                0x000000000049851e       0x3e ohos/libs/libsamgr_source.a(libsamgr_source.common.o)
+                0x000000000049851e                VECTOR_Clear
  .text.VECTOR_Add
-                0x000000000049855e       0xca ohos/libs/libsamgr_source.a(libsamgr_source.common.o)
-                0x000000000049855e                VECTOR_Add
+                0x000000000049855c       0xca ohos/libs/libsamgr_source.a(libsamgr_source.common.o)
+                0x000000000049855c                VECTOR_Add
  .text.VECTOR_At
-                0x0000000000498628       0x3e ohos/libs/libsamgr_source.a(libsamgr_source.common.o)
-                0x0000000000498628                VECTOR_At
+                0x0000000000498626       0x3e ohos/libs/libsamgr_source.a(libsamgr_source.common.o)
+                0x0000000000498626                VECTOR_At
  .text.VECTOR_Swap
-                0x0000000000498666       0x4c ohos/libs/libsamgr_source.a(libsamgr_source.common.o)
-                0x0000000000498666                VECTOR_Swap
+                0x0000000000498664       0x4c ohos/libs/libsamgr_source.a(libsamgr_source.common.o)
+                0x0000000000498664                VECTOR_Swap
  .text.VECTOR_FindByKey
-                0x00000000004986b2       0x68 ohos/libs/libsamgr_source.a(libsamgr_source.common.o)
-                0x00000000004986b2                VECTOR_FindByKey
+                0x00000000004986b0       0x68 ohos/libs/libsamgr_source.a(libsamgr_source.common.o)
+                0x00000000004986b0                VECTOR_FindByKey
  .text.VECTOR_Size
-                0x000000000049871a       0x2e ohos/libs/libsamgr_source.a(libsamgr_source.common.o)
-                0x000000000049871a                VECTOR_Size
+                0x0000000000498718       0x2e ohos/libs/libsamgr_source.a(libsamgr_source.common.o)
+                0x0000000000498718                VECTOR_Size
  .text.VECTOR_Num
-                0x0000000000498748       0x3a ohos/libs/libsamgr_source.a(libsamgr_source.common.o)
-                0x0000000000498748                VECTOR_Num
+                0x0000000000498746       0x3a ohos/libs/libsamgr_source.a(libsamgr_source.common.o)
+                0x0000000000498746                VECTOR_Num
  .text.SAMGR_AddInterface
-                0x0000000000498782       0x34 ohos/libs/libsamgr_source.a(libsamgr_source.feature.o)
-                0x0000000000498782                SAMGR_AddInterface
+                0x0000000000498780       0x34 ohos/libs/libsamgr_source.a(libsamgr_source.feature.o)
+                0x0000000000498780                SAMGR_AddInterface
  .text.SAMGR_DelInterface
-                0x00000000004987b6       0x30 ohos/libs/libsamgr_source.a(libsamgr_source.feature.o)
-                0x00000000004987b6                SAMGR_DelInterface
+                0x00000000004987b4       0x30 ohos/libs/libsamgr_source.a(libsamgr_source.feature.o)
+                0x00000000004987b4                SAMGR_DelInterface
  .text.SAMGR_GetInterface
-                0x00000000004987e6       0x2c ohos/libs/libsamgr_source.a(libsamgr_source.feature.o)
-                0x00000000004987e6                SAMGR_GetInterface
+                0x00000000004987e4       0x2c ohos/libs/libsamgr_source.a(libsamgr_source.feature.o)
+                0x00000000004987e4                SAMGR_GetInterface
  .text.SAMGR_IsNoInterface
-                0x0000000000498812       0x30 ohos/libs/libsamgr_source.a(libsamgr_source.feature.o)
-                0x0000000000498812                SAMGR_IsNoInterface
+                0x0000000000498810       0x30 ohos/libs/libsamgr_source.a(libsamgr_source.feature.o)
+                0x0000000000498810                SAMGR_IsNoInterface
  .text.FEATURE_CreateInstance
-                0x0000000000498842       0x3a ohos/libs/libsamgr_source.a(libsamgr_source.feature.o)
-                0x0000000000498842                FEATURE_CreateInstance
+                0x0000000000498840       0x3a ohos/libs/libsamgr_source.a(libsamgr_source.feature.o)
+                0x0000000000498840                FEATURE_CreateInstance
  .text.IUNKNOWN_AddRef
-                0x000000000049887c       0x3c ohos/libs/libsamgr_source.a(libsamgr_source.iunknown.o)
-                0x000000000049887c                IUNKNOWN_AddRef
+                0x000000000049887a       0x3c ohos/libs/libsamgr_source.a(libsamgr_source.iunknown.o)
+                0x000000000049887a                IUNKNOWN_AddRef
  .text.IUNKNOWN_QueryInterface
-                0x00000000004988b8       0x4c ohos/libs/libsamgr_source.a(libsamgr_source.iunknown.o)
-                0x00000000004988b8                IUNKNOWN_QueryInterface
+                0x00000000004988b6       0x4c ohos/libs/libsamgr_source.a(libsamgr_source.iunknown.o)
+                0x00000000004988b6                IUNKNOWN_QueryInterface
  .text.IUNKNOWN_Release
-                0x0000000000498904       0x3c ohos/libs/libsamgr_source.a(libsamgr_source.iunknown.o)
-                0x0000000000498904                IUNKNOWN_Release
+                0x0000000000498902       0x3c ohos/libs/libsamgr_source.a(libsamgr_source.iunknown.o)
+                0x0000000000498902                IUNKNOWN_Release
  .text.SharedSend
-                0x0000000000498940       0x86 ohos/libs/libsamgr_source.a(libsamgr_source.message.o)
+                0x000000000049893e       0x86 ohos/libs/libsamgr_source.a(libsamgr_source.message.o)
  .text.FreeReference
-                0x00000000004989c6       0x5a ohos/libs/libsamgr_source.a(libsamgr_source.message.o)
+                0x00000000004989c4       0x5a ohos/libs/libsamgr_source.a(libsamgr_source.message.o)
  .text.SAMGR_SendRequest
-                0x0000000000498a20       0x66 ohos/libs/libsamgr_source.a(libsamgr_source.message.o)
-                0x0000000000498a20                SAMGR_SendRequest
+                0x0000000000498a1e       0x66 ohos/libs/libsamgr_source.a(libsamgr_source.message.o)
+                0x0000000000498a1e                SAMGR_SendRequest
  .text.SAMGR_SendResponse
-                0x0000000000498a86       0x84 ohos/libs/libsamgr_source.a(libsamgr_source.message.o)
-                0x0000000000498a86                SAMGR_SendResponse
+                0x0000000000498a84       0x84 ohos/libs/libsamgr_source.a(libsamgr_source.message.o)
+                0x0000000000498a84                SAMGR_SendResponse
  .text.SAMGR_MsgRecv
-                0x0000000000498b0a       0x52 ohos/libs/libsamgr_source.a(libsamgr_source.message.o)
-                0x0000000000498b0a                SAMGR_MsgRecv
+                0x0000000000498b08       0x52 ohos/libs/libsamgr_source.a(libsamgr_source.message.o)
+                0x0000000000498b08                SAMGR_MsgRecv
  .text.SAMGR_FreeMsg
-                0x0000000000498b5c       0x52 ohos/libs/libsamgr_source.a(libsamgr_source.message.o)
-                0x0000000000498b5c                SAMGR_FreeMsg
+                0x0000000000498b5a       0x52 ohos/libs/libsamgr_source.a(libsamgr_source.message.o)
+                0x0000000000498b5a                SAMGR_FreeMsg
  .text.SAMGR_SendSharedRequest
-                0x0000000000498bae       0x8a ohos/libs/libsamgr_source.a(libsamgr_source.message.o)
-                0x0000000000498bae                SAMGR_SendSharedRequest
+                0x0000000000498bac       0x8a ohos/libs/libsamgr_source.a(libsamgr_source.message.o)
+                0x0000000000498bac                SAMGR_SendSharedRequest
  .text.SAMGR_SendSharedDirectRequest
-                0x0000000000498c38       0xb2 ohos/libs/libsamgr_source.a(libsamgr_source.message.o)
-                0x0000000000498c38                SAMGR_SendSharedDirectRequest
+                0x0000000000498c36       0xb2 ohos/libs/libsamgr_source.a(libsamgr_source.message.o)
+                0x0000000000498c36                SAMGR_SendSharedDirectRequest
  .text.SAMGR_SendResponseByIdentity
-                0x0000000000498cea       0x46 ohos/libs/libsamgr_source.a(libsamgr_source.message.o)
-                0x0000000000498cea                SAMGR_SendResponseByIdentity
+                0x0000000000498ce8       0x46 ohos/libs/libsamgr_source.a(libsamgr_source.message.o)
+                0x0000000000498ce8                SAMGR_SendResponseByIdentity
  .text.GetFeatureName
-                0x0000000000498d30       0x32 ohos/libs/libsamgr_source.a(libsamgr_source.service.o)
+                0x0000000000498d2e       0x32 ohos/libs/libsamgr_source.a(libsamgr_source.service.o)
  .text.SAMGR_CreateServiceImpl
-                0x0000000000498d62       0x80 ohos/libs/libsamgr_source.a(libsamgr_source.service.o)
-                0x0000000000498d62                SAMGR_CreateServiceImpl
+                0x0000000000498d60       0x80 ohos/libs/libsamgr_source.a(libsamgr_source.service.o)
+                0x0000000000498d60                SAMGR_CreateServiceImpl
  .text.DEFAULT_AddFeature
-                0x0000000000498de2       0x66 ohos/libs/libsamgr_source.a(libsamgr_source.service.o)
-                0x0000000000498de2                DEFAULT_AddFeature
+                0x0000000000498de0       0x66 ohos/libs/libsamgr_source.a(libsamgr_source.service.o)
+                0x0000000000498de0                DEFAULT_AddFeature
  .text.DEFAULT_Initialize
-                0x0000000000498e48       0xaa ohos/libs/libsamgr_source.a(libsamgr_source.service.o)
-                0x0000000000498e48                DEFAULT_Initialize
+                0x0000000000498e46       0xaa ohos/libs/libsamgr_source.a(libsamgr_source.service.o)
+                0x0000000000498e46                DEFAULT_Initialize
  .text.DEFAULT_MessageHandle
-                0x0000000000498ef2       0x6a ohos/libs/libsamgr_source.a(libsamgr_source.service.o)
-                0x0000000000498ef2                DEFAULT_MessageHandle
+                0x0000000000498ef0       0x6a ohos/libs/libsamgr_source.a(libsamgr_source.service.o)
+                0x0000000000498ef0                DEFAULT_MessageHandle
  .text.DEFAULT_GetFeature
-                0x0000000000498f5c       0x3e ohos/libs/libsamgr_source.a(libsamgr_source.service.o)
-                0x0000000000498f5c                DEFAULT_GetFeature
+                0x0000000000498f5a       0x3e ohos/libs/libsamgr_source.a(libsamgr_source.service.o)
+                0x0000000000498f5a                DEFAULT_GetFeature
  .text.DEFAULT_GetFeatureId
-                0x0000000000498f9a       0x62 ohos/libs/libsamgr_source.a(libsamgr_source.service.o)
-                0x0000000000498f9a                DEFAULT_GetFeatureId
+                0x0000000000498f98       0x62 ohos/libs/libsamgr_source.a(libsamgr_source.service.o)
+                0x0000000000498f98                DEFAULT_GetFeatureId
  .text.DEFAULT_DeleteFeature
-                0x0000000000498ffc       0x78 ohos/libs/libsamgr_source.a(libsamgr_source.service.o)
-                0x0000000000498ffc                DEFAULT_DeleteFeature
+                0x0000000000498ffa       0x78 ohos/libs/libsamgr_source.a(libsamgr_source.service.o)
+                0x0000000000498ffa                DEFAULT_DeleteFeature
  .text.ProcResponse
-                0x0000000000499074       0x3c ohos/libs/libsamgr_source.a(libsamgr_source.task_manager.o)
+                0x0000000000499072       0x3c ohos/libs/libsamgr_source.a(libsamgr_source.task_manager.o)
  .text.ProcDirectRequest
-                0x00000000004990b0       0x3c ohos/libs/libsamgr_source.a(libsamgr_source.task_manager.o)
+                0x00000000004990ae       0x3c ohos/libs/libsamgr_source.a(libsamgr_source.task_manager.o)
  .text.CorrectServiceImpl
-                0x00000000004990ec       0x46 ohos/libs/libsamgr_source.a(libsamgr_source.task_manager.o)
+                0x00000000004990ea       0x46 ohos/libs/libsamgr_source.a(libsamgr_source.task_manager.o)
  .text.BeginWork
-                0x0000000000499132       0x5c ohos/libs/libsamgr_source.a(libsamgr_source.task_manager.o)
+                0x0000000000499130       0x5c ohos/libs/libsamgr_source.a(libsamgr_source.task_manager.o)
  .text.ProcRequest
-                0x000000000049918e       0x5a ohos/libs/libsamgr_source.a(libsamgr_source.task_manager.o)
- .text.EndWork  0x00000000004991e8       0x9a ohos/libs/libsamgr_source.a(libsamgr_source.task_manager.o)
+                0x000000000049918c       0x5a ohos/libs/libsamgr_source.a(libsamgr_source.task_manager.o)
+ .text.EndWork  0x00000000004991e6       0x9a ohos/libs/libsamgr_source.a(libsamgr_source.task_manager.o)
  .text.TaskEntry
-                0x0000000000499282       0x84 ohos/libs/libsamgr_source.a(libsamgr_source.task_manager.o)
+                0x0000000000499280       0x84 ohos/libs/libsamgr_source.a(libsamgr_source.task_manager.o)
  .text.SAMGR_CreateFixedTaskPool
-                0x0000000000499306       0xdc ohos/libs/libsamgr_source.a(libsamgr_source.task_manager.o)
-                0x0000000000499306                SAMGR_CreateFixedTaskPool
+                0x0000000000499304       0xdc ohos/libs/libsamgr_source.a(libsamgr_source.task_manager.o)
+                0x0000000000499304                SAMGR_CreateFixedTaskPool
  .text.SAMGR_StartTaskPool
-                0x00000000004993e2       0xa8 ohos/libs/libsamgr_source.a(libsamgr_source.task_manager.o)
-                0x00000000004993e2                SAMGR_StartTaskPool
+                0x00000000004993e0       0xa8 ohos/libs/libsamgr_source.a(libsamgr_source.task_manager.o)
+                0x00000000004993e0                SAMGR_StartTaskPool
  .text.SAMGR_ReleaseTaskPool
-                0x000000000049948a       0x64 ohos/libs/libsamgr_source.a(libsamgr_source.task_manager.o)
-                0x000000000049948a                SAMGR_ReleaseTaskPool
+                0x0000000000499488       0x64 ohos/libs/libsamgr_source.a(libsamgr_source.task_manager.o)
+                0x0000000000499488                SAMGR_ReleaseTaskPool
  .text.SAMGR_ReferenceTaskPool
-                0x00000000004994ee       0x3a ohos/libs/libsamgr_source.a(libsamgr_source.task_manager.o)
-                0x00000000004994ee                SAMGR_ReferenceTaskPool
+                0x00000000004994ec       0x3a ohos/libs/libsamgr_source.a(libsamgr_source.task_manager.o)
+                0x00000000004994ec                SAMGR_ReferenceTaskPool
  .text.SAMGR_GetCurrentQueueID
-                0x0000000000499528       0x28 ohos/libs/libsamgr_source.a(libsamgr_source.task_manager.o)
-                0x0000000000499528                SAMGR_GetCurrentQueueID
+                0x0000000000499526       0x28 ohos/libs/libsamgr_source.a(libsamgr_source.task_manager.o)
+                0x0000000000499526                SAMGR_GetCurrentQueueID
  .text.SHT40Demo
-                0x0000000000499550       0x66 ohos/libs/libsht40.a(libsht40.sht40.o)
-                0x0000000000499550                SHT40Demo
+                0x000000000049954e       0x66 ohos/libs/libsht40.a(libsht40.sht40.o)
+                0x000000000049954e                SHT40Demo
  .text.SHT40_Write.constprop.0
-                0x00000000004995b6       0x4c ohos/libs/libsht40.a(libsht40.sht40.o)
+                0x00000000004995b4       0x4c ohos/libs/libsht40.a(libsht40.sht40.o)
  .text.SHT40_Read.constprop.1
-                0x0000000000499602       0x46 ohos/libs/libsht40.a(libsht40.sht40.o)
+                0x0000000000499600       0x46 ohos/libs/libsht40.a(libsht40.sht40.o)
  .text.SHT40_GetMeasureResult
-                0x0000000000499648       0xf0 ohos/libs/libsht40.a(libsht40.sht40.o)
-                0x0000000000499648                SHT40_GetMeasureResult
+                0x0000000000499646       0xf0 ohos/libs/libsht40.a(libsht40.sht40.o)
+                0x0000000000499646                SHT40_GetMeasureResult
  .text.SHT40_StartMeasure
-                0x0000000000499738       0x30 ohos/libs/libsht40.a(libsht40.sht40.o)
-                0x0000000000499738                SHT40_StartMeasure
+                0x0000000000499736       0x30 ohos/libs/libsht40.a(libsht40.sht40.o)
+                0x0000000000499736                SHT40_StartMeasure
  .text.SHT40_Init
-                0x0000000000499768       0x32 ohos/libs/libsht40.a(libsht40.sht40.o)
-                0x0000000000499768                SHT40_Init
+                0x0000000000499766       0x32 ohos/libs/libsht40.a(libsht40.sht40.o)
+                0x0000000000499766                SHT40_Init
  .text.Fan_Init
-                0x000000000049979a       0x58 ohos/libs/libsht40.a(libsht40.sht40.o)
-                0x000000000049979a                Fan_Init
+                0x0000000000499798       0x58 ohos/libs/libsht40.a(libsht40.sht40.o)
+                0x0000000000499798                Fan_Init
  .text.SHT40Task
-                0x00000000004997f2       0xa0 ohos/libs/libsht40.a(libsht40.sht40.o)
-                0x00000000004997f2                SHT40Task
+                0x00000000004997f0       0xa0 ohos/libs/libsht40.a(libsht40.sht40.o)
+                0x00000000004997f0                SHT40Task
  .text.StaConnect
-                0x0000000000499892      0x104 ohos/libs/libwifiservice.a(libwifiservice.wifi_device.o)
+                0x0000000000499890      0x104 ohos/libs/libwifiservice.a(libwifiservice.wifi_device.o)
  .text.EnableWifi
-                0x0000000000499996       0x9e ohos/libs/libwifiservice.a(libwifiservice.wifi_device.o)
-                0x0000000000499996                EnableWifi
+                0x0000000000499994       0x9e ohos/libs/libwifiservice.a(libwifiservice.wifi_device.o)
+                0x0000000000499994                EnableWifi
  .text.AddDeviceConfig
-                0x0000000000499a34       0xac ohos/libs/libwifiservice.a(libwifiservice.wifi_device.o)
-                0x0000000000499a34                AddDeviceConfig
+                0x0000000000499a32       0xac ohos/libs/libwifiservice.a(libwifiservice.wifi_device.o)
+                0x0000000000499a32                AddDeviceConfig
  .text.ConnectTo
-                0x0000000000499ae0       0xea ohos/libs/libwifiservice.a(libwifiservice.wifi_device.o)
-                0x0000000000499ae0                ConnectTo
+                0x0000000000499ade       0xea ohos/libs/libwifiservice.a(libwifiservice.wifi_device.o)
+                0x0000000000499ade                ConnectTo
  .text.InitWifiGlobalLock
-                0x0000000000499bca       0x6e ohos/libs/libwifiservice.a(libwifiservice.wifi_device_util.o)
+                0x0000000000499bc8       0x6e ohos/libs/libwifiservice.a(libwifiservice.wifi_device_util.o)
  .text.HoSecToHiSec
-                0x0000000000499c38       0x3e ohos/libs/libwifiservice.a(libwifiservice.wifi_device_util.o)
-                0x0000000000499c38                HoSecToHiSec
+                0x0000000000499c36       0x3e ohos/libs/libwifiservice.a(libwifiservice.wifi_device_util.o)
+                0x0000000000499c36                HoSecToHiSec
  .text.LockWifiGlobalLock
-                0x0000000000499c76       0x4c ohos/libs/libwifiservice.a(libwifiservice.wifi_device_util.o)
-                0x0000000000499c76                LockWifiGlobalLock
+                0x0000000000499c74       0x4c ohos/libs/libwifiservice.a(libwifiservice.wifi_device_util.o)
+                0x0000000000499c74                LockWifiGlobalLock
  .text.UnlockWifiGlobalLock
-                0x0000000000499cc2       0x4a ohos/libs/libwifiservice.a(libwifiservice.wifi_device_util.o)
-                0x0000000000499cc2                UnlockWifiGlobalLock
+                0x0000000000499cc0       0x4a ohos/libs/libwifiservice.a(libwifiservice.wifi_device_util.o)
+                0x0000000000499cc0                UnlockWifiGlobalLock
  .text.LockWifiEventLock
-                0x0000000000499d0c       0x4c ohos/libs/libwifiservice.a(libwifiservice.wifi_device_util.o)
-                0x0000000000499d0c                LockWifiEventLock
+                0x0000000000499d0a       0x4c ohos/libs/libwifiservice.a(libwifiservice.wifi_device_util.o)
+                0x0000000000499d0a                LockWifiEventLock
  .text.UnlockWifiEventLock
-                0x0000000000499d58       0x4a ohos/libs/libwifiservice.a(libwifiservice.wifi_device_util.o)
-                0x0000000000499d58                UnlockWifiEventLock
+                0x0000000000499d56       0x4a ohos/libs/libwifiservice.a(libwifiservice.wifi_device_util.o)
+                0x0000000000499d56                UnlockWifiEventLock
  .text.FrequencyToChannel
-                0x0000000000499da2       0x4c ohos/libs/libwifiservice.a(libwifiservice.wifi_device_util.o)
-                0x0000000000499da2                FrequencyToChannel
+                0x0000000000499da0       0x4c ohos/libs/libwifiservice.a(libwifiservice.wifi_device_util.o)
+                0x0000000000499da0                FrequencyToChannel
  SORT_BY_NAME(*)(EXCLUDE_FILE(*libasm_flash.o) .got*)
- *fill*         0x0000000000499dee        0x2 
- .got           0x0000000000499df0       0xc8 build/libs/hi3861/release/no_mesh/libwifi_base.o
-                0x0000000000499df0                _GLOBAL_OFFSET_TABLE_
- .got.plt       0x0000000000499eb8        0x8 build/libs/hi3861/release/no_mesh/libwifi_base.o
+ *fill*         0x0000000000499dec        0x0 
+ .got           0x0000000000499dec       0xc8 build/libs/hi3861/release/no_mesh/libwifi_base.o
+                0x0000000000499dec                _GLOBAL_OFFSET_TABLE_
+ .got.plt       0x0000000000499eb4        0x8 build/libs/hi3861/release/no_mesh/libwifi_base.o
                 0x0000000000499ec0                . = ALIGN (0x20)
- *fill*         0x0000000000499ec0        0x0 
+ *fill*         0x0000000000499ebc        0x4 
                 0x0000000000499ec0                __text_cache_end2_ = .
  SORT_BY_NAME(*)(.rodata*)
  .rodata        0x0000000000499ec0       0x3c /opt/gcc_riscv32/bin/../lib/gcc/riscv32-unknown-elf/7.3.0/libgcc.a(divdf3.o)

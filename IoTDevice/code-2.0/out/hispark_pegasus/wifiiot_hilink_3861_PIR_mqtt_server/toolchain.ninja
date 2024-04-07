@@ -74,7 +74,7 @@ build obj/device/hisilicon/hispark_pegasus/hi3861_adapter/kal/kal.stamp: stamp .
 subninja obj/device/hisilicon/hispark_pegasus/hi3861_adapter/kal/cmsis/cmsis.ninja
 subninja obj/device/hisilicon/hispark_pegasus/hi3861_adapter/kal/posix/posix.ninja
 rule __device_hisilicon_hispark_pegasus_sdk_liteos_run_wifiiot_scons___build_lite_toolchain_riscv32-unknown-elf__rule
-  command = /usr/bin/python ../../../build/lite/build_ext_components.py --path=../../../device/hisilicon/hispark_pegasus/sdk_liteos --command=sh\$ hm_build.sh\$ /home/workspace/Major/2023-2024-2/ZR/code-2.0/out/hispark_pegasus/wifiiot_hilink_3861_PIR_mqtt_server\$ linux --target_dir=/home/workspace/Major/2023-2024-2/ZR/code-2.0/out/hispark_pegasus/wifiiot_hilink_3861_PIR_mqtt_server/obj/device/hisilicon/hispark_pegasus/sdk_liteos/build.log --out_dir=/home/workspace/Major/2023-2024-2/ZR/code-2.0/out/hispark_pegasus/wifiiot_hilink_3861_PIR_mqtt_server/error.log
+  command = /usr/bin/python ../../../build/lite/build_ext_components.py --path=../../../device/hisilicon/hispark_pegasus/sdk_liteos --command=sh\$ hm_build.sh\$ /home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0/out/hispark_pegasus/wifiiot_hilink_3861_PIR_mqtt_server\$ linux --target_dir=/home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0/out/hispark_pegasus/wifiiot_hilink_3861_PIR_mqtt_server/obj/device/hisilicon/hispark_pegasus/sdk_liteos/build.log --out_dir=/home/workspace/Projects/SmartAmusementPark/IoTDevice/code-2.0/out/hispark_pegasus/wifiiot_hilink_3861_PIR_mqtt_server/error.log
   description = ACTION //device/hisilicon/hispark_pegasus/sdk_liteos:run_wifiiot_scons(//build/lite/toolchain:riscv32-unknown-elf)
   restat = 1
 
