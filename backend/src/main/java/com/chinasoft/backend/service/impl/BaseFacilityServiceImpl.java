@@ -50,7 +50,7 @@ public class BaseFacilityServiceImpl extends ServiceImpl<BaseFacilityMapper, Bas
 
             BaseFacilityVO facilityVO = new BaseFacilityVO();
 
-            Integer facilityType = 0;
+            Integer facilityType = 2;
 
             // 将facility的信息复制到VO对象
             BeanUtils.copyProperties(facility, facilityVO);
