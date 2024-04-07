@@ -1,0 +1,30 @@
+From 30f5815c847060c5ad4075e81581771b8d0cbb72 Mon Sep 17 00:00:00 2001
+From: Lemmy Huang <huangliming5@huawei.com>
+Date: Thu, 8 Jun 2023 15:15:07 +0800
+Subject: [PATCH] optimize: avoid too many empty acks in tcp_input
+
+Signed-off-by: Lemmy Huang <huangliming5@huawei.com>
+---
+ src/core/tcp_in.c | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
+
+diff --git a/src/core/tcp_in.c b/src/core/tcp_in.c
+index 7e7d70ab..0abee303 100644
+--- a/src/core/tcp_in.c
++++ b/src/core/tcp_in.c
+@@ -1807,11 +1807,7 @@ tcp_receive(struct tcp_pcb *pcb)
+ 
+ 
+         /* Acknowledge the segment(s). */
+-        if (flags & TCP_PSH) {
+-            tcp_ack_now(pcb);
+-        } else {
+-            tcp_ack(pcb);
+-        }
++        tcp_ack(pcb);
+ 
+ #if LWIP_TCP_SACK_OUT
+         if (LWIP_TCP_SACK_VALID(pcb, 0)) {
+-- 
+2.22.0.windows.1
+

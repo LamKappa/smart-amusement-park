@@ -1,0 +1,87 @@
+# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/test.gni")
+import("//foundation/appexecfwk/standard/appexecfwk.gni")
+import(
+    "//foundation/appexecfwk/standard/services/bundlemgr/appexecfwk_bundlemgr.gni")
+
+module_output_path = "appexecfwk_standard/mstbundlemgrservice"
+
+ohos_moduletest("BmsBundleUninstallerModuleTest") {
+  module_out_path = module_output_path
+
+  configs = [
+    "${services_path}/test/moduletest/common/bms:bms_module_test_config",
+    "${libs_path}/libeventhandler:libeventhandler_config",
+    "${services_path}/bundlemgr:bundlemgr_common_config",
+    "${common_path}:appexecfwk_common_config",
+  ]
+
+  include_dirs = [
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_core/include/bundlemgr",
+    "//third_party/json/include",
+    "${services_path}/test/mock/include",
+  ]
+
+  sources = [
+    "${services_path}/bundlemgr/src/bundle_data_mgr.cpp",
+    "${services_path}/bundlemgr/src/bundle_data_storage.cpp",
+    "${services_path}/bundlemgr/src/bundle_mgr_host_impl.cpp",
+    "${services_path}/bundlemgr/src/bundle_mgr_service.cpp",
+    "${services_path}/bundlemgr/src/bundle_mgr_service_event_handler.cpp",
+    "${services_path}/bundlemgr/src/bundle_scanner.cpp",
+    "${services_path}/bundlemgr/src/bundle_status_callback_death_recipient.cpp",
+    "${services_path}/bundlemgr/src/installd/installd_host_impl.cpp",
+    "${services_path}/bundlemgr/src/installd/installd_operator.cpp",
+    "${services_path}/bundlemgr/src/installd/installd_service.cpp",
+  ]
+
+  sources += bundle_install_sources
+
+  sources += [
+    "${services_path}/bundlemgr/test/mock/src/system_ability_helper.cpp",
+    "${services_path}/test/mock/src/mock_status_receiver.cpp",
+  ]
+
+  sources += [ "bms_bundle_uninstaller_module_test.cpp" ]
+  cflags = []
+  if (target_cpu == "arm") {
+    cflags += [ "-DBINDER_IPC_32BIT" ]
+  }
+  deps = [
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_core:appexecfwk_core",
+    "${libs_path}/libeventhandler:libeventhandler_target",
+    "${services_path}/bundlemgr:bundle_parser",
+    "${services_path}/bundlemgr:parser_common",
+    "${services_path}/test/moduletest/utils:tool_common",
+    "//base/notification/ces_standard/cesfwk/kits/native:cesfwk_kits",
+    "//base/security/appverify/interfaces/innerkits/appverify:libhapverify",
+    "//base/security/permission/interfaces/innerkits/permission_standard/permissionsdk:libpermissionsdk_standard",
+    "//foundation/aafwk/standard/interfaces/innerkits/base:base",
+    "//foundation/aafwk/standard/interfaces/innerkits/want:want",
+    "//foundation/distributedschedule/safwk/interfaces/innerkits/safwk:system_ability_fwk",
+    "//third_party/googletest:gtest_main",
+  ]
+
+  external_deps = [
+    "hiviewdfx_hilog_native:libhilog",
+    "ipc:ipc_core",
+  ]
+}
+
+group("moduletest") {
+  testonly = true
+
+  deps = [ ":BmsBundleUninstallerModuleTest" ]
+}

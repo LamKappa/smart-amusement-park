@@ -1,0 +1,275 @@
+From 212198780662639e0422419a25d28ff2bb0d421e Mon Sep 17 00:00:00 2001
+From: hantwofish <hankangkang5@huawei.com>
+Date: Mon, 25 Dec 2023 15:36:45 +0800
+Subject: [PATCH] Mod the issue that 2w connection unable to establish in
+ Redis.
+
+---
+ src/api/api_lib.c               |  2 +-
+ src/api/api_msg.c               |  2 +-
+ src/api/sockets.c               | 19 ++++++++++++-------
+ src/core/init.c                 |  4 ++--
+ src/core/tcp.c                  |  4 ++--
+ src/core/tcp_in.c               |  2 +-
+ src/include/lwip/api.h          |  2 +-
+ src/include/lwip/opt.h          |  2 +-
+ src/include/lwip/priv/api_msg.h |  2 +-
+ src/include/lwip/tcp.h          |  8 ++++----
+ src/include/lwipopts.h          |  4 ++--
+ 11 files changed, 28 insertions(+), 23 deletions(-)
+
+diff --git a/src/api/api_lib.c b/src/api/api_lib.c
+index e73b81e..30e3422 100644
+--- a/src/api/api_lib.c
++++ b/src/api/api_lib.c
+@@ -431,7 +431,7 @@ netconn_disconnect(struct netconn *conn)
+  *         don't return any error (yet?))
+  */
+ err_t
+-netconn_listen_with_backlog(struct netconn *conn, u8_t backlog)
++netconn_listen_with_backlog(struct netconn *conn, u16_t backlog)
+ {
+ #if LWIP_TCP
+   API_MSG_VAR_DECLARE(msg);
+diff --git a/src/api/api_msg.c b/src/api/api_msg.c
+index 531da40..91b8590 100644
+--- a/src/api/api_msg.c
++++ b/src/api/api_msg.c
+@@ -1499,7 +1499,7 @@ lwip_netconn_do_listen(void *m)
+           /* connection is not closed, cannot listen */
+           err = ERR_VAL;
+         } else {
+-          u8_t backlog;
++          u16_t backlog;
+ #if TCP_LISTEN_BACKLOG
+           backlog = msg->msg.lb.backlog;
+ #else  /* TCP_LISTEN_BACKLOG */
+diff --git a/src/api/sockets.c b/src/api/sockets.c
+index f5b8ea6..b7ee304 100644
+--- a/src/api/sockets.c
++++ b/src/api/sockets.c
+@@ -447,7 +447,7 @@ tryget_socket_unconn_nouse(int fd)
+   if ((s < 0) || (s >= NUM_SOCKETS))
+ #endif /* GAZELLE_ENABLE */
+   {
+-    LWIP_DEBUGF(SOCKETS_DEBUG, ("tryget_socket_unconn(%d): invalid\n", fd));
++    LWIP_DEBUGF(SOCKETS_DEBUG | GAZELLE_DEBUG_SERIOUS, ("tryget_socket_unconn(%d): invalid\n", fd));
+     return NULL;
+   }
+   return &sockets[s];
+@@ -521,7 +521,7 @@ get_socket(int fd)
+   struct lwip_sock *sock = tryget_socket(fd);
+   if (!sock) {
+     if ((fd < LWIP_SOCKET_OFFSET) || (fd >= (LWIP_SOCKET_OFFSET + NUM_SOCKETS))) {
+-      LWIP_DEBUGF(SOCKETS_DEBUG, ("get_socket(%d): invalid\n", fd));
++      LWIP_DEBUGF(SOCKETS_DEBUG | GAZELLE_DEBUG_SERIOUS, ("get_socket(%d): invalid\n", fd));
+     }
+     set_errno(EBADF);
+     return NULL;
+@@ -588,6 +588,7 @@ alloc_socket(struct netconn *newconn, int accepted, int flags)
+   SYS_ARCH_PROTECT(lev);
+   i = posix_api->socket_fn(domain, type, protocol);
+   if (i == -1) {
++    LWIP_DEBUGF(SOCKETS_DEBUG | GAZELLE_DEBUG_SERIOUS, ("posix_api->socket_fn fail socket is -1"));
+     goto err;
+   }
+ 
+@@ -596,6 +597,7 @@ alloc_socket(struct netconn *newconn, int accepted, int flags)
+   }
+ 
+   if ((i < LWIP_SOCKET_OFFSET) || (i >= sockets_num + LWIP_SOCKET_OFFSET)) {
++    LWIP_DEBUGF(SOCKETS_DEBUG | GAZELLE_DEBUG_SERIOUS, ("posix_api->socket_fn  socket is %d, illegal\n", i));
+     goto err;
+   }
+ 
+@@ -767,13 +769,14 @@ lwip_accept4(int s, struct sockaddr *addr, socklen_t *addrlen, int flags)
+ 
+   sock = get_socket(s);
+   if (!sock) {
++    LWIP_DEBUGF(SOCKETS_DEBUG | GAZELLE_DEBUG_SERIOUS, ("get_socket sock is null\n"));
+     return -1;
+   }
+ 
+   /* wait for a new connection */
+   err = netconn_accept(sock->conn, &newconn);
+   if (err != ERR_OK) {
+-    LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_accept(%d): netconn_acept failed, err=%d\n", s, err));
++    LWIP_DEBUGF(SOCKETS_DEBUG | GAZELLE_DEBUG_SERIOUS, ("lwip_accept(%d): netconn_acept failed, err=%d\n", s, err));
+     if (NETCONNTYPE_GROUP(netconn_type(sock->conn)) != NETCONN_TCP) {
+       sock_set_errno(sock, EOPNOTSUPP);
+     } else if (err == ERR_CLSD) {
+@@ -788,6 +791,7 @@ lwip_accept4(int s, struct sockaddr *addr, socklen_t *addrlen, int flags)
+ 
+   newsock = alloc_socket(newconn, 1, flags);
+   if (newsock == -1) {
++    LWIP_DEBUGF(SOCKETS_DEBUG | GAZELLE_DEBUG_SERIOUS, ("alloc_socket fail newsock is -1\n"));
+     netconn_delete(newconn);
+     sock_set_errno(sock, ENFILE);
+     done_socket(sock);
+@@ -807,6 +811,7 @@ lwip_accept4(int s, struct sockaddr *addr, socklen_t *addrlen, int flags)
+     ret = find_same_node_memzone(pcb, nsock);
+   }
+   if (pcb == NULL || ret != 0) {
++      LWIP_DEBUGF(SOCKETS_DEBUG | GAZELLE_DEBUG_SERIOUS, ("alloc_socket fail pcb null flag=%u, ret=%d \n", (pcb == NULL), ret));
+       netconn_delete(newconn);
+       free_socket(nsock, 1);
+       sock_set_errno(sock, ENOTCONN);
+@@ -842,7 +847,7 @@ lwip_accept4(int s, struct sockaddr *addr, socklen_t *addrlen, int flags)
+     /* get the IP address and port of the remote host */
+     err = netconn_peer(newconn, &naddr, &port);
+     if (err != ERR_OK) {
+-      LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_accept(%d): netconn_peer failed, err=%d\n", s, err));
++      LWIP_DEBUGF(SOCKETS_DEBUG | GAZELLE_DEBUG_SERIOUS, ("lwip_accept(%d): netconn_peer failed, err=%d\n", s, err));
+       free_socket(nsock, 1);
+       sock_set_errno(sock, err_to_errno(err));
+       done_socket(sock);
+@@ -1059,10 +1064,10 @@ lwip_listen(int s, int backlog)
+     return -1;
+   }
+ 
+-  /* limit the "backlog" parameter to fit in an u8_t */
+-  backlog = LWIP_MIN(LWIP_MAX(backlog, 0), 0xff);
++  /* limit the "backlog" parameter to fit in an u16_t */
++  backlog = LWIP_MIN(LWIP_MAX(backlog, 0), 0xffff);
+ 
+-  err = netconn_listen_with_backlog(sock->conn, (u8_t)backlog);
++  err = netconn_listen_with_backlog(sock->conn, (u16_t)backlog);
+ 
+   if (err != ERR_OK) {
+     LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_listen(%d) failed, err=%d\n", s, err));
+diff --git a/src/core/init.c b/src/core/init.c
+index 6880fd3..8c59a7c 100644
+--- a/src/core/init.c
++++ b/src/core/init.c
+@@ -160,8 +160,8 @@ PACK_STRUCT_END
+ #if (LWIP_TCP && ((TCP_MAXRTX > 12) || (TCP_SYNMAXRTX > 12)))
+ #error "If you want to use TCP, TCP_MAXRTX and TCP_SYNMAXRTX must less or equal to 12 (due to tcp_backoff table), so, you have to reduce them in your lwipopts.h"
+ #endif
+-#if (LWIP_TCP && TCP_LISTEN_BACKLOG && ((TCP_DEFAULT_LISTEN_BACKLOG < 0) || (TCP_DEFAULT_LISTEN_BACKLOG > 0xff)))
+-#error "If you want to use TCP backlog, TCP_DEFAULT_LISTEN_BACKLOG must fit into an u8_t"
++#if (LWIP_TCP && TCP_LISTEN_BACKLOG && ((TCP_DEFAULT_LISTEN_BACKLOG < 0) || (TCP_DEFAULT_LISTEN_BACKLOG > 0xffff)))
++#error "If you want to use TCP backlog, TCP_DEFAULT_LISTEN_BACKLOG must fit into an u16_t"
+ #endif
+ #if (LWIP_TCP && LWIP_TCP_SACK_OUT && !TCP_QUEUE_OOSEQ)
+ #error "To use LWIP_TCP_SACK_OUT, TCP_QUEUE_OOSEQ needs to be enabled"
+diff --git a/src/core/tcp.c b/src/core/tcp.c
+index ca70a85..76f0ffd 100644
+--- a/src/core/tcp.c
++++ b/src/core/tcp.c
+@@ -903,7 +903,7 @@ tcp_accept_null(void *arg, struct tcp_pcb *pcb, err_t err)
+  *             tpcb = tcp_listen_with_backlog(tpcb, backlog);
+  */
+ struct tcp_pcb *
+-tcp_listen_with_backlog(struct tcp_pcb *pcb, u8_t backlog)
++tcp_listen_with_backlog(struct tcp_pcb *pcb, u16_t backlog)
+ {
+   LWIP_ASSERT_CORE_LOCKED();
+   return tcp_listen_with_backlog_and_err(pcb, backlog, NULL);
+@@ -926,7 +926,7 @@ tcp_listen_with_backlog(struct tcp_pcb *pcb, u8_t backlog)
+  *             tpcb = tcp_listen_with_backlog_and_err(tpcb, backlog, &err);
+  */
+ struct tcp_pcb *
+-tcp_listen_with_backlog_and_err(struct tcp_pcb *pcb, u8_t backlog, err_t *err)
++tcp_listen_with_backlog_and_err(struct tcp_pcb *pcb, u16_t backlog, err_t *err)
+ {
+   struct tcp_pcb_listen *lpcb = NULL;
+   err_t res;
+diff --git a/src/core/tcp_in.c b/src/core/tcp_in.c
+index c76c114..e9ab96f 100644
+--- a/src/core/tcp_in.c
++++ b/src/core/tcp_in.c
+@@ -785,7 +785,7 @@ tcp_listen_input(struct tcp_pcb_listen *pcb)
+        SYN at a time when we have more memory available. */
+     if (npcb == NULL) {
+       err_t err;
+-      LWIP_DEBUGF(TCP_DEBUG, ("tcp_listen_input: could not allocate PCB\n"));
++      LWIP_DEBUGF(TCP_DEBUG | GAZELLE_DEBUG_SERIOUS, ("tcp_listen_input: could not allocate PCB\n"));
+       TCP_STATS_INC(tcp.memerr);
+       TCP_EVENT_ACCEPT(pcb, NULL, pcb->callback_arg, ERR_MEM, err);
+       LWIP_UNUSED_ARG(err); /* err not useful here */
+diff --git a/src/include/lwip/api.h b/src/include/lwip/api.h
+index ed237c7..a986cd4 100644
+--- a/src/include/lwip/api.h
++++ b/src/include/lwip/api.h
+@@ -366,7 +366,7 @@ err_t   netconn_bind(struct netconn *conn, const ip_addr_t *addr, u16_t port);
+ err_t   netconn_bind_if(struct netconn *conn, u8_t if_idx);
+ err_t   netconn_connect(struct netconn *conn, const ip_addr_t *addr, u16_t port);
+ err_t   netconn_disconnect (struct netconn *conn);
+-err_t   netconn_listen_with_backlog(struct netconn *conn, u8_t backlog);
++err_t   netconn_listen_with_backlog(struct netconn *conn, u16_t backlog);
+ /** @ingroup netconn_tcp */
+ #define netconn_listen(conn) netconn_listen_with_backlog(conn, TCP_DEFAULT_LISTEN_BACKLOG)
+ err_t   netconn_accept(struct netconn *conn, struct netconn **new_conn);
+diff --git a/src/include/lwip/opt.h b/src/include/lwip/opt.h
+index 57a1a53..6332d51 100644
+--- a/src/include/lwip/opt.h
++++ b/src/include/lwip/opt.h
+@@ -1428,7 +1428,7 @@
+  * 0xff is the maximum (u8_t).
+  */
+ #if !defined TCP_DEFAULT_LISTEN_BACKLOG || defined __DOXYGEN__
+-#define TCP_DEFAULT_LISTEN_BACKLOG      0xff
++#define TCP_DEFAULT_LISTEN_BACKLOG      0xffff
+ #endif
+ 
+ /**
+diff --git a/src/include/lwip/priv/api_msg.h b/src/include/lwip/priv/api_msg.h
+index 9e8ffc9..b36f00a 100644
+--- a/src/include/lwip/priv/api_msg.h
++++ b/src/include/lwip/priv/api_msg.h
+@@ -145,7 +145,7 @@ struct api_msg {
+ #endif /* LWIP_IGMP || (LWIP_IPV6 && LWIP_IPV6_MLD) */
+ #if TCP_LISTEN_BACKLOG
+     struct {
+-      u8_t backlog;
++      u16_t backlog;
+     } lb;
+ #endif /* TCP_LISTEN_BACKLOG */
+   } msg;
+diff --git a/src/include/lwip/tcp.h b/src/include/lwip/tcp.h
+index 91a86c9..741e58f 100644
+--- a/src/include/lwip/tcp.h
++++ b/src/include/lwip/tcp.h
+@@ -249,8 +249,8 @@ struct tcp_pcb_listen {
+ #endif /* LWIP_CALLBACK_API */
+ 
+ #if TCP_LISTEN_BACKLOG
+-  u8_t backlog;
+-  u8_t accepts_pending;
++  u16_t backlog;
++  u16_t accepts_pending;
+ #endif /* TCP_LISTEN_BACKLOG */
+ 
+ #if GAZELLE_TCP_REUSE_IPPORT
+@@ -575,8 +575,8 @@ void             tcp_bind_netif(struct tcp_pcb *pcb, const struct netif *netif);
+ err_t            tcp_connect (struct tcp_pcb *pcb, const ip_addr_t *ipaddr,
+                               u16_t port, tcp_connected_fn connected);
+ 
+-struct tcp_pcb * tcp_listen_with_backlog_and_err(struct tcp_pcb *pcb, u8_t backlog, err_t *err);
+-struct tcp_pcb * tcp_listen_with_backlog(struct tcp_pcb *pcb, u8_t backlog);
++struct tcp_pcb * tcp_listen_with_backlog_and_err(struct tcp_pcb *pcb, u16_t backlog, err_t *err);
++struct tcp_pcb * tcp_listen_with_backlog(struct tcp_pcb *pcb, u16_t backlog);
+ /** @ingroup tcp_raw */
+ #define          tcp_listen(pcb) tcp_listen_with_backlog(pcb, TCP_DEFAULT_LISTEN_BACKLOG)
+ 
+diff --git a/src/include/lwipopts.h b/src/include/lwipopts.h
+index 82cf881..44ed80f 100644
+--- a/src/include/lwipopts.h
++++ b/src/include/lwipopts.h
+@@ -210,11 +210,11 @@
+ 
+ #define TCP_HLEN 20
+ 
+-#define DEFAULT_ACCEPTMBOX_SIZE 1024
++#define DEFAULT_ACCEPTMBOX_SIZE 4096
+ #define DEFAULT_TCP_RECVMBOX_SIZE 4096
+ 
+ #define TCP_LISTEN_BACKLOG 1
+-#define TCP_DEFAULT_LISTEN_BACKLOG 0xff
++#define TCP_DEFAULT_LISTEN_BACKLOG 0xffff
+ 
+ #define TCP_OVERSIZE TCP_MSS
+ #define LWIP_NETIF_TX_SINGLE_PBUF 1
+-- 
+2.33.0
+

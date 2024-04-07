@@ -1,0 +1,29 @@
+From 21f7f9a5bdfd5d2f592af19e73647a48fdbb7bf1 Mon Sep 17 00:00:00 2001
+From: kircher <majun65@huawei.com>
+Date: Tue, 16 May 2023 19:07:42 +0800
+Subject: [PATCH] fix pbuf leak in udp connection
+
+---
+ src/core/udp.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/src/core/udp.c b/src/core/udp.c
+index 1398537..9c3cdaa 100644
+--- a/src/core/udp.c
++++ b/src/core/udp.c
+@@ -933,8 +933,11 @@ udp_sendto_if_src_chksum(struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *d
+   /* @todo: must this be increased even if error occurred? */
+   MIB2_STATS_INC(mib2.udpoutdatagrams);
+ 
++#if !GAZELLE_ENABLE
+   /* did we chain a separate header pbuf earlier? */
+-  if (q != p) {
++  if (q != p)
++#endif
++  {
+     /* free the header pbuf */
+     pbuf_free(q);
+     q = NULL;
+-- 
+2.33.0
+

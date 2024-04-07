@@ -1,0 +1,37 @@
+From 11d8e9f6d54a606163a452f1c8beaa5bc90e949c Mon Sep 17 00:00:00 2001
+From: jiangheng <jiangheng14@huawei.com>
+Date: Wed, 28 Dec 2022 21:25:36 +0800
+Subject: [PATCH] listen pcb also use pcb_if
+
+---
+ src/include/lwip/ip.h  | 1 +
+ src/include/lwip/tcp.h | 1 -
+ 2 files changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/include/lwip/ip.h b/src/include/lwip/ip.h
+index d560f6b..4cf5f5e 100644
+--- a/src/include/lwip/ip.h
++++ b/src/include/lwip/ip.h
+@@ -79,6 +79,7 @@ extern "C" {
+   ip_addr_t remote_ip;                     \
+   /* Bound netif index */                  \
+   u8_t netif_idx;                          \
++  struct netif *pcb_if;                     \
+   /* Socket options */                     \
+   u8_t so_options;                         \
+   /* Type Of Service */                    \
+diff --git a/src/include/lwip/tcp.h b/src/include/lwip/tcp.h
+index 97cb882..0b65b01 100644
+--- a/src/include/lwip/tcp.h
++++ b/src/include/lwip/tcp.h
+@@ -409,7 +409,6 @@ struct tcp_pcb {
+   u8_t snd_scale;
+   u8_t rcv_scale;
+ #endif
+-  struct netif* pcb_if;
+ };
+
+ #if TCP_PCB_HASH
+--
+2.23.0
+

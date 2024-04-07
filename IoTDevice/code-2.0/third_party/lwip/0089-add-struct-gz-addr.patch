@@ -1,0 +1,97 @@
+diff -Nur lwip-org/src/core/tcp.c lwip-gz-addr/src/core/tcp.c
+--- lwip-org/src/core/tcp.c	2023-12-04 14:10:25.364481010 +0800
++++ lwip-gz-addr/src/core/tcp.c	2023-12-04 14:33:31.712481010 +0800
+@@ -1161,7 +1161,7 @@
+ 
+       if (__atomic_load_n(&port_state[tcp_port - TCP_LOCAL_PORT_RANGE_START], __ATOMIC_ACQUIRE) == 0) {
+ #if GAZELLE_ENABLE
+-        if (port_in_stack_queue(pcb->remote_ip, pcb->local_ip, pcb->remote_port, tcp_port)) {
++        if (port_in_stack_queue((gz_addr_t *)&pcb->remote_ip, (gz_addr_t *)&pcb->local_ip, pcb->remote_port, tcp_port)) {
+             tmp_port = tcp_port;
+             __atomic_store_n(&port_state[tcp_port - TCP_LOCAL_PORT_RANGE_START], 1, __ATOMIC_RELEASE);
+             break;
+diff -Nur lwip-org/src/core/udp.c lwip-gz-addr/src/core/udp.c
+--- lwip-org/src/core/udp.c	2023-12-04 14:10:25.364481010 +0800
++++ lwip-gz-addr/src/core/udp.c	2023-12-04 14:19:58.832481010 +0800
+@@ -132,7 +132,7 @@
+     }
+ 
+     if (__atomic_load_n(&port_state[udp_port - UDP_LOCAL_PORT_RANGE_START], __ATOMIC_ACQUIRE) == 0) {
+-      if (port_in_stack_queue(dst_pcb->remote_ip, dst_pcb->local_ip, dst_pcb->remote_port, udp_port)) {
++      if (port_in_stack_queue((gz_addr_t *)&dst_pcb->remote_ip, (gz_addr_t *)&dst_pcb->local_ip, dst_pcb->remote_port, udp_port)) {
+           tmp_port = udp_port;
+           __atomic_store_n(&port_state[udp_port - UDP_LOCAL_PORT_RANGE_START], 1, __ATOMIC_RELEASE);
+           break;
+diff -Nur lwip-org/src/include/lwipopts.h lwip-gz-addr/src/include/lwipopts.h
+--- lwip-org/src/include/lwipopts.h	2023-12-04 14:10:25.368481010 +0800
++++ lwip-gz-addr/src/include/lwipopts.h	2023-12-06 19:29:24.520481010 +0800
+@@ -184,6 +184,7 @@
+ */
+ #define LWIP_IPV6                1
+ #define IP6_HLEN                 40
++#define LWIP_IPV6_SCOPES         1
+ 
+ /*
+    ---------------------------------
+diff -Nur lwip-org/src/include/reg_sock.h lwip-gz-addr/src/include/reg_sock.h
+--- lwip-org/src/include/reg_sock.h	2023-12-04 14:10:25.368481010 +0800
++++ lwip-gz-addr/src/include/reg_sock.h	2023-12-06 19:41:19.792481010 +0800
+@@ -34,7 +34,35 @@
+ #define __REG_SOCK_H__
+ 
+ #include <stdbool.h>
+-#include "lwip/ip_addr.h"
++
++#include "lwipopts.h"
++
++/*  compatible with ip4_addr_t */
++struct gz_ip4 {
++  uint32_t addr;
++};
++
++/*  compatible with ip6_addr_t */
++#if LWIP_IPV6
++struct gz_ip6 {
++  uint32_t addr[4];
++#if LWIP_IPV6_SCOPES
++  uint8_t zone;
++#endif /* LWIP_IPV6_SCOPES */
++};
++#endif /* LWIP_IPV6 */
++
++/* gazelle ip address, compatible with ip_addr_t */
++typedef struct gz_addr {
++    union {
++#if LWIP_IPV6
++        struct gz_ip6 ip6;
++#endif /* LWIP_IPV6 */
++        struct gz_ip4 ip4;
++    } u_addr;
++    /** @ref lwip_ip_addr_type */
++    uint8_t type;
++} gz_addr_t;
+ 
+ enum reg_ring_type {
+     REG_RING_TCP_LISTEN = 0,
+@@ -45,10 +73,12 @@
+ };
+ 
+ struct gazelle_quintuple {
+-	uint32_t protocol;
++    uint32_t protocol;
+     /* net byte order */
+     uint16_t src_port;
+     uint16_t dst_port;
++
++    /* TODO: replace with gz_addr_t */
+     uint32_t src_ip;
+     uint32_t dst_ip;
+ #if LWIP_IPV6
+@@ -65,6 +95,6 @@
+ };
+ 
+ extern int vdev_reg_xmit(enum reg_ring_type type, struct gazelle_quintuple *qtuple);
+-extern bool port_in_stack_queue(ip_addr_t src_ip, ip_addr_t dst_ip, uint16_t src_port, uint16_t dst_port);
++extern bool port_in_stack_queue(gz_addr_t *src_ip, gz_addr_t *dst_ip, uint16_t src_port, uint16_t dst_port);
+ 
+ #endif /* __REG_SOCK_H__ */

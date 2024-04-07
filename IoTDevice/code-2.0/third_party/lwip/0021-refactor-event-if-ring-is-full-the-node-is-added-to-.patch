@@ -1,0 +1,33 @@
+From b7faf0800631668d4d23cb497f1ceeb5948e4a41 Mon Sep 17 00:00:00 2001
+From: jiangheng <jiangheng12@huawei.com>
+Date: Tue, 15 Mar 2022 19:22:22 +0800
+Subject: [PATCH] refactor event, if ring is full, the node is added to list
+
+---
+ src/include/lwipsock.h | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/include/lwipsock.h b/src/include/lwipsock.h
+index 355bf47..36bcaed 100644
+--- a/src/include/lwipsock.h
++++ b/src/include/lwipsock.h
+@@ -104,12 +104,16 @@ struct lwip_sock {
+   struct pbuf *send_lastdata; /* unread data in one pbuf */
+   void *send_ring;
+   int32_t recv_flags;
++  int32_t send_flags;
+   bool wait_close;
+   int32_t attach_fd;
+   struct lwip_sock *shadowed_sock;
+   struct list_node attach_list;
+   struct list_node listen_list;
+   struct list_node recv_list;
++  struct list_node event_list;
++  struct list_node wakeup_list;
++  struct list_node send_list;
+   int32_t nextfd; /* listenfd list */
+ #endif
+ };
+-- 
+1.8.3.1
+

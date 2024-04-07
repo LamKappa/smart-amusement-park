@@ -1,0 +1,41 @@
+From a7be70b7c210fbe17d4b6a90b8c8a155dd489035 Mon Sep 17 00:00:00 2001
+From: compile_success <980965867@qq.com>
+Date: Sat, 4 Nov 2023 14:16:06 +0000
+Subject: [PATCH] enable vlan define
+
+---
+ src/include/lwipopts.h | 3 +++
+ src/netif/ethernet.c   | 4 ++++
+ 2 files changed, 7 insertions(+)
+
+diff --git a/src/include/lwipopts.h b/src/include/lwipopts.h
+index fdd4f87..a18179e 100644
+--- a/src/include/lwipopts.h
++++ b/src/include/lwipopts.h
+@@ -261,4 +261,7 @@
+ */
+ #define LWIP_NETIF_LOOPBACK 1
+ 
++#define ETHARP_SUPPORT_VLAN 1
++#define LWIP_VLAN_PCP 1
++
+ #endif /* __LWIPOPTS_H__ */
+diff --git a/src/netif/ethernet.c b/src/netif/ethernet.c
+index cbe298e..d411892 100644
+--- a/src/netif/ethernet.c
++++ b/src/netif/ethernet.c
+@@ -321,7 +321,11 @@ ethernet_output(struct netif * netif, struct pbuf * p,
+               ("ethernet_output: sending packet %p\n", (void *)p));
+ 
+ #if CHECKSUM_GEN_IP_HW || CHECKSUM_GEN_TCP_HW
++#if LWIP_VLAN_PCP
++  ethh_cksum_set(p, sizeof(*ethhdr)+SIZEOF_VLAN_HDR);
++#else
+   ethh_cksum_set(p, sizeof(*ethhdr));
++#endif
+ #endif
+ 
+   /* send the packet */
+-- 
+2.33.0
+

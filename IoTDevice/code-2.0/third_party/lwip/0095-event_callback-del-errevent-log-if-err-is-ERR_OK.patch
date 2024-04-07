@@ -1,0 +1,27 @@
+From db1929c5698a672200bf96d7ece992f10a98a80c Mon Sep 17 00:00:00 2001
+From: yangchen <yangchen145@huawei.com>
+Date: Wed, 20 Dec 2023 17:37:42 +0800
+Subject: [PATCH] event_callback: del errevent log if err is ERR_OK
+
+---
+ src/api/sockets.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/api/sockets.c b/src/api/sockets.c
+index 0b3e4ea..f5b8ea6 100644
+--- a/src/api/sockets.c
++++ b/src/api/sockets.c
+@@ -2805,7 +2805,9 @@ event_callback(struct netconn *conn, enum netconn_evt evt, u16_t len)
+ #endif
+       break;
+     case NETCONN_EVT_ERROR:
+-      LWIP_DEBUGF(GAZELLE_DEBUG_SERIOUS, ("event_callback: have errevent, err=%d, fd=%d\n", conn->pending_err, conn->socket));
++      if (conn->pending_err != ERR_OK) {
++          LWIP_DEBUGF(GAZELLE_DEBUG_SERIOUS, ("event_callback: have errevent, err=%d, fd=%d\n", conn->pending_err, conn->socket));
++      }
+       sock->errevent = 1;
+ #if GAZELLE_ENABLE
+       if (netif_is_rtc_mode(netif_default)) {
+-- 
+2.33.0
+

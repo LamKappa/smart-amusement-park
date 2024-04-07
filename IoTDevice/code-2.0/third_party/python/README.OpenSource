@@ -1,0 +1,11 @@
+[
+  {
+    "Name": "python",
+    "License": "Python Software Foundation License V2",
+    "License File": "LICENSE",
+    "Version Number": "3.8.5",
+    "Owner": "wangweichao2@huawei.com",
+    "Upstream URL": "https://www.python.org",
+    "Description": "Python is a programming language that lets you work quickly and integrate systems more effectively."
+  }
+]

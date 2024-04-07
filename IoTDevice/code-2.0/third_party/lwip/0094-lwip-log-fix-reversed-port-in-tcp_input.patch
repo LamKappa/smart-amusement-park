@@ -1,0 +1,61 @@
+From ce3debdf4c4cd6701cdb323377477539a5fd13fa Mon Sep 17 00:00:00 2001
+From: yangchen <yangchen145@huawei.com>
+Date: Fri, 15 Dec 2023 17:21:54 +0800
+Subject: [PATCH] lwip log: fix reversed port in tcp_input
+
+---
+ src/core/tcp_in.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/src/core/tcp_in.c b/src/core/tcp_in.c
+index 24706c1..c76c114 100644
+--- a/src/core/tcp_in.c
++++ b/src/core/tcp_in.c
+@@ -689,7 +689,7 @@ aborted:
+       TCP_STATS_INC(tcp.drop);
+       LWIP_DEBUGF(TCP_RST_DEBUG | GAZELLE_DEBUG_SERIOUS,
+                   ("tcp_input: no PCB match found, send RST, local_port=%d, remote_port=%d\n",
+-                  tcphdr->src, tcphdr->dest));
++                  tcphdr->dest, tcphdr->src));
+       tcp_rst(NULL, ackno, seqno + tcplen, ip_current_dest_addr(),
+               ip_current_src_addr(), tcphdr->dest, tcphdr->src);
+     }
+@@ -766,7 +766,7 @@ tcp_listen_input(struct tcp_pcb_listen *pcb)
+        RST. */
+     LWIP_DEBUGF(TCP_RST_DEBUG | GAZELLE_DEBUG_SERIOUS,
+                 ("tcp_listen_input: ACK in LISTEN, send reset, local_port=%d, remote_port=%d\n",
+-                tcphdr->src, tcphdr->dest));
++                tcphdr->dest, tcphdr->src));
+     tcp_rst((const struct tcp_pcb *)pcb, ackno, seqno + tcplen, ip_current_dest_addr(),
+             ip_current_src_addr(), tcphdr->dest, tcphdr->src);
+   } else if (flags & TCP_SYN) {
+@@ -903,7 +903,7 @@ tcp_timewait_input(struct tcp_pcb *pcb)
+       /* If the SYN is in the window it is an error, send a reset */
+       LWIP_DEBUGF(GAZELLE_DEBUG_SERIOUS,
+                   ("tcp_timewait_input: SYN in TIME_WAIT, send RST, local_port=%d, remote_port=%d\n",
+-                  tcphdr->src, tcphdr->dest));
++                  tcphdr->dest, tcphdr->src));
+       tcp_rst(pcb, ackno, seqno + tcplen, ip_current_dest_addr(),
+               ip_current_src_addr(), tcphdr->dest, tcphdr->src);
+       return;
+@@ -1073,7 +1073,7 @@ tcp_process(struct tcp_pcb *pcb)
+       else if (flags & TCP_ACK) {
+         /* send a RST to bring the other side in a non-synchronized state. */
+         LWIP_DEBUGF(GAZELLE_DEBUG_SERIOUS, ("tcp_process: ACK in SYN_SENT, send RST, local_port=%d, remote_port=%d\n",
+-                    tcphdr->src, tcphdr->dest));
++                    tcphdr->dest, tcphdr->src));
+         tcp_rst(pcb, ackno, seqno + tcplen, ip_current_dest_addr(),
+                 ip_current_src_addr(), tcphdr->dest, tcphdr->src);
+         /* Resend SYN immediately (don't wait for rto timeout) to establish
+@@ -1146,7 +1146,7 @@ tcp_process(struct tcp_pcb *pcb)
+           /* incorrect ACK number, send RST */
+           LWIP_DEBUGF(GAZELLE_DEBUG_SERIOUS, 
+                       ("tcp_process: incorrect ACK number in SYN_RCVD, send RST, ackno=%d, lastack=%d, snd_nxt=%d, local_port=%d, remote_port=%d\n",
+-                      ackno, pcb->lastack, pcb->snd_nxt, tcphdr->src, tcphdr->dest));
++                      ackno, pcb->lastack, pcb->snd_nxt, tcphdr->dest, tcphdr->src));
+           tcp_rst(pcb, ackno, seqno + tcplen, ip_current_dest_addr(),
+                   ip_current_src_addr(), tcphdr->dest, tcphdr->src);
+         }
+-- 
+2.33.0
+

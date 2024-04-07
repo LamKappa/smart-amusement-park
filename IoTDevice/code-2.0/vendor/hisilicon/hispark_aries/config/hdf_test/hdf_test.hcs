@@ -1,0 +1,12 @@
+#include "../hdf.hcs"
+#include "hdf_test_manager/device_info.hcs"
+#include "hdf_config_test.hcs"
+#include "gpio_test_config.hcs"
+#include "i2c_test_config.hcs"
+#include "spi_test_config.hcs"
+#include "uart_test_config.hcs"
+#include "sdio_test_config.hcs"
+
+root {
+    module = "hisilicon,hi35xx_chip";
+}

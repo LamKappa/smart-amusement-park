@@ -1,0 +1,195 @@
+From 68c1fe8794077eab032b542094608338947f3d4f Mon Sep 17 00:00:00 2001
+From: wuchangsheng <wuchangsheng2@huawei.com>
+Date: Thu, 6 Oct 2022 19:27:41 +0800
+Subject: [PATCH] fix tcp new port
+
+---
+ src/core/tcp.c         | 87 +++++++++++++++++++++++++++++-------------
+ src/include/reg_sock.h |  1 +
+ 2 files changed, 61 insertions(+), 27 deletions(-)
+
+diff --git a/src/core/tcp.c b/src/core/tcp.c
+index b65ab33..436ef85 100644
+--- a/src/core/tcp.c
++++ b/src/core/tcp.c
+@@ -202,13 +202,26 @@ PER_THREAD u8_t tcp_active_pcbs_changed;
+ /** Timer counter to handle calling slow-timer from tcp_tmr() */
+ static PER_THREAD u8_t tcp_timer;
+ static PER_THREAD u8_t tcp_timer_ctr;
++#if USE_LIBOS
++static u16_t tcp_new_port(struct tcp_pcb *pcb);
++#else
+ static u16_t tcp_new_port(void);
++#endif
+ 
+ static err_t tcp_close_shutdown_fin(struct tcp_pcb *pcb);
+ #if LWIP_TCP_PCB_NUM_EXT_ARGS
+ static void tcp_ext_arg_invoke_callbacks_destroyed(struct tcp_pcb_ext_args *ext_args);
+ #endif
+ 
++#if USE_LIBOS
++static u8_t port_state[TCP_LOCAL_PORT_RANGE_END - TCP_LOCAL_PORT_RANGE_START + 1] = {0};
++void release_port(u16_t port)
++{
++    if (port >= TCP_LOCAL_PORT_RANGE_START && port <= TCP_LOCAL_PORT_RANGE_END) {
++        port_state[port - TCP_LOCAL_PORT_RANGE_START] = 0;
++    }
++}
++#endif
+ /**
+  * Initialize this module.
+  */
+@@ -237,6 +250,7 @@ tcp_free(struct tcp_pcb *pcb)
+ {
+ #if USE_LIBOS
+   vdev_unreg_done(pcb);
++  release_port(pcb->local_port);
+ #endif
+   LWIP_ASSERT("tcp_free: LISTEN", pcb->state != LISTEN);
+ #if LWIP_TCP_PCB_NUM_EXT_ARGS
+@@ -746,7 +760,11 @@ tcp_bind(struct tcp_pcb *pcb, const ip_addr_t *ipaddr, u16_t port)
+ #endif /* LWIP_IPV6 && LWIP_IPV6_SCOPES */
+ 
+   if (port == 0) {
++#if USE_LIBOS
++    port = tcp_new_port(pcb);
++#else
+     port = tcp_new_port();
++#endif
+     if (port == 0) {
+       return ERR_BUF;
+     }
+@@ -1057,33 +1075,43 @@ tcp_recved(struct tcp_pcb *pcb, u16_t len)
+  *
+  * @return a new (free) local TCP port number
+  */
++#if USE_LIBOS
++static u16_t
++tcp_new_port(struct tcp_pcb *pcb)
++#else
+ static u16_t
+ tcp_new_port(void)
++#endif
+ {
+-  u8_t i;
+   u16_t n = 0;
+-  u16_t tmp_port;
+-  struct tcp_pcb *pcb;
++  u16_t tmp_port = 0;
+ 
+   pthread_mutex_lock(&g_tcp_port_mutex);
+-again:
+-  tcp_port++;
+-  if (tcp_port == TCP_LOCAL_PORT_RANGE_END) {
+-    tcp_port = TCP_LOCAL_PORT_RANGE_START;
+-  }
+-  /* Check all PCB lists. */
+-  for (i = 0; i < NUM_TCP_PCB_LISTS; i++) {
+-    for (pcb = *tcp_pcb_lists[i]; pcb != NULL; pcb = pcb->next) {
+-      if (pcb->local_port == tcp_port) {
+-        n++;
+-        if (n > (TCP_LOCAL_PORT_RANGE_END - TCP_LOCAL_PORT_RANGE_START)) {
+-          return 0;
++  do {
++      tcp_port++;
++      if (tcp_port == TCP_LOCAL_PORT_RANGE_END) {
++        tcp_port = TCP_LOCAL_PORT_RANGE_START;
++      }
++
++      if (__atomic_load_n(&port_state[tcp_port - TCP_LOCAL_PORT_RANGE_START], __ATOMIC_ACQUIRE) == 0) {
++#if USE_LIBOS
++        if (port_in_stack_queue(pcb->remote_ip.addr, pcb->local_ip.addr, pcb->remote_port, tcp_port)) {
++            tmp_port = tcp_port;
++            __atomic_store_n(&port_state[tcp_port - TCP_LOCAL_PORT_RANGE_START], 1, __ATOMIC_RELEASE);
++            break;
+         }
+-        goto again;
++#else
++        __atomic_store_n(&port_state[tcp_port - TCP_LOCAL_PORT_RANGE_START], 1, __ATOMIC_RELEASE);
++        break;
++#endif
+       }
+-    }
+-  }
+-  tmp_port = tcp_port;
++
++      n++;
++      if (n > TCP_LOCAL_PORT_RANGE_END - TCP_LOCAL_PORT_RANGE_START) {
++        break;
++      }
++  } while (tmp_port == 0);
++
+   pthread_mutex_unlock(&g_tcp_port_mutex);
+ 
+   return tmp_port;
+@@ -1169,7 +1197,11 @@ tcp_connect(struct tcp_pcb *pcb, const ip_addr_t *ipaddr, u16_t port,
+ 
+   old_local_port = pcb->local_port;
+   if (pcb->local_port == 0) {
++#if USE_LIBOS
++    pcb->local_port = tcp_new_port(pcb);
++#else
+     pcb->local_port = tcp_new_port();
++#endif
+     if (pcb->local_port == 0) {
+       return ERR_BUF;
+     }
+@@ -1196,10 +1228,6 @@ tcp_connect(struct tcp_pcb *pcb, const ip_addr_t *ipaddr, u16_t port,
+ #endif /* SO_REUSE */
+   }
+ 
+-#if USE_LIBOS
+-  vdev_reg_done(REG_RING_TCP_CONNECT, pcb);
+-#endif
+-
+   iss = tcp_next_iss(pcb);
+   pcb->rcv_nxt = 0;
+   pcb->snd_nxt = iss;
+@@ -1227,6 +1255,10 @@ tcp_connect(struct tcp_pcb *pcb, const ip_addr_t *ipaddr, u16_t port,
+   /* Send a SYN together with the MSS option. */
+   ret = tcp_enqueue_flags(pcb, TCP_SYN);
+   if (ret == ERR_OK) {
++#if USE_LIBOS
++    vdev_reg_done(REG_RING_TCP_CONNECT, pcb);
++#endif
++
+     /* SYN segment was enqueued, changed the pcbs state now */
+     pcb->state = SYN_SENT;
+     if (old_local_port != 0) {
+@@ -2277,10 +2309,6 @@ tcp_pcb_remove(struct tcp_pcb **pcblist, struct tcp_pcb *pcb)
+   LWIP_ASSERT("tcp_pcb_remove: invalid pcb", pcb != NULL);
+   LWIP_ASSERT("tcp_pcb_remove: invalid pcblist", pcblist != NULL);
+ 
+-#if USE_LIBOS
+-  vdev_unreg_done(pcb);
+-#endif
+-
+   TCP_RMV(pcblist, pcb);
+ 
+   tcp_pcb_purge(pcb);
+@@ -2301,6 +2329,11 @@ tcp_pcb_remove(struct tcp_pcb **pcblist, struct tcp_pcb *pcb)
+ #endif /* TCP_QUEUE_OOSEQ */
+   }
+ 
++#if USE_LIBOS
++  vdev_unreg_done(pcb);
++  release_port(pcb->local_port);
++#endif
++
+   pcb->state = CLOSED;
+   /* reset the local port to prevent the pcb from being 'bound' */
+   pcb->local_port = 0;
+diff --git a/src/include/reg_sock.h b/src/include/reg_sock.h
+index 76673da..e349e85 100644
+--- a/src/include/reg_sock.h
++++ b/src/include/reg_sock.h
+@@ -58,5 +58,6 @@ struct reg_ring_msg {
+ };
+ 
+ extern int vdev_reg_xmit(enum reg_ring_type type, struct gazelle_quintuple *qtuple);
++extern bool port_in_stack_queue(uint32_t src_ip, uint32_t dst_ip, uint16_t src_port, uint16_t dst_port);
+ 
+ #endif /* __REG_SOCK_H__ */
+-- 
+2.27.0
+

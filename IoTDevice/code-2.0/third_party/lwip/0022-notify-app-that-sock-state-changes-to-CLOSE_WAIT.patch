@@ -1,0 +1,56 @@
+From 05159c41efdc2f07ddbe3520330faf2675baa3d6 Mon Sep 17 00:00:00 2001
+From: jiangheng <jiangheng12@huawei.com>
+Date: Tue, 15 Mar 2022 20:10:07 +0800
+Subject: [PATCH] notify app that sock changes to CLOSE_WAAIT
+
+---
+ src/core/tcp_in.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/src/core/tcp_in.c b/src/core/tcp_in.c
+index 1652b86..0d3a2f1 100644
+--- a/src/core/tcp_in.c
++++ b/src/core/tcp_in.c
+@@ -58,6 +58,9 @@
+ #if LWIP_ND6_TCP_REACHABILITY_HINTS
+ #include "lwip/nd6.h"
+ #endif /* LWIP_ND6_TCP_REACHABILITY_HINTS */
++#if USE_LIBOS
++#include "lwip/api.h"
++#endif
+ 
+ #include <string.h>
+ 
+@@ -1032,6 +1035,9 @@ tcp_process(struct tcp_pcb *pcb)
+           if (recv_flags & TF_GOT_FIN) {
+             tcp_ack_now(pcb);
+             pcb->state = CLOSE_WAIT;
++#if USE_LIBOS
++            API_EVENT(((struct netconn *)pcb->callback_arg), NETCONN_EVT_ERROR, 0);
++#endif
+           }
+         } else {
+           /* incorrect ACK number, send RST */
+@@ -1050,6 +1056,9 @@ tcp_process(struct tcp_pcb *pcb)
+       if (recv_flags & TF_GOT_FIN) { /* passive close */
+         tcp_ack_now(pcb);
+         pcb->state = CLOSE_WAIT;
++#if USE_LIBOS
++        API_EVENT(((struct netconn *)pcb->callback_arg), NETCONN_EVT_ERROR, 0);
++#endif
+       }
+       break;
+     case FIN_WAIT_1:
+@@ -1676,6 +1685,9 @@ tcp_receive(struct tcp_pcb *pcb)
+             recv_flags |= TF_GOT_FIN;
+             if (pcb->state == ESTABLISHED) { /* force passive close or we can move to active close */
+               pcb->state = CLOSE_WAIT;
++#if USE_LIBOS
++              API_EVENT(((struct netconn *)pcb->callback_arg), NETCONN_EVT_ERROR, 0);
++#endif
+             }
+           }
+ 
+-- 
+1.8.3.1
+

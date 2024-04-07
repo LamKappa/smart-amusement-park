@@ -1,0 +1,30 @@
+From a554661e9dd189f2d4b5dee8970fd009db89d9aa Mon Sep 17 00:00:00 2001
+From: wuchangsheng <wuchangsheng2@huawei.com>
+Date: Thu, 6 Oct 2022 17:33:16 +0800
+Subject: [PATCH] per thread reassdata variables
+
+---
+ src/core/ipv4/ip4_frag.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/src/core/ipv4/ip4_frag.c b/src/core/ipv4/ip4_frag.c
+index 17a4ccd..c60523d 100644
+--- a/src/core/ipv4/ip4_frag.c
++++ b/src/core/ipv4/ip4_frag.c
+@@ -115,8 +115,13 @@ PACK_STRUCT_END
+    IPH_ID(iphdrA) == IPH_ID(iphdrB)) ? 1 : 0
+ 
+ /* global variables */
++#if USE_LIBOS
++static PER_THREAD struct ip_reassdata *reassdatagrams;
++static PER_THREAD u16_t ip_reass_pbufcount;
++#else
+ static struct ip_reassdata *reassdatagrams;
+ static u16_t ip_reass_pbufcount;
++#endif
+ 
+ /* function prototypes */
+ static void ip_reass_dequeue_datagram(struct ip_reassdata *ipr, struct ip_reassdata *prev);
+-- 
+2.27.0
+

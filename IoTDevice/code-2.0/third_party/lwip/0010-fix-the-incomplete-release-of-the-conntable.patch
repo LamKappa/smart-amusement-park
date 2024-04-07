@@ -1,0 +1,115 @@
+From 70a1cdd2618f117c9f7da17b111a6c51db242f4b Mon Sep 17 00:00:00 2001
+From: wuchangsheng <wuchangsheng2@huawei.com>
+Date: Tue, 3 Aug 2021 11:23:10 +0800
+Subject: [PATCH] fix-the-incomplete-release-of-the-conntable
+
+---
+ src/core/tcp.c                   | 12 +++++++++++
+ src/include/lwip/priv/tcp_priv.h | 37 ++++++--------------------------
+ 2 files changed, 19 insertions(+), 30 deletions(-)
+
+diff --git a/src/core/tcp.c b/src/core/tcp.c
+index 0aafa9b..2cfbce2 100644
+--- a/src/core/tcp.c
++++ b/src/core/tcp.c
+@@ -235,6 +235,9 @@ tcp_init(void)
+ void
+ tcp_free(struct tcp_pcb *pcb)
+ {
++#if USE_LIBOS
++  vdev_unreg_done(pcb);
++#endif
+   LWIP_ASSERT("tcp_free: LISTEN", pcb->state != LISTEN);
+ #if LWIP_TCP_PCB_NUM_EXT_ARGS
+   tcp_ext_arg_invoke_callbacks_destroyed(pcb->ext_args);
+@@ -943,6 +946,11 @@ tcp_listen_with_backlog_and_err(struct tcp_pcb *pcb, u8_t backlog, err_t *err)
+ #if LWIP_TCP_PCB_NUM_EXT_ARGS
+   /* copy over ext_args to listening pcb  */
+   memcpy(&lpcb->ext_args, &pcb->ext_args, sizeof(pcb->ext_args));
++#endif
++#if USE_LIBOS
++  /* pcb transfer to lpcb and reg into tcp_listen_pcbs. freeing pcb shouldn't release sock table in here.
++   * local_port=0 avoid to release sock table in tcp_free */
++  pcb->local_port = 0;
+ #endif
+   tcp_free(pcb);
+ #if LWIP_CALLBACK_API
+@@ -2263,6 +2271,10 @@ tcp_pcb_remove(struct tcp_pcb **pcblist, struct tcp_pcb *pcb)
+   LWIP_ASSERT("tcp_pcb_remove: invalid pcb", pcb != NULL);
+   LWIP_ASSERT("tcp_pcb_remove: invalid pcblist", pcblist != NULL);
+ 
++#if USE_LIBOS
++  vdev_unreg_done(pcb);
++#endif
++
+   TCP_RMV(pcblist, pcb);
+ 
+   tcp_pcb_purge(pcb);
+diff --git a/src/include/lwip/priv/tcp_priv.h b/src/include/lwip/priv/tcp_priv.h
+index 599289f..f771725 100644
+--- a/src/include/lwip/priv/tcp_priv.h
++++ b/src/include/lwip/priv/tcp_priv.h
+@@ -358,27 +358,16 @@ static inline int vdev_reg_done(enum reg_ring_type reg_type, const struct tcp_pc
+ 
+   return vdev_reg_xmit(reg_type, &qtuple);
+ }
+-
+-/* TCP_RMV pcb whether to call vdev_reg_xmit to reg conn-sock table.
+-   fix the error of adding conn table in connect func and deleting conn table 
+-   when moving pcb from tcp_bound_pcbs to tcp_listen_pcbs  */
+-static inline int need_vdev_reg(struct tcp_pcb *pcb_list, const struct tcp_pcb *pcb)
++static inline void vdev_unreg_done(const struct tcp_pcb *pcb)
+ {
+-  /* tw_pcbs_list and tcp_listen_pcbs will not change pcb to other list always reg */
+-  if ((pcb_list == tcp_tw_pcbs) || (pcb_list == tcp_listen_pcbs.pcbs)) {
+-    return 1;
++  if (pcb->local_port == 0) {
++    return;
+   }
+-
+-  /* tcp_active_pcbs in FIN_WAIT_1,FIN_WAIT_2,CLOSING state will change pcb to tw_pcbs_list don't reg.
+-     detail info see func tcp_process in tcp_in.c */
+-  if (pcb_list == tcp_active_pcbs) {
+-    if ((pcb->state != FIN_WAIT_1) && (pcb->state != FIN_WAIT_2) && (pcb->state != CLOSING)) {
+-      return 1;
+-    }
++  if (pcb->state == LISTEN) {
++    vdev_reg_done(REG_RING_TCP_LISTEN_CLOSE, pcb);
++  } else {
++    vdev_reg_done(REG_RING_TCP_CONNECT_CLOSE, pcb);
+   }
+-
+-  /* tcp_bound_pcbs and others don't reg */
+-  return 0;
+ }
+ #endif
+ 
+@@ -414,12 +403,6 @@ static inline int need_vdev_reg(struct tcp_pcb *pcb_list, const struct tcp_pcb *
+               tcp_timer_needed(); \
+                             } while(0)
+ #define TCP_RMV(pcbs, npcb) do { \
+-                            if (need_vdev_reg(*pcbs, npcb)) {               \
+-                              if (npcb->state == LISTEN)                    \
+-                                vdev_reg_done(REG_RING_TCP_LISTEN_CLOSE, npcb);  \
+-                              else                                          \
+-                                vdev_reg_done(REG_RING_TCP_CONNECT_CLOSE, npcb); \
+-                            }                                               \
+                             struct tcp_pcb *tcp_tmp_pcb; \
+                             LWIP_ASSERT("TCP_RMV: pcbs != NULL", *(pcbs) != NULL); \
+                             LWIP_DEBUGF(TCP_DEBUG, ("TCP_RMV: removing %p from %p\n", (npcb), *(pcbs))); \
+@@ -512,12 +495,6 @@ static inline int need_vdev_reg(struct tcp_pcb *pcb_list, const struct tcp_pcb *
+ 
+ #define TCP_RMV(pcbs, npcb)                        \
+   do {                                             \
+-    if (need_vdev_reg(*pcbs, npcb)) {              \
+-      if (npcb->state == LISTEN)                   \
+-        vdev_reg_done(REG_RING_TCP_LISTEN_CLOSE, npcb); \
+-      else                                         \
+-        vdev_reg_done(REG_RING_TCP_CONNECT_CLOSE, npcb);\
+-    }                                              \
+     if(*(pcbs) == (npcb)) {                        \
+       (*(pcbs)) = (*pcbs)->next;                   \
+       if (*pcbs)                                   \
+-- 
+2.23.0
+

@@ -1,0 +1,62 @@
+From 4970d00fecf52a472a28d55243f87142d3d08268 Mon Sep 17 00:00:00 2001
+From: jiangheng <jiangheng12@huawei.com>
+Date: Tue, 4 Jan 2022 17:23:03 +0800
+Subject: [PATCH] fix some compile errors
+
+---
+ src/include/arch/cc.h   | 4 ++--
+ src/include/lwiplog.h   | 2 +-
+ src/include/posix_api.h | 2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/src/include/arch/cc.h b/src/include/arch/cc.h
+index 33c24b4..222b0c9 100644
+--- a/src/include/arch/cc.h
++++ b/src/include/arch/cc.h
+@@ -62,7 +62,7 @@ void alloc_memp_##name##_base(void) \
+     memp_pools[MEMP_##name] = &memp_ ## name; \
+     \
+     char mpname[MEMZONE_NAMESIZE] = {0}; \
+-    snprintf(mpname, MEMZONE_NAMESIZE, "%ld_%s", gettid(), #name); \
++    snprintf(mpname, MEMZONE_NAMESIZE, "%d_%s", gettid(), #name); \
+     memp_memory_##name##_base = \
+         sys_hugepage_malloc(mpname, LWIP_MEM_ALIGN_BUFFER(__size)); \
+     memp_pools[MEMP_##name]->base = memp_memory_##name##_base; \
+@@ -73,7 +73,7 @@ PER_THREAD uint8_t *variable_name; \
+ void alloc_memory_##variable_name(void) \
+ { \
+     char mpname[MEMZONE_NAMESIZE] = {0}; \
+-    snprintf(mpname, MEMZONE_NAMESIZE, "%ld_%s", gettid(), #variable_name); \
++    snprintf(mpname, MEMZONE_NAMESIZE, "%d_%s", gettid(), #variable_name); \
+     (variable_name) = \
+         sys_hugepage_malloc(mpname, LWIP_MEM_ALIGN_BUFFER(size)); \
+ }
+diff --git a/src/include/lwiplog.h b/src/include/lwiplog.h
+index 363e516..6fccac8 100644
+--- a/src/include/lwiplog.h
++++ b/src/include/lwiplog.h
+@@ -40,7 +40,7 @@
+ 
+ #include "lwipopts.h"
+ 
+-#define gettid()    syscall(__NR_gettid)
++extern int gettid(void);
+ 
+ #if USE_DPDK_LOG
+ 
+diff --git a/src/include/posix_api.h b/src/include/posix_api.h
+index 8aa8516..0dca8eb 100644
+--- a/src/include/posix_api.h
++++ b/src/include/posix_api.h
+@@ -79,7 +79,7 @@ typedef struct {
+     int is_chld;
+ } posix_api_t;
+ 
+-posix_api_t *posix_api;
++extern posix_api_t *posix_api;
+ 
+ int posix_api_init(void);
+ void posix_api_free(void);
+-- 
+1.8.3.1
+

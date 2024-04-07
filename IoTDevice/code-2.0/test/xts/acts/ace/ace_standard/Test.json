@@ -1,0 +1,19 @@
+{
+    "description": "Configuration for aceceshi Tests",
+    "driver": {
+        "type": "JSUnitTest",
+        "test-timeout": "21600000",
+        "package": "com.example.aceceshi",
+        "abilityName": "decc.testkit.runner.JsEntryAbility",
+        "shell-timeout": "21600000"
+    },
+    "kits": [
+        {
+            "test-file-name": [
+                "ace_standard.hap"
+            ],
+            "type": "AppInstallKit",
+            "cleanup-apps": true
+        }
+    ]
+}

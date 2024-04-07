@@ -1,0 +1,91 @@
+# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/test.gni")
+import("//foundation/aafwk/standard/aafwk.gni")
+
+module_output_path = "aafwk_standard/mstabilitymgrservice"
+
+ohos_moduletest("ability_stack_module_test") {
+  module_out_path = module_output_path
+
+  include_dirs = [ "${services_path}/test/mock/include" ]
+
+  sources = [ "ability_stack_module_test.cpp" ]
+  sources += [
+    "//foundation/aafwk/standard/services/abilitymgr/src/ability_connect_callback_stub.cpp",
+    "//foundation/aafwk/standard/services/abilitymgr/src/ability_connect_manager.cpp",
+    "//foundation/aafwk/standard/services/abilitymgr/src/ability_event_handler.cpp",
+    "//foundation/aafwk/standard/services/abilitymgr/src/ability_manager_service.cpp",
+    "//foundation/aafwk/standard/services/abilitymgr/src/ability_manager_stub.cpp",
+    "//foundation/aafwk/standard/services/abilitymgr/src/ability_record.cpp",
+    "//foundation/aafwk/standard/services/abilitymgr/src/ability_record_info.cpp",
+    "//foundation/aafwk/standard/services/abilitymgr/src/ability_scheduler_stub.cpp",
+    "//foundation/aafwk/standard/services/abilitymgr/src/ability_stack_manager.cpp",
+    "//foundation/aafwk/standard/services/abilitymgr/src/ability_token_stub.cpp",
+    "//foundation/aafwk/standard/services/abilitymgr/src/app_scheduler.cpp",
+    "//foundation/aafwk/standard/services/abilitymgr/src/caller_info.cpp",
+    "//foundation/aafwk/standard/services/abilitymgr/src/connection_record.cpp",
+    "//foundation/aafwk/standard/services/abilitymgr/src/data_ability_manager.cpp",
+    "//foundation/aafwk/standard/services/abilitymgr/src/data_ability_record.cpp",
+    "//foundation/aafwk/standard/services/abilitymgr/src/image_info.cpp",
+    "//foundation/aafwk/standard/services/abilitymgr/src/kernal_system_app_manager.cpp",
+    "//foundation/aafwk/standard/services/abilitymgr/src/lifecycle_deal.cpp",
+    "//foundation/aafwk/standard/services/abilitymgr/src/lifecycle_state_info.cpp",
+    "//foundation/aafwk/standard/services/abilitymgr/src/mission_description_info.cpp",
+    "//foundation/aafwk/standard/services/abilitymgr/src/mission_record.cpp",
+    "//foundation/aafwk/standard/services/abilitymgr/src/mission_record_info.cpp",
+    "//foundation/aafwk/standard/services/abilitymgr/src/mission_snapshot_info.cpp",
+    "//foundation/aafwk/standard/services/abilitymgr/src/mission_stack.cpp",
+    "//foundation/aafwk/standard/services/abilitymgr/src/mission_stack_info.cpp",
+    "//foundation/aafwk/standard/services/abilitymgr/src/recent_mission_info.cpp",
+    "//foundation/aafwk/standard/services/abilitymgr/src/stack_info.cpp",
+    "//foundation/aafwk/standard/services/abilitymgr/test/mock/libs/sa_mgr/src/sa_mgr_client_mock.cpp",
+  ]
+  configs = [
+    "${services_path}/test:aafwk_module_test_config",
+    "//foundation/aafwk/standard/interfaces/innerkits/ability_manager:ability_manager_public_config",
+    "//foundation/aafwk/standard/services/abilitymgr/test/mock/libs/sa_mgr:sa_mgr_mock_config",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_base:appexecfwk_base_sdk_config",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core:appmgr_sdk_config",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core:bundlemgr_sdk_config",
+  ]
+  cflags = []
+  if (target_cpu == "arm") {
+    cflags += [ "-DBINDER_IPC_32BIT" ]
+  }
+  deps = [
+    "${innerkits_path}/want:want",
+    "//foundation/aafwk/standard/frameworks/kits/ability/native:dummy_classes",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_base:appexecfwk_base",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core:appexecfwk_core",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/libeventhandler:libeventhandler",
+    "//foundation/distributedschedule/dmsfwk/interfaces/innerkits/uri:zuri",
+    "//foundation/distributedschedule/safwk/interfaces/innerkits/safwk:system_ability_fwk",
+    "//foundation/distributedschedule/samgr/interfaces/innerkits/samgr_proxy:samgr_proxy",
+    "//third_party/googletest:gmock_main",
+    "//third_party/googletest:gtest_main",
+    "//utils/native/base:utils",
+  ]
+
+  external_deps = [
+    "hiviewdfx_hilog_native:libhilog",
+    "ipc:ipc_core",
+  ]
+}
+
+group("moduletest") {
+  testonly = true
+
+  deps = [ ":ability_stack_module_test" ]
+}

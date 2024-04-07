@@ -1,0 +1,234 @@
+From 777db45e3ae9c17abf397daf79a129ad5ed1e0cf Mon Sep 17 00:00:00 2001
+From: peanut_huang <huangliming5@huawei.com>
+Date: Mon, 30 Nov 2020 06:53:46 +0000
+Subject: [PATCH] add makefile
+
+Signed-off-by: peanut_huang <huangliming5@huawei.com>
+---
+ src/Makefile                | 60 ++++++++++++++++++++++++++++
+ src/api/dir.mk              |  3 ++
+ src/core/dir.mk             |  6 +++
+ src/include/arch/cc.h       |  7 ++++
+ src/include/arch/sys_arch.h |  7 ++++
+ src/include/lwipopts.h      | 80 +++++++++++++++++++++++++++++++++++++
+ src/netif/dir.mk            |  3 ++
+ 7 files changed, 166 insertions(+)
+ create mode 100644 src/Makefile
+ create mode 100644 src/api/dir.mk
+ create mode 100644 src/core/dir.mk
+ create mode 100644 src/include/arch/cc.h
+ create mode 100644 src/include/arch/sys_arch.h
+ create mode 100644 src/include/lwipopts.h
+ create mode 100644 src/netif/dir.mk
+
+diff --git a/src/Makefile b/src/Makefile
+new file mode 100644
+index 0000000..3ecf8d2
+--- /dev/null
++++ b/src/Makefile
+@@ -0,0 +1,60 @@
++LWIP_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
++ROOT_DIR := $(dir $(abspath $(LWIP_DIR)))
++
++LWIP_INC = $(LWIP_DIR)/include
++#DPDK_INCLUDE_FILE ?= /usr/include/dpdk
++
++SEC_FLAGS = -fstack-protector-strong -Werror -Wall -Wl,-z,relro,-z,now -Wl,-z,noexecstack -Wtrampolines -fPIC
++
++CC = gcc
++AR = ar
++OPTIMIZATION = -O3
++INC = -I$(LWIP_DIR) \
++      -I$(LWIP_INC)
++
++CFLAGS = -g $(OPTIMIZATION) $(INC) $(SEC_FLAGS)
++ARFLAGS = crDP
++
++ifeq ($(shell $(CC) -dumpmachine | cut -d"-" -f1), x86_64)
++    CFLAGS += -mssse3
++endif
++
++SRCS =
++DIRS = api core netif
++
++define register_dir
++SRCS += $(patsubst %, $(1)/%, $(2))
++endef
++
++include $(patsubst %, %/dir.mk, $(DIRS))
++
++OBJS = $(subst .c,.o,$(SRCS))
++TMPS := $(subst .c,.s,$(SRCS))
++TMPS += $(subst .c,.i,$(SRCS))
++
++LWIP_LIB = liblwip.a
++
++INSTALL_LIB = $(DESTDIR)/usr/lib64
++INSTALL_INC = $(DESTDIR)/usr/include/lwip
++
++.PHONY: all
++all: $(LWIP_LIB)
++
++.depend: $(SRCS)
++	rm -f ./.depend
++	$(foreach SRC,$(SRCS),$(CC) $(CFLAGS) -MM -MT $(SRC:.c=.o) $(SRC) >> .depend;)
++
++-include .depend
++
++$(LWIP_LIB): $(OBJS)
++	$(AR) $(ARFLAGS) $@ $(OBJS)
++
++.PHONY: install
++install:
++	install -dp $(INSTALL_LIB) $(INSTALL_INC)
++	install -Dp $(LWIP_DIR)/$(LWIP_LIB) $(INSTALL_LIB)
++	cp -pr $(LWIP_INC)/* $(INSTALL_INC)/
++
++.PHONY: clean
++clean:
++	$(RM) $(LWIP_LIB) $(OBJS) $(TMPS) .depend
+diff --git a/src/api/dir.mk b/src/api/dir.mk
+new file mode 100644
+index 0000000..72142ab
+--- /dev/null
++++ b/src/api/dir.mk
+@@ -0,0 +1,3 @@
++SRC = api_lib.c api_msg.c err.c netbuf.c netdb.c netifapi.c sockets.c tcpip.c
++
++$(eval $(call register_dir, api, $(SRC)))
+diff --git a/src/core/dir.mk b/src/core/dir.mk
+new file mode 100644
+index 0000000..e5a055b
+--- /dev/null
++++ b/src/core/dir.mk
+@@ -0,0 +1,6 @@
++SRC = inet_chksum.c init.c ip.c mem.c memp.c netif.c pbuf.c \
++	raw.c stats.c tcp.c tcp_in.c tcp_out.c timeouts.c udp.c \
++	ipv4/etharp.c ipv4/icmp.c ipv4/ip4_addr.c ipv4/ip4.c \
++	ipv4/ip4_frag.c
++
++$(eval $(call register_dir, core, $(SRC)))
+diff --git a/src/include/arch/cc.h b/src/include/arch/cc.h
+new file mode 100644
+index 0000000..52b76f9
+--- /dev/null
++++ b/src/include/arch/cc.h
+@@ -0,0 +1,7 @@
++#ifndef LWIP_CC_H
++#define LWIP_CC_H
++
++
++
++#endif /* LWIP_CC_H */
++
+diff --git a/src/include/arch/sys_arch.h b/src/include/arch/sys_arch.h
+new file mode 100644
+index 0000000..3f555ee
+--- /dev/null
++++ b/src/include/arch/sys_arch.h
+@@ -0,0 +1,7 @@
++#ifndef LWIP_SYS_ARCH_H
++#define LWIP_SYS_ARCH_H
++
++
++
++#endif /* LWIP_SYS_ARCH_H */
++
+diff --git a/src/include/lwipopts.h b/src/include/lwipopts.h
+new file mode 100644
+index 0000000..4ab26f2
+--- /dev/null
++++ b/src/include/lwipopts.h
+@@ -0,0 +1,80 @@
++/*
++ * Copyright (c) 2001-2003 Swedish Institute of Computer Science.
++ * All rights reserved. 
++ * 
++ * Redistribution and use in source and binary forms, with or without modification, 
++ * are permitted provided that the following conditions are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ * 3. The name of the author may not be used to endorse or promote products
++ *    derived from this software without specific prior written permission. 
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED 
++ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
++ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT 
++ * SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, 
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT 
++ * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING 
++ * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY 
++ * OF SUCH DAMAGE.
++ *
++ * This file is part of the lwIP TCP/IP stack.
++ * 
++ * Author: Simon Goldschmidt
++ *
++ */
++#ifndef LWIP_HDR_LWIPOPTS_H__
++#define LWIP_HDR_LWIPOPTS_H__
++
++/* Prevent having to link sys_arch.c (we don't test the API layers in unit tests) */
++#define NO_SYS                          1
++#define LWIP_NETCONN                    0
++#define LWIP_SOCKET                     0
++#define SYS_LIGHTWEIGHT_PROT            0
++
++#define LWIP_IPV6                       1
++#define IPV6_FRAG_COPYHEADER            1
++#define LWIP_IPV6_DUP_DETECT_ATTEMPTS   0
++
++/* Enable some protocols to test them */
++#define LWIP_DHCP                       1
++#define LWIP_AUTOIP                     1
++
++#define LWIP_IGMP                       1
++#define LWIP_DNS                        1
++
++#define LWIP_ALTCP                      1
++
++/* Turn off checksum verification of fuzzed data */
++#define CHECKSUM_CHECK_IP               0
++#define CHECKSUM_CHECK_UDP              0
++#define CHECKSUM_CHECK_TCP              0
++#define CHECKSUM_CHECK_ICMP             0
++#define CHECKSUM_CHECK_ICMP6            0
++
++/* Minimal changes to opt.h required for tcp unit tests: */
++#define MEM_SIZE                        16000
++#define TCP_SND_QUEUELEN                40
++#define MEMP_NUM_TCP_SEG                TCP_SND_QUEUELEN
++#define TCP_OVERSIZE                    1
++#define TCP_SND_BUF                     (12 * TCP_MSS)
++#define TCP_WND                         (10 * TCP_MSS)
++#define LWIP_WND_SCALE                  1
++#define TCP_RCV_SCALE                   2
++#define PBUF_POOL_SIZE                  400 /* pbuf tests need ~200KByte */
++
++/* Minimal changes to opt.h required for etharp unit tests: */
++#define ETHARP_SUPPORT_STATIC_ENTRIES   1
++
++#define LWIP_NUM_NETIF_CLIENT_DATA      1
++#define LWIP_SNMP                       1
++#define MIB2_STATS                      1
++#define LWIP_MDNS_RESPONDER             1
++
++#endif /* LWIP_HDR_LWIPOPTS_H__ */
+diff --git a/src/netif/dir.mk b/src/netif/dir.mk
+new file mode 100644
+index 0000000..233c79a
+--- /dev/null
++++ b/src/netif/dir.mk
+@@ -0,0 +1,3 @@
++SRC = ethernet.c
++
++$(eval $(call register_dir, netif, $(SRC)))
+-- 
+2.23.0
+

@@ -1,0 +1,50 @@
+From 05bfdb54fc744d835c8b3b50b54d220fe7e87277 Mon Sep 17 00:00:00 2001
+From: wuchangsheng <wuchangsheng2@huawei.com>
+Date: Mon, 7 Mar 2022 21:10:06 +0800
+Subject: [PATCH] reduce copy in send
+
+---
+ src/core/pbuf.c         | 5 +++++
+ src/include/lwip/pbuf.h | 3 +++
+ 2 files changed, 8 insertions(+)
+
+diff --git a/src/core/pbuf.c b/src/core/pbuf.c
+index 27afc28..cd6b558 100644
+--- a/src/core/pbuf.c
++++ b/src/core/pbuf.c
+@@ -281,6 +281,10 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
+       }
+ 
+       /* If pbuf is to be allocated in RAM, allocate memory for it. */
++#if USE_LIBOS
++      /* alloc mbuf to reduce copy in sending */
++      p = lwip_alloc_pbuf(layer, length, type);
++#else
+       p = (struct pbuf *)mem_malloc(alloc_len);
+       if (p == NULL) {
+         return NULL;
+@@ -289,6 +293,7 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
+                              length, length, type, 0);
+       LWIP_ASSERT("pbuf_alloc: pbuf->payload properly aligned",
+                   ((mem_ptr_t)p->payload % MEM_ALIGNMENT) == 0);
++#endif
+       break;
+     }
+     default:
+diff --git a/src/include/lwip/pbuf.h b/src/include/lwip/pbuf.h
+index e5daf96..3894574 100644
+--- a/src/include/lwip/pbuf.h
++++ b/src/include/lwip/pbuf.h
+@@ -272,6 +272,9 @@ void pbuf_free_ooseq(void);
+ /* Initializes the pbuf module. This call is empty for now, but may not be in future. */
+ #define pbuf_init()
+ 
++#if USE_LIBOS
++struct pbuf *lwip_alloc_pbuf(pbuf_layer l, u16_t length, pbuf_type type);
++#endif
+ struct pbuf *pbuf_alloc(pbuf_layer l, u16_t length, pbuf_type type);
+ struct pbuf *pbuf_alloc_reference(void *payload, u16_t length, pbuf_type type);
+ #if LWIP_SUPPORT_CUSTOM_PBUF
+-- 
+2.30.0
+

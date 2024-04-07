@@ -1,0 +1,25 @@
+From 2d01f8467027e5a640ee6c7ed72d64d8e0247829 Mon Sep 17 00:00:00 2001
+From: jiangheng <jiangheng14@huawei.com>
+Date: Wed, 27 Dec 2023 10:40:54 +0800
+Subject: [PATCH] remove duplicate log
+
+---
+ src/core/tcp_in.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/core/tcp_in.c b/src/core/tcp_in.c
+index e9ab96f..69dcd26 100644
+--- a/src/core/tcp_in.c
++++ b/src/core/tcp_in.c
+@@ -764,7 +764,7 @@ tcp_listen_input(struct tcp_pcb_listen *pcb)
+   if (flags & TCP_ACK) {
+     /* For incoming segments with the ACK flag set, respond with a
+        RST. */
+-    LWIP_DEBUGF(TCP_RST_DEBUG | GAZELLE_DEBUG_SERIOUS,
++    LWIP_DEBUGF(TCP_RST_DEBUG,
+                 ("tcp_listen_input: ACK in LISTEN, send reset, local_port=%d, remote_port=%d\n",
+                 tcphdr->dest, tcphdr->src));
+     tcp_rst((const struct tcp_pcb *)pcb, ackno, seqno + tcplen, ip_current_dest_addr(),
+-- 
+2.27.0
+
