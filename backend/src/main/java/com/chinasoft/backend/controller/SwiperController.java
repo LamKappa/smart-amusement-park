@@ -19,8 +19,6 @@ public class SwiperController {
     SwiperService swiperService;
 
     /**
-     * 根据名称 简介 类型 查询各种设施
-     *
      * @param
      * @return
      */
