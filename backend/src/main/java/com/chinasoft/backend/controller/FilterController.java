@@ -32,7 +32,6 @@ public class FilterController {
     /*
     游乐设施筛选
      */
-
     @GetMapping("/amusement/name")
     public BaseResponse<List<AmusementFacility>> filterAmusementName(@Param("name") String name) {
         // 查询数据库
@@ -103,5 +102,5 @@ public class FilterController {
         // 返回响应
         return ResultUtils.success(data);
     }
-
+    
 }
