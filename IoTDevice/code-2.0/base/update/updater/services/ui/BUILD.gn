@@ -1,0 +1,57 @@
+# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+ohos_static_library("libui") {
+  sources = [
+    "animation_label.cpp",
+    "frame.cpp",
+    "updater_ui.cpp",
+    "input_event.cpp",
+    "progress_bar.cpp",
+    "surface_dev.cpp",
+    "text_label.cpp",
+    "view.cpp",
+  ]
+
+  include_dirs = [
+    "//third_party/libpng",
+    "//third_party/libdrm/include/drm",
+    "//third_party/libdrm",
+    "//base/update/updater/services/include/log",
+    "//base/update/updater/services/include",
+    "//drivers/framework/ability/sbuf/include",
+    "//drivers/framework/include/platform",
+    "//drivers/framework/include/core",
+    "//drivers/framework/include/osal",
+    "//drivers/framework/include/utils",
+    "//drivers/framework/include/config",
+    "//drivers/framework/include",
+    "//drivers/adapter/uhdf2/hdi",
+    "//drivers/peripheral/input/hal/include",
+    "//drivers/peripheral/input/interfaces/include",
+    "//base/update/updater/utils/include",
+    "//base/update/updater/services",
+    "//base/update/updater/interfaces/kits/include",
+  ]
+
+  deps = [
+    "//base/update/updater/interfaces/kits/packages:libpackageExt",
+    "//base/update/updater/services/log:libupdaterlog",
+    "//base/update/updater/utils:libutils",
+    "//drivers/peripheral/input/hal:hdi_input",
+    "//third_party/bounds_checking_function:libsec_static",
+    "//third_party/libdrm:libdrm",
+    "//third_party/libpng:libpng",
+  ]
+}

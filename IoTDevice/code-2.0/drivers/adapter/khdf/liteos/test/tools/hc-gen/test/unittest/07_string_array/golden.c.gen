@@ -1,0 +1,15 @@
+/*
+ * It's HDF config auto-gen file, do not modify it manually
+ */
+
+#include "golden.h"
+
+static const struct HdfConfigTestRoot g_hdfConfigTestModuleRoot = {
+    .module = "test",
+    .term1 = { "hello", "world" },
+};
+
+const struct HdfConfigTestRoot* HdfGetTestModuleConfigRoot(void)
+{
+    return &g_hdfConfigTestModuleRoot;
+}

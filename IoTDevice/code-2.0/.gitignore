@@ -1,0 +1,7 @@
+.vscode
+ohos_config.json
+*.log
+out/
+
+
+

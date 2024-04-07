@@ -1,0 +1,19 @@
+static_library("PIR_mqtt_server") {
+    sources = [
+        "main.c",
+        "wifi_connect_util.c",
+        "mqtt_task.c"
+    ]
+
+    include_dirs = [
+        "//utils/native/lite/include",
+        "//kernel/liteos_m/components/cmsis/2.0",
+        "//device/hisilicon/hispark_pegasus/sdk_liteos/third_party/lwip_sack/include/lwip",
+        "//base/iot_hardware/peripheral/interfaces/kits",
+        "//foundation/communication/wifi_lite/interfaces/wifiservice",
+        "//third_party/pahomqtt/MQTTPacket/src",
+        "//third_party/pahomqtt/MQTTPacket/samples",
+        "//device/hisilicon/hispark_pegasus/sdk_liteos/components/at/src",
+        "../RIP"
+    ]
+}
