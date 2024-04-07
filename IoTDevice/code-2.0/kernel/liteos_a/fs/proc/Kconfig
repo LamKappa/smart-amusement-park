@@ -1,6 +1,0 @@
-config FS_PROC
-    bool "Enable PROC"
-    default y
-    depends on FS_VFS
-    help
-      Answer Y to enable LiteOS support proc filesystem.

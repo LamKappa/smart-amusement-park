@@ -1,7 +1,0 @@
-root {
-    module = "test";
-    bar {
-        term1 = delete;
-        term2 = 1;
-    // miss '}' here for test
-}

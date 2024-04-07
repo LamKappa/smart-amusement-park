@@ -1,6 +1,0 @@
-config DRIVERS_VIDEO
-    bool "Enable Video"
-    default y
-    depends on DRIVERS
-    help
-        Answer Y to enable LiteOS support video driver.

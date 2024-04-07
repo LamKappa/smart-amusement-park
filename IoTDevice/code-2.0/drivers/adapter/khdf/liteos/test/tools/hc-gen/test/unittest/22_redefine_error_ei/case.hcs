@@ -1,5 +1,0 @@
-root {
-    module = "test";
-    term1 = 1;
-    term1 = 2;
-}

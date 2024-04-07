@@ -1,5 +1,0 @@
-#include "device_info.hcs"
-
-root {
-    module = "default";
-}

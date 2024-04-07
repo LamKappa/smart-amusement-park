@@ -1,4 +1,0 @@
-[compile exit status]:1
-[compile console output]:
-Error: ./23_node_ref_invalid_node_ei/case.hcs:3
-	ref node 'root.bar' not exist

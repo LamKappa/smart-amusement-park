@@ -1,7 +1,0 @@
-config DRIVERS_HIEVENT
-    bool "Enable hievent"
-    default n
-    depends on DRIVERS
-    help
-      Answer Y to enable LiteOS support hievent.
-

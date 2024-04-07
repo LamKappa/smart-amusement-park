@@ -1,2 +1,0 @@
-## Features
-Ability manager is devoted to support some interface functions to other outside processes. By using these functions, other processes can start, stop, connect or disconnect ability of some one application.

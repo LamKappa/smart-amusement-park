@@ -1,6 +1,0 @@
-config FS_ZPFS
-    bool "Enable ZPFS"
-    default y
-    depends on FS_VFS && PLATFORM_PATCHFS
-    help
-      Answer Y to enable LiteOS support zpfs filesystem.

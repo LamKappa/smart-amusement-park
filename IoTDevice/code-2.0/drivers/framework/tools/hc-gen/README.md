@@ -1,1 +1,0 @@
-hc-gen compilation requires flex and bison, so make sure they are installed before you get start.

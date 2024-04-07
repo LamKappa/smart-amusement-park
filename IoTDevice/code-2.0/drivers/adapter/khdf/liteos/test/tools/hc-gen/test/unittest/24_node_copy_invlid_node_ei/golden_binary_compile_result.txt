@@ -1,4 +1,0 @@
-[compile exit status]:1
-[compile console output]:
-Error: ./24_node_copy_invlid_node_ei/case.hcs:3
-	node foo copy node 'root.bar' not exist

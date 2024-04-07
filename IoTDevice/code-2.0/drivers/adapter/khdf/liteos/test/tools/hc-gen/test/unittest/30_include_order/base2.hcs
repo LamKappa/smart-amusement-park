@@ -1,6 +1,0 @@
-root {
-    foo {
-        term = 2;
-        term1 = 2;
-    }
-}

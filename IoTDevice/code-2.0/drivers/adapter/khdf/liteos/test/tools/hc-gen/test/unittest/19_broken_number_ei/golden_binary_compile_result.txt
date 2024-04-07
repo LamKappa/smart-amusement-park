@@ -1,4 +1,0 @@
-[compile exit status]:1
-[compile console output]:
-Error: ./19_broken_number_ei/case.hcs:3
-	syntax error, unexpected ',', expecting ';'
