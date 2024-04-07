@@ -1,22 +1,19 @@
 package com.chinasoft.backend.model.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
-import java.io.Serializable;
-import java.util.Date;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
+import java.io.Serializable;
+import java.util.Date;
+
 /**
- * 
  * @TableName facility_image
  */
-@TableName(value ="facility_image")
+@TableName(value = "facility_image")
 @Data
 public class FacilityImage implements Serializable {
     /**
-     * 
+     *
      */
     @TableId(type = IdType.AUTO)
     private Long id;
@@ -37,18 +34,19 @@ public class FacilityImage implements Serializable {
     private String imageUrl;
 
     /**
-     * 
+     *
      */
     private Date createTime;
 
     /**
-     * 
+     *
      */
     private Date updateTime;
 
     /**
      * 逻辑删除标志（0-未删除，1-已删除）
      */
+    @TableLogic
     private Integer isDeleted;
 
     @TableField(exist = false)
