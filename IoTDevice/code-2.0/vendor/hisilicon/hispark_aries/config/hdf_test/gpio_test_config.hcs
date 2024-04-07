@@ -1,0 +1,10 @@
+root {
+    module = "gpio";
+    gpio_config {
+        gpio_controller_tester {
+            match_attr = "GPIO_TEST";
+            gpio = 83;
+            gpioIrq = 83;
+        }
+    }
+}

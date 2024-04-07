@@ -1,0 +1,2252 @@
+From b42299206a917ed5876c27617de59fb71f8437a7 Mon Sep 17 00:00:00 2001
+From: Lemmy Huang <huangliming5@huawei.com>
+Date: Thu, 9 Mar 2023 10:57:16 +0800
+Subject: [PATCH] cleancode: improve lwipopts.h readability
+
+Signed-off-by: Lemmy Huang <huangliming5@huawei.com>
+---
+ src/api/api_msg.c                |  12 +-
+ src/api/sockets.c                |  66 ++++-----
+ src/api/tcpip.c                  |  18 +--
+ src/core/ipv4/etharp.c           |   4 +-
+ src/core/ipv4/icmp.c             |   2 +-
+ src/core/ipv4/ip4.c              |   6 +-
+ src/core/ipv4/ip4_frag.c         |   4 +-
+ src/core/memp.c                  |   4 +-
+ src/core/pbuf.c                  |   8 +-
+ src/core/tcp.c                   |  66 ++++-----
+ src/core/tcp_in.c                |  46 +++---
+ src/core/tcp_out.c               |  36 ++---
+ src/core/timeouts.c              |   4 +-
+ src/include/arch/sys_arch.h      |   2 +-
+ src/include/dpdk_cksum.h         |   4 +-
+ src/include/hlist.h              |   4 +-
+ src/include/lwip/api.h           |  10 +-
+ src/include/lwip/ip.h            |   4 +-
+ src/include/lwip/memp.h          |  10 +-
+ src/include/lwip/opt.h           |   8 +-
+ src/include/lwip/pbuf.h          |   6 +-
+ src/include/lwip/priv/memp_std.h |   4 +-
+ src/include/lwip/priv/tcp_priv.h |  24 ++--
+ src/include/lwip/sockets.h       |  30 ++--
+ src/include/lwip/tcp.h           |  16 +--
+ src/include/lwip/timeouts.h      |   4 +-
+ src/include/lwiplog.h            |   4 +-
+ src/include/lwipopts.h           | 240 +++++++++++++++++--------------
+ src/include/lwipsock.h           |   8 +-
+ src/netif/ethernet.c             |   2 +-
+ 30 files changed, 339 insertions(+), 317 deletions(-)
+
+diff --git a/src/api/api_msg.c b/src/api/api_msg.c
+index 3a4a473..1840c9d 100644
+--- a/src/api/api_msg.c
++++ b/src/api/api_msg.c
+@@ -54,7 +54,7 @@
+ #include "lwip/mld6.h"
+ #include "lwip/priv/tcpip_priv.h"
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ #include "lwip/sockets.h"
+ #include "lwipsock.h"
+ #include "posix_api.h"
+@@ -341,7 +341,7 @@ recv_tcp(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
+ #if LWIP_SO_RCVBUF
+     SYS_ARCH_INC(conn->recv_avail, len);
+ #endif /* LWIP_SO_RCVBUF */
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+     add_recv_list(conn->socket);
+     LWIP_UNUSED_ARG(len);
+ #else
+@@ -477,7 +477,7 @@ err_tcp(void *arg, err_t err)
+   if (NETCONN_MBOX_VALID(conn, &conn->recvmbox)) {
+     /* use trypost to prevent deadlock */
+     sys_mbox_trypost(&conn->recvmbox, mbox_msg);
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+     add_recv_list(conn->socket);
+ #endif
+   }
+@@ -609,7 +609,7 @@ accept_function(void *arg, struct tcp_pcb *newpcb, err_t err)
+     API_EVENT(conn, NETCONN_EVT_RCVPLUS, 0);
+   }
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+   LWIP_DEBUGF(API_MSG_DEBUG, ("libos incoming connection established\n"));
+   SET_CONN_TYPE_LIBOS(newconn);
+ #endif
+@@ -1333,7 +1333,7 @@ lwip_netconn_do_connected(void *arg, struct tcp_pcb *pcb, err_t err)
+     return ERR_VAL;
+   }
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+   gazelle_connected_callback(conn);
+ #endif
+ 
+@@ -1738,7 +1738,7 @@ lwip_netconn_do_writemore(struct netconn *conn  WRITE_DELAYED_PARAM)
+       } else {
+         write_more = 0;
+       }
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+       /* vector->ptr is private arg sock */
+       LWIP_UNUSED_ARG(dataptr);
+       write_more = 0;
+diff --git a/src/api/sockets.c b/src/api/sockets.c
+index 2cb6f22..356e345 100644
+--- a/src/api/sockets.c
++++ b/src/api/sockets.c
+@@ -62,7 +62,7 @@
+ #include <stdarg.h>
+ #endif
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ #include <stdarg.h>
+ #include "lwipsock.h"
+ #include "posix_api.h"
+@@ -92,7 +92,7 @@
+ #define API_SELECT_CB_VAR_FREE(name)              API_VAR_FREE(MEMP_SELECT_CB, name)
+ 
+ #if LWIP_IPV4
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ #define IP4ADDR_PORT_TO_SOCKADDR(sin, ipaddr, port) do { \
+       (sin)->sin_family = AF_INET; \
+       (sin)->sin_port = lwip_htons((port)); \
+@@ -105,7 +105,7 @@
+       (sin)->sin_port = lwip_htons((port)); \
+       inet_addr_from_ip4addr(&(sin)->sin_addr, ipaddr); \
+       memset((sin)->sin_zero, 0, SIN_ZERO_LEN); }while(0)
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+ #define SOCKADDR4_TO_IP4ADDR_PORT(sin, ipaddr, port) do { \
+     inet_addr_to_ip4addr(ip_2_ip4(ipaddr), &((sin)->sin_addr)); \
+     (port) = lwip_ntohs((sin)->sin_port); }while(0)
+@@ -271,12 +271,12 @@ static void lwip_socket_drop_registered_mld6_memberships(int s);
+ #endif /* LWIP_IPV6_MLD */
+ 
+ /** The global array of available sockets */
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ uint32_t sockets_num;
+ struct lwip_sock *sockets;
+ #else
+ static struct lwip_sock sockets[NUM_SOCKETS];
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+ 
+ #if LWIP_SOCKET_SELECT || LWIP_SOCKET_POLL
+ #if LWIP_TCPIP_CORE_LOCKING
+@@ -431,11 +431,11 @@ tryget_socket_unconn_nouse(int fd)
+ {
+   int s = fd - LWIP_SOCKET_OFFSET;
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+   if ((s < 0) || (s >= sockets_num))
+ #else
+   if ((s < 0) || (s >= NUM_SOCKETS))
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+   {
+     LWIP_DEBUGF(SOCKETS_DEBUG, ("tryget_socket_unconn(%d): invalid\n", fd));
+     return NULL;
+@@ -500,13 +500,13 @@ tryget_socket(int fd)
+  * @param fd externally used socket index
+  * @return struct lwip_sock for the socket or NULL if not found
+  */
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ struct lwip_sock *
+ get_socket(int fd)
+ #else
+ static struct lwip_sock *
+ get_socket(int fd)
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+ {
+   struct lwip_sock *sock = tryget_socket(fd);
+   if (!sock) {
+@@ -519,7 +519,7 @@ get_socket(int fd)
+   return sock;
+ }
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ /**
+  * Map a externally used socket index to the internal socket representation.
+  *
+@@ -535,7 +535,7 @@ get_socket_by_fd(int fd)
+   }
+   return &sockets[fd - LWIP_SOCKET_OFFSET];
+ }
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+ 
+ /**
+  * Allocate a new socket for a given netconn.
+@@ -553,7 +553,7 @@ alloc_socket(struct netconn *newconn, int accepted, int flags)
+   SYS_ARCH_DECL_PROTECT(lev);
+   LWIP_UNUSED_ARG(accepted);
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+   int type, protocol = 0, domain = AF_INET;
+   switch (NETCONNTYPE_GROUP(newconn->type)) {
+     case NETCONN_RAW:
+@@ -615,7 +615,7 @@ err:
+   posix_api->close_fn(i);
+   SYS_ARCH_UNPROTECT(lev);
+   return -1;
+-#else /* USE_LIBOS */
++#else /* GAZELLE_ENABLE */
+ 
+   /* allocate a new socket identifier */
+   for (i = 0; i < NUM_SOCKETS; ++i) {
+@@ -649,7 +649,7 @@ err:
+   }
+   return -1;
+ 
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+ }
+ 
+ /** Free a socket (under lock)
+@@ -773,12 +773,12 @@ lwip_accept4(int s, struct sockaddr *addr, socklen_t *addrlen, int flags)
+     done_socket(sock);
+     return -1;
+   }
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+   LWIP_ASSERT("invalid socket index", (newsock >= LWIP_SOCKET_OFFSET) && (newsock < sockets_num + LWIP_SOCKET_OFFSET));
+   gazelle_init_sock(newsock);
+ #else
+   LWIP_ASSERT("invalid socket index", (newsock >= LWIP_SOCKET_OFFSET) && (newsock < NUM_SOCKETS + LWIP_SOCKET_OFFSET));
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+   nsock = &sockets[newsock - LWIP_SOCKET_OFFSET];
+ 
+   /* See event_callback: If data comes in right away after an accept, even
+@@ -816,13 +816,13 @@ lwip_accept4(int s, struct sockaddr *addr, socklen_t *addrlen, int flags)
+     }
+ 
+     IPADDR_PORT_TO_SOCKADDR(&tempaddr, &naddr, port);
+-#if !USE_LIBOS
++#if !GAZELLE_ENABLE
+     if (*addrlen > tempaddr.sa.sa_len) {
+       *addrlen = tempaddr.sa.sa_len;
+     }
+ #else
+         *addrlen = LWIP_MIN(*addrlen, sizeof(tempaddr));
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+     MEMCPY(addr, &tempaddr, *addrlen);
+ 
+     LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_accept(%d) returning new sock=%d addr=", s, newsock));
+@@ -993,10 +993,10 @@ lwip_connect(int s, const struct sockaddr *name, socklen_t namelen)
+     return -1;
+   }
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+   LWIP_DEBUGF(SOCKETS_DEBUG, ("libos connect succeed fd=%d\n",s));
+   SET_CONN_TYPE_LIBOS(sock->conn);
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+ 
+   LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_connect(%d) succeeded\n", s));
+   sock_set_errno(sock, 0);
+@@ -1065,7 +1065,7 @@ lwip_recv_tcp(struct lwip_sock *sock, void *mem, size_t len, int flags)
+     apiflags |= NETCONN_DONTBLOCK;
+   }
+ 
+-#if !USE_LIBOS
++#if !GAZELLE_ENABLE
+   do {
+     struct pbuf *p;
+     err_t err;
+@@ -1146,13 +1146,13 @@ lwip_recv_tcp(struct lwip_sock *sock, void *mem, size_t len, int flags)
+   } while ((recv_left > 0) && !(flags & MSG_PEEK));
+ 
+ lwip_recv_tcp_done:
+-#else /* USE_LIBOS */
++#else /* GAZELLE_ENABLE */
+   LWIP_UNUSED_ARG(recv_left);
+   recvd = read_lwip_data(sock, flags, apiflags);
+   if (recvd <= 0) {
+     return recvd;
+   }
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+   if (apiflags & NETCONN_NOAUTORCVD) {
+     if ((recvd > 0) && !(flags & MSG_PEEK)) {
+       /* ensure window update after copying all data */
+@@ -1188,7 +1188,7 @@ lwip_sock_make_addr(struct netconn *conn, ip_addr_t *fromaddr, u16_t port,
+ #endif /* LWIP_IPV4 && LWIP_IPV6 */
+ 
+   IPADDR_PORT_TO_SOCKADDR(&saddr, fromaddr, port);
+-#if !USE_LIBOS
++#if !GAZELLE_ENABLE
+   if (*fromlen < saddr.sa.sa_len) {
+     truncated = 1;
+   } else if (*fromlen > saddr.sa.sa_len) {
+@@ -2692,7 +2692,7 @@ event_callback(struct netconn *conn, enum netconn_evt evt, u16_t len)
+       if (sock->rcvevent > 1) {
+         check_waiters = 0;
+       }
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+       if (conn->acceptmbox != NULL && !sys_mbox_empty(conn->acceptmbox)) {
+         add_sock_event(sock, POLLIN);
+       }
+@@ -2714,7 +2714,7 @@ event_callback(struct netconn *conn, enum netconn_evt evt, u16_t len)
+       break;
+     case NETCONN_EVT_ERROR:
+       sock->errevent = 1;
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+       add_sock_event(sock, EPOLLERR);
+ #endif
+       break;
+@@ -2911,7 +2911,7 @@ lwip_getaddrname(int s, struct sockaddr *name, socklen_t *namelen, u8_t local)
+   ip_addr_debug_print_val(SOCKETS_DEBUG, naddr);
+   LWIP_DEBUGF(SOCKETS_DEBUG, (" port=%"U16_F")\n", port));
+ 
+-#if !USE_LIBOS
++#if !GAZELLE_ENABLE
+   if (*namelen > saddr.sa.sa_len) {
+     *namelen = saddr.sa.sa_len;
+   }
+@@ -3052,7 +3052,7 @@ lwip_sockopt_to_ipopt(int optname)
+     return SOF_KEEPALIVE;
+   case SO_REUSEADDR:
+     return SOF_REUSEADDR;
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+   case SO_REUSEPORT:
+     return SO_REUSEPORT;
+ #endif
+@@ -3928,7 +3928,7 @@ lwip_setsockopt_impl(int s, int level, int optname, const void *optval, socklen_
+   return err;
+ }
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ int
+ lwip_ioctl(int s, long cmd, ...)
+ {
+@@ -3963,7 +3963,7 @@ lwip_ioctl(int s, long cmd, void *argp)
+   if (!sock) {
+     return -1;
+   }
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+ 
+   switch (cmd) {
+ #if LWIP_SO_RCVBUF || LWIP_FIONREAD_LINUXMODE
+@@ -4107,7 +4107,7 @@ lwip_fcntl(int s, int cmd, int val)
+       break;
+     default:
+       LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_fcntl(%d, UNIMPL: %d, %d)\n", s, cmd, val));
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+       sock_set_errno(sock, 0); /* not yet implemented, but we return 0 for compatilbe with app */
+       ret = 0;
+ #else
+@@ -4375,7 +4375,7 @@ lwip_socket_drop_registered_mld6_memberships(int s)
+ }
+ #endif /* LWIP_IPV6_MLD */
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ void lwip_sock_init(void)
+ {
+   if (sockets_num == 0) {
+@@ -4400,6 +4400,6 @@ void lwip_exit(void)
+   return;
+ }
+ 
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+ 
+ #endif /* LWIP_SOCKET */
+diff --git a/src/api/tcpip.c b/src/api/tcpip.c
+index d3d0b55..fe7a7bd 100644
+--- a/src/api/tcpip.c
++++ b/src/api/tcpip.c
+@@ -123,13 +123,13 @@ again:
+  *
+  * @param arg unused argument
+  */
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ __attribute__((unused)) static void
+ tcpip_thread(void *arg)
+ #else
+ static void
+ tcpip_thread(void *arg)
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+ {
+   struct tcpip_msg *msg;
+   LWIP_UNUSED_ARG(arg);
+@@ -247,7 +247,7 @@ tcpip_inpkt(struct pbuf *p, struct netif *inp, netif_input_fn input_fn)
+ #if LWIP_TCPIP_CORE_LOCKING_INPUT
+   err_t ret;
+   LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip_inpkt: PACKET %p/%p\n", (void *)p, (void *)inp));
+-#if USE_LIBOS && LWIP_TIMERS
++#if GAZELLE_ENABLE && LWIP_TIMERS
+   sys_timer_run();
+ #endif
+   LOCK_TCPIP_CORE();
+@@ -329,7 +329,7 @@ tcpip_callback(tcpip_callback_fn function, void *ctx)
+   msg->msg.cb.function = function;
+   msg->msg.cb.ctx = ctx;
+ 
+-#if USE_LIBOS && LWIP_TIMER
++#if GAZELLE_ENABLE && LWIP_TIMER
+   sys_timer_run();
+ #endif
+   sys_mbox_post(&tcpip_mbox, msg);
+@@ -368,7 +368,7 @@ tcpip_try_callback(tcpip_callback_fn function, void *ctx)
+   msg->msg.cb.function = function;
+   msg->msg.cb.ctx = ctx;
+ 
+-#if USE_LIBOS && LWIP_TIMER
++#if GAZELLE_ENABLE && LWIP_TIMER
+   sys_timer_run();
+ #endif
+   if (sys_mbox_trypost(&tcpip_mbox, msg) != ERR_OK) {
+@@ -452,7 +452,7 @@ tcpip_send_msg_wait_sem(tcpip_callback_fn fn, void *apimsg, sys_sem_t *sem)
+ {
+ #if LWIP_TCPIP_CORE_LOCKING
+   LWIP_UNUSED_ARG(sem);
+-#if USE_LIBOS && LWIP_TIMERS
++#if GAZELLE_ENABLE && LWIP_TIMERS
+   sys_timer_run();
+ #endif
+   LOCK_TCPIP_CORE();
+@@ -492,7 +492,7 @@ tcpip_api_call(tcpip_api_call_fn fn, struct tcpip_api_call_data *call)
+ #if LWIP_TCPIP_CORE_LOCKING
+   err_t err;
+   LOCK_TCPIP_CORE();
+-#if USE_LIBOS && LWIP_TIMERS
++#if GAZELLE_ENABLE && LWIP_TIMERS
+   sys_timer_run();
+ #endif
+   err = fn(call);
+@@ -558,7 +558,7 @@ tcpip_callbackmsg_new(tcpip_callback_fn function, void *ctx)
+   msg->msg.cb.function = function;
+   msg->msg.cb.ctx = ctx;
+ 
+-#if USE_LIBOS && LWIP_TIMER
++#if GAZELLE_ENABLE && LWIP_TIMER
+   sys_timer_run();
+ #endif
+   return (struct tcpip_callback_msg *)msg;
+@@ -638,7 +638,7 @@ tcpip_init(tcpip_init_done_fn initfunc, void *arg)
+   }
+ #endif /* LWIP_TCPIP_CORE_LOCKING */
+ 
+-#if !USE_LIBOS
++#if !GAZELLE_ENABLE
+   sys_thread_new(TCPIP_THREAD_NAME, tcpip_thread, NULL, TCPIP_THREAD_STACKSIZE, TCPIP_THREAD_PRIO);
+ #endif
+ }
+diff --git a/src/core/ipv4/etharp.c b/src/core/ipv4/etharp.c
+index f1903e4..5a1a834 100644
+--- a/src/core/ipv4/etharp.c
++++ b/src/core/ipv4/etharp.c
+@@ -482,7 +482,7 @@ etharp_update_arp_entry(struct netif *netif, const ip4_addr_t *ipaddr, struct et
+     struct pbuf *p = arp_table[i].q;
+     arp_table[i].q = NULL;
+ #endif /* ARP_QUEUEING */
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+     struct pbuf *tmp = p->next;
+     while (tmp != NULL) {
+        tmp->ref--;
+@@ -1034,7 +1034,7 @@ etharp_query(struct netif *netif, const ip4_addr_t *ipaddr, struct pbuf *q)
+     } else {
+       /* referencing the old pbuf is enough */
+       p = q;
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+       struct pbuf *tmp = p;
+       while (tmp != NULL) {
+         pbuf_ref(tmp);
+diff --git a/src/core/ipv4/icmp.c b/src/core/ipv4/icmp.c
+index c58ae25..402ba69 100644
+--- a/src/core/ipv4/icmp.c
++++ b/src/core/ipv4/icmp.c
+@@ -51,7 +51,7 @@
+ 
+ #include <string.h>
+ 
+-#if USE_LIBOS && CHECKSUM_GEN_IP_HW
++#if GAZELLE_ENABLE && CHECKSUM_GEN_IP_HW
+ #include "dpdk_cksum.h"
+ #endif
+ 
+diff --git a/src/core/ipv4/ip4.c b/src/core/ipv4/ip4.c
+index d823491..1b70bb5 100644
+--- a/src/core/ipv4/ip4.c
++++ b/src/core/ipv4/ip4.c
+@@ -59,7 +59,7 @@
+ 
+ #include <string.h>
+ 
+-#if USE_LIBOS && (CHECKSUM_CHECK_IP_HW || CHECKSUM_GEN_IP_HW)
++#if GAZELLE_ENABLE && (CHECKSUM_CHECK_IP_HW || CHECKSUM_GEN_IP_HW)
+ #include "dpdk_cksum.h"
+ #endif
+ 
+@@ -1034,13 +1034,13 @@ ip4_output_if_opt_src(struct pbuf *p, const ip4_addr_t *src, const ip4_addr_t *d
+ #endif /* ENABLE_LOOPBACK */
+ #if IP_FRAG
+   /* don't fragment if interface has mtu set to 0 [loopif] */
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+   if (!(get_eth_params_tx_ol() & DEV_TX_OFFLOAD_TCP_TSO)) {
+ #endif
+     if (netif->mtu && (p->tot_len > netif->mtu)) {
+       return ip4_frag(p, netif, dest);
+     }
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+   }
+ #endif
+ #endif /* IP_FRAG */
+diff --git a/src/core/ipv4/ip4_frag.c b/src/core/ipv4/ip4_frag.c
+index c60523d..f15b798 100644
+--- a/src/core/ipv4/ip4_frag.c
++++ b/src/core/ipv4/ip4_frag.c
+@@ -51,7 +51,7 @@
+ 
+ #include <string.h>
+ 
+-#if USE_LIBOS && CHECKSUM_GEN_IP_HW
++#if GAZELLE_ENABLE && CHECKSUM_GEN_IP_HW
+ #include "dpdk_cksum.h"
+ #endif
+ 
+@@ -115,7 +115,7 @@ PACK_STRUCT_END
+    IPH_ID(iphdrA) == IPH_ID(iphdrB)) ? 1 : 0
+ 
+ /* global variables */
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ static PER_THREAD struct ip_reassdata *reassdatagrams;
+ static PER_THREAD u16_t ip_reass_pbufcount;
+ #else
+diff --git a/src/core/memp.c b/src/core/memp.c
+index 454ba32..fca1b0c 100644
+--- a/src/core/memp.c
++++ b/src/core/memp.c
+@@ -78,14 +78,14 @@
+ #define LWIP_MEMPOOL(name,num,size,desc) LWIP_MEMPOOL_DECLARE(name,num,size,desc)
+ #include "lwip/priv/memp_std.h"
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ PER_THREAD struct memp_desc* memp_pools[MEMP_MAX] = {NULL};
+ #else
+ const struct memp_desc *const memp_pools[MEMP_MAX] = {
+ #define LWIP_MEMPOOL(name,num,size,desc) &memp_ ## name,
+ #include "lwip/priv/memp_std.h"
+ };
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+ 
+ #ifdef LWIP_HOOK_FILENAME
+ #include LWIP_HOOK_FILENAME
+diff --git a/src/core/pbuf.c b/src/core/pbuf.c
+index ad75aa6..dd71519 100644
+--- a/src/core/pbuf.c
++++ b/src/core/pbuf.c
+@@ -83,7 +83,7 @@
+ #if LWIP_CHECKSUM_ON_COPY
+ #include "lwip/inet_chksum.h"
+ #endif
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ #include <rte_prefetch.h>
+ #endif
+ 
+@@ -284,7 +284,7 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
+       }
+ 
+       /* If pbuf is to be allocated in RAM, allocate memory for it. */
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+       /* alloc mbuf avoid send copy */
+       p = lwip_alloc_pbuf(layer, length, type);
+ #else
+@@ -753,7 +753,7 @@ pbuf_free(struct pbuf *p)
+   /* de-allocate all consecutive pbufs from the head of the chain that
+    * obtain a zero reference count after decrementing*/
+   while (p != NULL) {
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+     if (p->next)
+       rte_prefetch0(p->next);
+ #endif
+@@ -1027,7 +1027,7 @@ pbuf_copy_partial_pbuf(struct pbuf *p_to, const struct pbuf *p_from, u16_t copy_
+       len_calc = p_to->len - offset_to;
+     }
+ 
+-#if USE_LIBOS && (CHECKSUM_GEN_IP_HW || CHECKSUM_GEN_TCP_HW)
++#if GAZELLE_ENABLE && (CHECKSUM_GEN_IP_HW || CHECKSUM_GEN_TCP_HW)
+     p_to->l2_len = p_from->l2_len;
+     p_to->l3_len = p_from->l3_len;
+     p_to->ol_flags = p_from->ol_flags;
+diff --git a/src/core/tcp.c b/src/core/tcp.c
+index 3171c5e..69a39f6 100644
+--- a/src/core/tcp.c
++++ b/src/core/tcp.c
+@@ -183,7 +183,7 @@ PER_THREAD struct tcp_pcb *tcp_tw_pcbs;
+ /** An array with all (non-temporary) PCB lists, mainly used for smaller code size */
+ PER_THREAD struct tcp_pcb ** tcp_pcb_lists[NUM_TCP_PCB_LISTS] = {NULL, NULL, NULL, NULL};
+ 
+-#if TCP_PCB_HASH
++#if GAZELLE_TCP_PCB_HASH
+ #define INIT_TCP_HTABLE(ht_ptr) \
+   do { \
+     int _i; \
+@@ -203,7 +203,7 @@ PER_THREAD u8_t tcp_active_pcbs_changed;
+ /** Timer counter to handle calling slow-timer from tcp_tmr() */
+ static PER_THREAD u8_t tcp_timer;
+ static PER_THREAD u8_t tcp_timer_ctr;
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ static u16_t tcp_new_port(struct tcp_pcb *pcb);
+ #else
+ static u16_t tcp_new_port(void);
+@@ -214,7 +214,7 @@ static err_t tcp_close_shutdown_fin(struct tcp_pcb *pcb);
+ static void tcp_ext_arg_invoke_callbacks_destroyed(struct tcp_pcb_ext_args *ext_args);
+ #endif
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ static u8_t port_state[TCP_LOCAL_PORT_RANGE_END - TCP_LOCAL_PORT_RANGE_START + 1] = {0};
+ void release_port(u16_t port)
+ {
+@@ -238,7 +238,7 @@ tcp_init(void)
+   tcp_port = TCP_ENSURE_LOCAL_PORT_RANGE(LWIP_RAND());
+ #endif /* LWIP_RAND */
+ 
+-#if TCP_PCB_HASH
++#if GAZELLE_TCP_PCB_HASH
+   tcp_active_htable = (struct tcp_hash_table*)mem_malloc(sizeof(struct tcp_hash_table));
+   LWIP_ASSERT("malloc tcp_active_htable mem failed.", tcp_active_htable != NULL);
+   INIT_TCP_HTABLE(tcp_active_htable);
+@@ -249,7 +249,7 @@ tcp_init(void)
+ void
+ tcp_free(struct tcp_pcb *pcb)
+ {
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+   vdev_unreg_done(pcb);
+   release_port(pcb->local_port);
+ #endif
+@@ -405,7 +405,7 @@ tcp_close_shutdown(struct tcp_pcb *pcb, u8_t rst_on_unacked_data)
+               pcb->local_port, pcb->remote_port);
+ 
+       tcp_pcb_purge(pcb);
+-#if TCP_PCB_HASH
++#if GAZELLE_TCP_PCB_HASH
+       TCP_RMV_ACTIVE_HASH(pcb);
+ #endif
+       TCP_RMV_ACTIVE(pcb);
+@@ -442,7 +442,7 @@ tcp_close_shutdown(struct tcp_pcb *pcb, u8_t rst_on_unacked_data)
+       tcp_free_listen(pcb);
+       break;
+     case SYN_SENT:
+-#if TCP_PCB_HASH
++#if GAZELLE_TCP_PCB_HASH
+       TCP_PCB_REMOVE_ACTIVE_HASH(pcb);
+ #endif
+       TCP_PCB_REMOVE_ACTIVE(pcb);
+@@ -650,7 +650,7 @@ tcp_abandon(struct tcp_pcb *pcb, int reset)
+     } else {
+       send_rst = reset;
+       local_port = pcb->local_port;
+-#if TCP_PCB_HASH
++#if GAZELLE_TCP_PCB_HASH
+       TCP_PCB_REMOVE_ACTIVE_HASH(pcb);
+ #endif
+       TCP_PCB_REMOVE_ACTIVE(pcb);
+@@ -761,7 +761,7 @@ tcp_bind(struct tcp_pcb *pcb, const ip_addr_t *ipaddr, u16_t port)
+ #endif /* LWIP_IPV6 && LWIP_IPV6_SCOPES */
+ 
+   if (port == 0) {
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+     port = tcp_new_port(pcb);
+ #else
+     port = tcp_new_port();
+@@ -773,7 +773,7 @@ tcp_bind(struct tcp_pcb *pcb, const ip_addr_t *ipaddr, u16_t port)
+     /* Check if the address already is in use (on all lists) */
+     for (i = 0; i < max_pcb_list; i++) {
+       for (cpcb = *tcp_pcb_lists[i]; cpcb != NULL; cpcb = cpcb->next) {
+-#if REUSE_IPPORT
++#if GAZELLE_TCP_REUSE_IPPORT
+               continue;
+ #else
+         if (cpcb->local_port == port) {
+@@ -927,7 +927,7 @@ tcp_listen_with_backlog_and_err(struct tcp_pcb *pcb, u8_t backlog, err_t *err)
+     goto done;
+   }
+ 
+-#if REUSE_IPPORT
++#if GAZELLE_TCP_REUSE_IPPORT
+   struct tcp_pcb_listen *first_same_port_pcb = NULL;
+   for (lpcb = tcp_listen_pcbs.listen_pcbs; lpcb != NULL; lpcb = lpcb->next) {
+     if ((lpcb->local_port == pcb->local_port) &&
+@@ -952,9 +952,9 @@ tcp_listen_with_backlog_and_err(struct tcp_pcb *pcb, u8_t backlog, err_t *err)
+       }
+     }
+   }
+-#endif /* REUSE_IPPORT */
++#endif /* GAZELLE_TCP_REUSE_IPPORT */
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+   vdev_reg_done(REG_RING_TCP_LISTEN, pcb);
+ #endif
+ 
+@@ -972,7 +972,7 @@ tcp_listen_with_backlog_and_err(struct tcp_pcb *pcb, u8_t backlog, err_t *err)
+   lpcb->ttl = pcb->ttl;
+   lpcb->tos = pcb->tos;
+ 
+-#if REUSE_IPPORT
++#if GAZELLE_TCP_REUSE_IPPORT
+   lpcb->connect_num = 0;
+   lpcb->next_same_port_pcb = NULL;
+ 
+@@ -992,7 +992,7 @@ tcp_listen_with_backlog_and_err(struct tcp_pcb *pcb, u8_t backlog, err_t *err)
+   /* copy over ext_args to listening pcb  */
+   memcpy(&lpcb->ext_args, &pcb->ext_args, sizeof(pcb->ext_args));
+ #endif
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+   /* pcb transfer to lpcb and reg into tcp_listen_pcbs. freeing pcb shouldn't release sock table in here.
+    * local_port=0 avoid to release sock table in tcp_free */
+   pcb->local_port = 0;
+@@ -1006,7 +1006,7 @@ tcp_listen_with_backlog_and_err(struct tcp_pcb *pcb, u8_t backlog, err_t *err)
+   tcp_backlog_set(lpcb, backlog);
+ #endif /* TCP_LISTEN_BACKLOG */
+ 
+-#if REUSE_IPPORT
++#if GAZELLE_TCP_REUSE_IPPORT
+   if (first_same_port_pcb != NULL) {
+     TCP_REG_SAMEPORT((struct tcp_pcb_listen *)first_same_port_pcb, (struct tcp_pcb_listen *)lpcb);
+   } else
+@@ -1109,7 +1109,7 @@ tcp_recved(struct tcp_pcb *pcb, u16_t len)
+  *
+  * @return a new (free) local TCP port number
+  */
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ static u16_t
+ tcp_new_port(struct tcp_pcb *pcb)
+ #else
+@@ -1128,7 +1128,7 @@ tcp_new_port(void)
+       }
+ 
+       if (__atomic_load_n(&port_state[tcp_port - TCP_LOCAL_PORT_RANGE_START], __ATOMIC_ACQUIRE) == 0) {
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+         if (port_in_stack_queue(pcb->remote_ip.addr, pcb->local_ip.addr, pcb->remote_port, tcp_port)) {
+             tmp_port = tcp_port;
+             __atomic_store_n(&port_state[tcp_port - TCP_LOCAL_PORT_RANGE_START], 1, __ATOMIC_RELEASE);
+@@ -1231,7 +1231,7 @@ tcp_connect(struct tcp_pcb *pcb, const ip_addr_t *ipaddr, u16_t port,
+ 
+   old_local_port = pcb->local_port;
+   if (pcb->local_port == 0) {
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+     pcb->local_port = tcp_new_port(pcb);
+ #else
+     pcb->local_port = tcp_new_port();
+@@ -1289,7 +1289,7 @@ tcp_connect(struct tcp_pcb *pcb, const ip_addr_t *ipaddr, u16_t port,
+   /* Send a SYN together with the MSS option. */
+   ret = tcp_enqueue_flags(pcb, TCP_SYN);
+   if (ret == ERR_OK) {
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+     vdev_reg_done(REG_RING_TCP_CONNECT, pcb);
+ #endif
+ 
+@@ -1298,7 +1298,7 @@ tcp_connect(struct tcp_pcb *pcb, const ip_addr_t *ipaddr, u16_t port,
+     if (old_local_port != 0) {
+       TCP_RMV(&tcp_bound_pcbs, pcb);
+     }
+-#if TCP_PCB_HASH
++#if GAZELLE_TCP_PCB_HASH
+     TCP_REG_ACTIVE_HASH(pcb);
+ #endif
+     TCP_REG_ACTIVE(pcb);
+@@ -1516,7 +1516,7 @@ tcp_slowtmr_start:
+       if (prev != NULL) {
+         LWIP_ASSERT("tcp_slowtmr: middle tcp != tcp_active_pcbs", pcb != tcp_active_pcbs);
+         prev->next = pcb->next;
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+         if (pcb->next)
+           pcb->next->prev = prev;
+         //dont set next NULL, it will be used below
+@@ -1526,14 +1526,14 @@ tcp_slowtmr_start:
+         /* This PCB was the first. */
+         LWIP_ASSERT("tcp_slowtmr: first pcb == tcp_active_pcbs", tcp_active_pcbs == pcb);
+         tcp_active_pcbs = pcb->next;
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+         if (pcb->next)
+           pcb->next->prev = NULL;
+         //dont set next NULL, it will be used below
+         pcb->prev = NULL;
+ #endif
+       }
+-#if TCP_PCB_HASH
++#if GAZELLE_TCP_PCB_HASH
+       TCP_RMV_ACTIVE_HASH(pcb);
+ #endif
+ 
+@@ -1546,7 +1546,7 @@ tcp_slowtmr_start:
+       last_state = pcb->state;
+       pcb2 = pcb;
+       pcb = pcb->next;
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+       pcb2->next = NULL;
+ #endif
+       tcp_free(pcb2);
+@@ -1600,7 +1600,7 @@ tcp_slowtmr_start:
+       if (prev != NULL) {
+         LWIP_ASSERT("tcp_slowtmr: middle tcp != tcp_tw_pcbs", pcb != tcp_tw_pcbs);
+         prev->next = pcb->next;
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+         if (pcb->next)
+           pcb->next->prev = prev;
+         //dont set next NULL, it will be used below
+@@ -1610,7 +1610,7 @@ tcp_slowtmr_start:
+         /* This PCB was the first. */
+         LWIP_ASSERT("tcp_slowtmr: first pcb == tcp_tw_pcbs", tcp_tw_pcbs == pcb);
+         tcp_tw_pcbs = pcb->next;
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+         if (pcb->next)
+           pcb->next->prev = NULL;
+         //dont set next NULL, it will be used below
+@@ -1619,7 +1619,7 @@ tcp_slowtmr_start:
+       }
+       pcb2 = pcb;
+       pcb = pcb->next;
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+       pcb2->next = NULL;
+ #endif
+       tcp_free(pcb2);
+@@ -1790,7 +1790,7 @@ tcp_seg_free(struct tcp_seg *seg)
+       seg->p = NULL;
+ #endif /* TCP_DEBUG */
+     }
+-#if !USE_LIBOS
++#if !GAZELLE_ENABLE
+     memp_free(MEMP_TCP_SEG, seg);
+ #endif
+   }
+@@ -1828,7 +1828,7 @@ tcp_seg_copy(struct tcp_seg *seg)
+ 
+   LWIP_ASSERT("tcp_seg_copy: invalid seg", seg != NULL);
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+   cseg = (struct tcp_seg *)((uint8_t *)seg->p + sizeof(struct pbuf_custom));
+ #else
+   cseg = (struct tcp_seg *)memp_malloc(MEMP_TCP_SEG);
+@@ -2371,7 +2371,7 @@ tcp_pcb_remove(struct tcp_pcb **pcblist, struct tcp_pcb *pcb)
+ #endif /* TCP_QUEUE_OOSEQ */
+   }
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+   vdev_unreg_done(pcb);
+   release_port(pcb->local_port);
+ #endif
+@@ -2383,13 +2383,13 @@ tcp_pcb_remove(struct tcp_pcb **pcblist, struct tcp_pcb *pcb)
+   LWIP_ASSERT("tcp_pcb_remove: tcp_pcbs_sane()", tcp_pcbs_sane());
+ }
+ 
+-#if TCP_PCB_HASH
++#if GAZELLE_TCP_PCB_HASH
+ void
+ tcp_pcb_remove_hash(struct tcp_hash_table *htb, struct tcp_pcb *pcb)
+ {
+   TCP_RMV_HASH(htb, pcb);
+ }
+-#endif /* TCP_PCB_HASH */
++#endif /* GAZELLE_TCP_PCB_HASH */
+ 
+ /**
+  * Calculates a new initial sequence number for new connections.
+diff --git a/src/core/tcp_in.c b/src/core/tcp_in.c
+index 9f5c34a..dd83260 100644
+--- a/src/core/tcp_in.c
++++ b/src/core/tcp_in.c
+@@ -58,13 +58,13 @@
+ #if LWIP_ND6_TCP_REACHABILITY_HINTS
+ #include "lwip/nd6.h"
+ #endif /* LWIP_ND6_TCP_REACHABILITY_HINTS */
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ #include "lwip/api.h"
+ #endif
+ 
+ #include <string.h>
+ 
+-#if USE_LIBOS && CHECKSUM_CHECK_TCP_HW
++#if GAZELLE_ENABLE && CHECKSUM_CHECK_TCP_HW
+ #include <dpdk_cksum.h>
+ #endif /* CHECKSUM_CHECK_TCP_HW */
+ 
+@@ -134,7 +134,7 @@ tcp_input(struct pbuf *p, struct netif *inp)
+   u8_t hdrlen_bytes;
+   err_t err;
+ 
+-#if TCP_PCB_HASH
++#if GAZELLE_TCP_PCB_HASH
+   u32_t idx;
+   struct hlist_head *head;
+   struct hlist_node *node;
+@@ -277,7 +277,7 @@ tcp_input(struct pbuf *p, struct netif *inp)
+      for an active connection. */
+   prev = NULL;
+ 
+-#if TCP_PCB_HASH
++#if GAZELLE_TCP_PCB_HASH
+   idx = TUPLE4_HASH_FN( ip_current_dest_addr()->addr, tcphdr->dest,
+                       ip_current_src_addr()->addr, tcphdr->src) &
+          (tcp_active_htable->size - 1);
+@@ -301,7 +301,7 @@ tcp_input(struct pbuf *p, struct netif *inp)
+         pcb->local_port == tcphdr->dest &&
+         ip_addr_cmp(&pcb->remote_ip, ip_current_src_addr()) &&
+         ip_addr_cmp(&pcb->local_ip, ip_current_dest_addr())) {
+-#if !TCP_PCB_HASH
++#if !GAZELLE_TCP_PCB_HASH
+       /* Move this PCB to the front of the list so that subsequent
+          lookups will be faster (we exploit locality in TCP segment
+          arrivals). */
+@@ -317,7 +317,7 @@ tcp_input(struct pbuf *p, struct netif *inp)
+ #endif
+       break;
+     }
+-#if TCP_PCB_HASH
++#if GAZELLE_TCP_PCB_HASH
+     pcb = NULL;
+ #else
+     prev = pcb;
+@@ -356,7 +356,7 @@ tcp_input(struct pbuf *p, struct netif *inp)
+       }
+     }
+ 
+-#if REUSE_IPPORT
++#if GAZELLE_TCP_REUSE_IPPORT
+     struct tcp_pcb_listen *min_cnts_lpcb = NULL;
+ #endif
+     /* Finally, if we still did not get a match, we check all PCBs that
+@@ -382,7 +382,7 @@ tcp_input(struct pbuf *p, struct netif *inp)
+         } else if (IP_ADDR_PCB_VERSION_MATCH_EXACT(lpcb, ip_current_dest_addr())) {
+           if (ip_addr_cmp(&lpcb->local_ip, ip_current_dest_addr())) {
+             /* found an exact match */
+-#if REUSE_IPPORT
++#if GAZELLE_TCP_REUSE_IPPORT
+             // check master fd
+             struct tcp_pcb_listen *tmp_lpcb = lpcb;
+             u8_t have_master_fd = 0;
+@@ -395,7 +395,7 @@ tcp_input(struct pbuf *p, struct netif *inp)
+ 
+             tmp_lpcb = lpcb;
+             min_cnts_lpcb = lpcb;
+-            u16_t min_conn_num = MAX_CONN_NUM_PER_THREAD;
++            u16_t min_conn_num = GAZELLE_TCP_MAX_CONN_PER_THREAD;
+             while (tmp_lpcb != NULL) {
+               if (!have_master_fd || tmp_lpcb->master_lpcb) {
+                 if (tmp_lpcb->connect_num < min_conn_num) {
+@@ -434,13 +434,13 @@ tcp_input(struct pbuf *p, struct netif *inp)
+          arrivals). */
+       if (prev != NULL) {
+         ((struct tcp_pcb_listen *)prev)->next = lpcb->next;
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+         if (lpcb->next)
+           lpcb->next->prev = (struct tcp_pcb_listen *)prev;
+ #endif
+         /* our successor is the remainder of the listening list */
+         lpcb->next = tcp_listen_pcbs.listen_pcbs;
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+         lpcb->prev = NULL;
+ #endif
+         /* put this listening pcb at the head of the listening list */
+@@ -455,7 +455,7 @@ tcp_input(struct pbuf *p, struct netif *inp)
+                                      tcphdr_opt1len, tcphdr_opt2, p) == ERR_OK)
+ #endif
+       {
+-#if REUSE_IPPORT
++#if GAZELLE_TCP_REUSE_IPPORT
+         tcp_listen_input(min_cnts_lpcb);
+ 	min_cnts_lpcb->connect_num++;
+ #else
+@@ -528,7 +528,7 @@ tcp_input(struct pbuf *p, struct netif *inp)
+            application that the connection is dead before we
+            deallocate the PCB. */
+         TCP_EVENT_ERR(pcb->state, pcb->errf, pcb->callback_arg, ERR_RST);
+-#if TCP_PCB_HASH
++#if GAZELLE_TCP_PCB_HASH
+         tcp_pcb_remove_hash(tcp_active_htable, pcb);
+ #endif
+         tcp_pcb_remove(&tcp_active_pcbs, pcb);
+@@ -710,7 +710,7 @@ tcp_input_delayed_close(struct tcp_pcb *pcb)
+           ensure the application doesn't continue using the PCB. */
+       TCP_EVENT_ERR(pcb->state, pcb->errf, pcb->callback_arg, ERR_CLSD);
+     }
+-#if TCP_PCB_HASH
++#if GAZELLE_TCP_PCB_HASH
+     tcp_pcb_remove_hash(tcp_active_htable, pcb);
+ #endif
+     tcp_pcb_remove(&tcp_active_pcbs, pcb);
+@@ -799,12 +799,12 @@ tcp_listen_input(struct tcp_pcb_listen *pcb)
+     npcb->netif_idx = pcb->netif_idx;
+     /* Register the new PCB so that we can begin receiving segments
+        for it. */
+-#if TCP_PCB_HASH
++#if GAZELLE_TCP_PCB_HASH
+     TCP_REG_ACTIVE_HASH(npcb);
+ #endif
+     TCP_REG_ACTIVE(npcb);
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+     vdev_reg_done(REG_RING_TCP_CONNECT, npcb);
+ #endif 
+ 
+@@ -1102,7 +1102,7 @@ tcp_process(struct tcp_pcb *pcb)
+           if (recv_flags & TF_GOT_FIN) {
+             tcp_ack_now(pcb);
+             pcb->state = CLOSE_WAIT;
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+             API_EVENT(((struct netconn *)pcb->callback_arg), NETCONN_EVT_ERROR, 0);
+ #endif
+           }
+@@ -1120,7 +1120,7 @@ tcp_process(struct tcp_pcb *pcb)
+       if (recv_flags & TF_GOT_FIN) { /* passive close */
+         tcp_ack_now(pcb);
+         pcb->state = CLOSE_WAIT;
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+         API_EVENT(((struct netconn *)pcb->callback_arg), NETCONN_EVT_ERROR, 0);
+ #endif
+       }
+@@ -1134,7 +1134,7 @@ tcp_process(struct tcp_pcb *pcb)
+                       ("TCP connection closed: FIN_WAIT_1 %"U16_F" -> %"U16_F".\n", inseg.tcphdr->src, inseg.tcphdr->dest));
+           tcp_ack_now(pcb);
+           tcp_pcb_purge(pcb);
+-#if TCP_PCB_HASH
++#if GAZELLE_TCP_PCB_HASH
+           TCP_RMV_ACTIVE_HASH(pcb);
+ #endif
+           TCP_RMV_ACTIVE(pcb);
+@@ -1155,7 +1155,7 @@ tcp_process(struct tcp_pcb *pcb)
+         LWIP_DEBUGF(TCP_DEBUG, ("TCP connection closed: FIN_WAIT_2 %"U16_F" -> %"U16_F".\n", inseg.tcphdr->src, inseg.tcphdr->dest));
+         tcp_ack_now(pcb);
+         tcp_pcb_purge(pcb);
+-#if TCP_PCB_HASH
++#if GAZELLE_TCP_PCB_HASH
+         TCP_RMV_ACTIVE_HASH(pcb);
+ #endif
+         TCP_RMV_ACTIVE(pcb);
+@@ -1168,7 +1168,7 @@ tcp_process(struct tcp_pcb *pcb)
+       if ((flags & TCP_ACK) && ackno == pcb->snd_nxt && pcb->unsent == NULL) {
+         LWIP_DEBUGF(TCP_DEBUG, ("TCP connection closed: CLOSING %"U16_F" -> %"U16_F".\n", inseg.tcphdr->src, inseg.tcphdr->dest));
+         tcp_pcb_purge(pcb);
+-#if TCP_PCB_HASH
++#if GAZELLE_TCP_PCB_HASH
+         TCP_RMV_ACTIVE_HASH(pcb);
+ #endif
+         TCP_RMV_ACTIVE(pcb);
+@@ -1377,7 +1377,7 @@ tcp_receive(struct tcp_pcb *pcb)
+             if (pcb->lastack == ackno) {
+               found_dataack = 1;
+               ++pcb->dataacks;
+-              if (pcb->dataacks > MAX_DATA_ACK_NUM) {
++              if (pcb->dataacks > GAZELLE_TCP_MAX_DATA_ACK_NUM) {
+                 if (tcp_rexmit(pcb) == ERR_OK) {
+                   pcb->rtime = 0;
+                   pcb->dataacks = 0;
+@@ -1775,7 +1775,7 @@ tcp_receive(struct tcp_pcb *pcb)
+             recv_flags |= TF_GOT_FIN;
+             if (pcb->state == ESTABLISHED) { /* force passive close or we can move to active close */
+               pcb->state = CLOSE_WAIT;
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+               API_EVENT(((struct netconn *)pcb->callback_arg), NETCONN_EVT_ERROR, 0);
+ #endif
+             }
+diff --git a/src/core/tcp_out.c b/src/core/tcp_out.c
+index bf23381..1b3c5af 100644
+--- a/src/core/tcp_out.c
++++ b/src/core/tcp_out.c
+@@ -80,7 +80,7 @@
+ 
+ #include <string.h>
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ #include "lwipsock.h"
+ #include <rte_prefetch.h>
+ #if CHECKSUM_GEN_TCP_HW
+@@ -162,7 +162,7 @@ tcp_route(const struct tcp_pcb *pcb, const ip_addr_t *src, const ip_addr_t *dst)
+  * The TCP header is filled in except ackno and wnd.
+  * p is freed on failure.
+  */
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ void tcp_init_segment(struct tcp_seg *seg, const struct tcp_pcb *pcb, struct pbuf *p, u8_t hdrflags,
+   u32_t seqno, u8_t optflags)
+ {
+@@ -515,7 +515,7 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
+    * pos records progress as data is segmented.
+    */
+ 
+-#if !USE_LIBOS
++#if !GAZELLE_ENABLE
+   /* Find the tail of the unsent queue. */
+   if (pcb->unsent != NULL) {
+     u16_t space;
+@@ -631,9 +631,9 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
+                 pcb->unsent_oversize == 0);
+ #endif /* TCP_OVERSIZE */
+   }
+-#else /* USE_LIBOS */
++#else /* GAZELLE_ENABLE */
+   last_unsent = pcb->last_unsent;
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+ 
+   /*
+    * Phase 3: Create new segments.
+@@ -651,7 +651,7 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
+     u8_t chksum_swapped = 0;
+ #endif /* TCP_CHECKSUM_ON_COPY */
+ 
+-#if !USE_LIBOS
++#if !GAZELLE_ENABLE
+     if (apiflags & TCP_WRITE_FLAG_COPY) {
+       /* If copy is set, memory should be allocated and data copied
+        * into pbuf */
+@@ -698,13 +698,13 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
+       /* Concatenate the headers and data pbufs together. */
+       pbuf_cat(p/*header*/, p2/*data*/);
+     }
+-#else  /* USE_LIBOS */
++#else  /* GAZELLE_ENABLE */
+     p = write_lwip_data((struct lwip_sock *)arg, len - pos, &apiflags);
+     if (p == NULL) {
+       break;
+     }
+     seglen = p->tot_len;
+-#endif  /* USE_LIBOS */
++#endif  /* GAZELLE_ENABLE */
+ 
+     queuelen += pbuf_clen(p);
+ 
+@@ -714,7 +714,7 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
+     if (queuelen > LWIP_MIN(TCP_SND_QUEUELEN, TCP_SNDQUEUELEN_OVERFLOW)) {
+       LWIP_DEBUGF(TCP_OUTPUT_DEBUG | LWIP_DBG_LEVEL_SERIOUS, ("tcp_write: queue too long %"U16_F" (%d)\n",
+                   queuelen, (int)TCP_SND_QUEUELEN));
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+       if (pos > 0) {
+         queuelen -= pbuf_clen(p);
+         break;
+@@ -726,7 +726,7 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
+     }
+ 
+     if ((seg = tcp_create_segment(pcb, p, 0, pcb->snd_lbb + pos, optflags)) == NULL) {
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+       if (pos > 0) {
+         queuelen -= pbuf_clen(p);
+         break;
+@@ -759,7 +759,7 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
+                 lwip_ntohl(seg->tcphdr->seqno) + TCP_TCPLEN(seg)));
+ 
+     pos += seglen;
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+     write_lwip_over((struct lwip_sock*)arg);
+ #endif
+   }
+@@ -847,7 +847,7 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
+   /*
+    * Finally update the pcb state.
+    */
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+   if (queue) {
+     pcb->last_unsent = prev_seg;
+   }
+@@ -876,7 +876,7 @@ memerr:
+   tcp_set_flags(pcb, TF_NAGLEMEMERR);
+   TCP_STATS_INC(tcp.memerr);
+ 
+-#if !USE_LIBOS
++#if !GAZELLE_ENABLE
+   if (concat_p != NULL) {
+     pbuf_free(concat_p);
+   }
+@@ -1307,7 +1307,7 @@ tcp_build_wnd_scale_option(u32_t *opts)
+ }
+ #endif
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ static struct tcp_seg *tcp_output_over(struct tcp_pcb *pcb, struct tcp_seg *seg, struct tcp_seg *useg)
+ {
+   if (TCP_TCPLEN(seg) > 0) {
+@@ -1472,7 +1472,7 @@ tcp_output(struct tcp_pcb *pcb)
+   /* data available and window allows it to be sent? */
+ 
+   u32_t send_len = 0;
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+   if ((get_eth_params_tx_ol() & DEV_TX_OFFLOAD_TCP_TSO) && pcb->need_tso_send) {
+     while(seg && send_len < 0xffff) {
+       /**
+@@ -1485,7 +1485,7 @@ tcp_output(struct tcp_pcb *pcb)
+       struct pbuf *pre_pbuf = NULL;
+       u8_t pbuf_chain_len = 0;
+       u32_t next_seqno = lwip_ntohl(seg->tcphdr->seqno);
+-      while (seg != NULL && pbuf_chain_len < MAX_PBUF_CHAIN_LEN) {
++      while (seg != NULL && pbuf_chain_len < GAZELLE_TCP_MAX_PBUF_CHAIN_LEN) {
+         u32_t seg_seqno = lwip_ntohl(seg->tcphdr->seqno);
+         if (seg_seqno - pcb->lastack + seg->len > wnd) {
+           if (first_pbuf)
+@@ -1501,7 +1501,7 @@ tcp_output(struct tcp_pcb *pcb)
+             goto output_done;
+         }
+ 
+-        if (seg->len < TCP_MSS || next_seqno != seg_seqno || pbuf_chain_len >= MAX_PBUF_CHAIN_LEN) {
++        if (seg->len < TCP_MSS || next_seqno != seg_seqno || pbuf_chain_len >= GAZELLE_TCP_MAX_PBUF_CHAIN_LEN) {
+           break;
+         }
+         if (first_pbuf == NULL && (seg->next == NULL || seg->next->len < TCP_MSS)) {
+@@ -1771,7 +1771,7 @@ tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb, struct netif *netif
+   }
+ #endif
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+   /* pbuf into mbuf. ref dpdk_common.h */
+   rte_prefetch0((uint8_t *)(seg->p) - sizeof(struct rte_mbuf) - sizeof(uint64_t) * 2);
+ #endif
+diff --git a/src/core/timeouts.c b/src/core/timeouts.c
+index 0542a32..2b80b0a 100644
+--- a/src/core/timeouts.c
++++ b/src/core/timeouts.c
+@@ -442,7 +442,7 @@ sys_timeouts_sleeptime(void)
+   }
+ }
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ void sys_timer_run(void)
+ {
+   u32_t sleeptime;
+@@ -452,7 +452,7 @@ void sys_timer_run(void)
+     sys_check_timeouts();
+   }
+ }
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+ 
+ #else /* LWIP_TIMERS && !LWIP_TIMERS_CUSTOM */
+ /* Satisfy the TCP code which calls this function */
+diff --git a/src/include/arch/sys_arch.h b/src/include/arch/sys_arch.h
+index fc4a9fd..04e3192 100644
+--- a/src/include/arch/sys_arch.h
++++ b/src/include/arch/sys_arch.h
+@@ -76,7 +76,7 @@ int sys_mbox_empty(struct sys_mbox *);
+ struct sys_thread;
+ typedef struct sys_thread *sys_thread_t;
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ extern int eth_dev_poll(void);
+ #include <rte_ring.h>
+ 
+diff --git a/src/include/dpdk_cksum.h b/src/include/dpdk_cksum.h
+index 83c9c38..df2e2a5 100644
+--- a/src/include/dpdk_cksum.h
++++ b/src/include/dpdk_cksum.h
+@@ -34,7 +34,7 @@
+ #define __DPDK_CKSUM_H__
+ 
+ #include "lwipopts.h"
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ #include <rte_ethdev.h>
+ 
+ #if CHECKSUM_OFFLOAD_ALL
+@@ -103,5 +103,5 @@ static inline u16_t ip_chksum_pseudo_offload(u8_t proto, u16_t proto_len,
+ }
+ #endif /* CHECKSUM_GEN_TCP_HW */
+ 
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+ #endif /* __DPDK_CKSUM_H__ */
+diff --git a/src/include/hlist.h b/src/include/hlist.h
+index 7059488..988b017 100644
+--- a/src/include/hlist.h
++++ b/src/include/hlist.h
+@@ -35,7 +35,7 @@
+ 
+ #include "list.h"
+ 
+-//#if TCP_PCB_HASH
++//#if GAZELLE_TCP_PCB_HASH
+ struct hlist_node {
+     /**
+      * @pprev: point the previous node's next pointer
+@@ -228,6 +228,6 @@ static inline void hlist_ctl_add_after(struct hlist_node *n, struct hlist_node *
+         ctl->tail.end = next;
+     }
+ }
+-//#endif /* TCP_PCB_HASH */
++//#endif /* GAZELLE_TCP_PCB_HASH */
+ 
+ #endif /* __HLIST_H__ */
+diff --git a/src/include/lwip/api.h b/src/include/lwip/api.h
+index 430a7a0..197faef 100644
+--- a/src/include/lwip/api.h
++++ b/src/include/lwip/api.h
+@@ -141,16 +141,16 @@ enum netconn_type {
+   , NETCONN_RAW_IPV6    = NETCONN_RAW | NETCONN_TYPE_IPV6 /* 0x48 */
+ #endif /* LWIP_IPV6 */
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+   /*here must bigger than 0xff, because (type & 0xff) is for lwip inner use*/
+   , NETCONN_LIBOS = 0x100
+   , NETCONN_HOST = 0x200
+   , NETCONN_INPRG = 0x400
+   , NETCONN_STACK = NETCONN_LIBOS | NETCONN_HOST | NETCONN_INPRG
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+ };
+ 
+-#ifdef USE_LIBOS
++#ifdef GAZELLE_ENABLE
+ #define SET_CONN_TYPE_LIBOS_OR_HOST(conn) do { \
+   conn->type &= ~(NETCONN_STACK); \
+   conn->type |= (NETCONN_LIBOS | NETCONN_HOST); } while (0)
+@@ -175,7 +175,7 @@ enum netconn_type {
+ #define CONN_TYPE_HAS_LIBOS_AND_HOST(conn) (0)
+ #define CONN_TYPE_HAS_LIBOS(conn) (0)
+ #define CONN_TYPE_HAS_HOST(conn) (0)
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+ 
+ /** Current state of the netconn. Non-TCP netconns are always
+  * in state NETCONN_NONE! */
+@@ -319,7 +319,7 @@ struct netconn {
+   /** A callback function that is informed about events for this netconn */
+   netconn_callback callback;
+ 
+-#if REUSE_IPPORT
++#if GAZELLE_TCP_REUSE_IPPORT
+   u8_t is_master_fd;
+ #endif
+ };
+diff --git a/src/include/lwip/ip.h b/src/include/lwip/ip.h
+index 7f55fb3..1c6988b 100644
+--- a/src/include/lwip/ip.h
++++ b/src/include/lwip/ip.h
+@@ -97,7 +97,7 @@ struct ip_pcb {
+ /*
+  * Option flags per-socket. These are the same like SO_XXX in sockets.h
+  */
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ #define SOF_REUSEADDR     0x02U /* allow local address reuse */
+ #define SOF_KEEPALIVE     0x09U /* keep connections alive */
+ #define SOF_BROADCAST     0x06U /* permit to send and to receive broadcast messages (see IP_SOF_BROADCAST option) */
+@@ -105,7 +105,7 @@ struct ip_pcb {
+ #define SOF_REUSEADDR     0x04U  /* allow local address reuse */
+ #define SOF_KEEPALIVE     0x08U  /* keep connections alive */
+ #define SOF_BROADCAST     0x20U  /* permit to send and to receive broadcast messages (see IP_SOF_BROADCAST option) */
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+ 
+ /* These flags are inherited (e.g. from a listen-pcb to a connection-pcb): */
+ #define SOF_INHERITED   (SOF_REUSEADDR|SOF_KEEPALIVE)
+diff --git a/src/include/lwip/memp.h b/src/include/lwip/memp.h
+index 64d8f31..1763836 100644
+--- a/src/include/lwip/memp.h
++++ b/src/include/lwip/memp.h
+@@ -58,11 +58,11 @@ typedef enum {
+ #include "lwip/priv/memp_priv.h"
+ #include "lwip/stats.h"
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ extern PER_THREAD struct memp_desc* memp_pools[MEMP_MAX];
+ #else
+ extern const struct memp_desc* const memp_pools[MEMP_MAX];
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+ 
+ /**
+  * @ingroup mempool
+@@ -96,7 +96,7 @@ extern const struct memp_desc* const memp_pools[MEMP_MAX];
+  * To relocate a pool, declare it as extern in cc.h. Example for GCC:
+  *   extern u8_t \_\_attribute\_\_((section(".onchip_mem"))) memp_memory_my_private_pool_base[];
+  */
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ #define LWIP_MEMPOOL_DECLARE(name,num,size,desc) \
+     PER_THREAD struct memp_desc memp_ ## name = {0}; \
+     PER_THREAD char memp_desc_ ## name[] = desc; \
+@@ -106,7 +106,7 @@ extern const struct memp_desc* const memp_pools[MEMP_MAX];
+     PER_THREAD struct memp *memp_tab_ ## name = NULL; \
+     LWIP_DECLARE_MEMP_BASE_ALIGNED(name, ((num) * (MEMP_SIZE + MEMP_ALIGN_SIZE(size))));
+ 
+-#else /* USE_LIBOS */
++#else /* GAZELLE_ENABLE */
+ 
+ #define LWIP_MEMPOOL_DECLARE(name,num,size,desc) \
+   LWIP_DECLARE_MEMORY_ALIGNED(memp_memory_ ## name ## _base, ((num) * (MEMP_SIZE + MEMP_ALIGN_SIZE(size)))); \
+@@ -124,7 +124,7 @@ extern const struct memp_desc* const memp_pools[MEMP_MAX];
+     &memp_tab_ ## name \
+   };
+ 
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+ #endif /* MEMP_MEM_MALLOC */
+ 
+ /**
+diff --git a/src/include/lwip/opt.h b/src/include/lwip/opt.h
+index 718816b..0376f60 100644
+--- a/src/include/lwip/opt.h
++++ b/src/include/lwip/opt.h
+@@ -3525,7 +3525,7 @@
+ /**
+  * EPOLL_DEBUG: Enable debugging in epoll.c.
+  */
+-#if !defined EPOLL_DEBUG || defined __DOXYGEN__ && USE_LIBOS
++#if !defined EPOLL_DEBUG || defined __DOXYGEN__ && GAZELLE_ENABLE
+ #define EPOLL_DEBUG                    LWIP_DBG_OFF
+ #endif
+ /**
+@@ -3535,7 +3535,7 @@
+ /**
+  * ETHDEV_DEBUG: Enable debugging in ethdev.c.
+  */
+-#if !defined ETHDEV_DEBUG || defined __DOXYGEN__ && USE_LIBOS
++#if !defined ETHDEV_DEBUG || defined __DOXYGEN__ && GAZELLE_ENABLE
+ #define ETHDEV_DEBUG                    LWIP_DBG_OFF
+ #endif
+ /**
+@@ -3545,7 +3545,7 @@
+ /**
+  * ETHDEV_DEBUG: Enable debugging in ethdev.c.
+  */
+-#if !defined SYSCALL_DEBUG || defined __DOXYGEN__ && USE_LIBOS
++#if !defined SYSCALL_DEBUG || defined __DOXYGEN__ && GAZELLE_ENABLE
+ #define SYSCALL_DEBUG                    LWIP_DBG_OFF
+ #endif
+ /**
+@@ -3555,7 +3555,7 @@
+ /**
+  * CONTROL_DEBUG: Enable debugging in control_plane.c.
+  */
+-#if !defined CONTROL_DEBUG || defined __DOXYGEN__ && USE_LIBOS
++#if !defined CONTROL_DEBUG || defined __DOXYGEN__ && GAZELLE_ENABLE
+ #define CONTROL_DEBUG                    LWIP_DBG_ON
+ #endif
+ /**
+diff --git a/src/include/lwip/pbuf.h b/src/include/lwip/pbuf.h
+index 1124408..a2e8e01 100644
+--- a/src/include/lwip/pbuf.h
++++ b/src/include/lwip/pbuf.h
+@@ -220,7 +220,7 @@ struct pbuf {
+   /** For incoming packets, this contains the input netif's index */
+   u8_t if_idx;
+ 
+-#if USE_LIBOS && CHECKSUM_OFFLOAD_ALL
++#if GAZELLE_ENABLE && CHECKSUM_OFFLOAD_ALL
+   /** checksum offload ol_flags */
+   u64_t ol_flags;
+   /* < L2 (MAC) Header Length for non-tunneling pkt. */
+@@ -234,7 +234,7 @@ struct pbuf {
+   u8_t in_write;
+   u8_t head;
+   struct pbuf *last;
+-#endif /* USE_LIBOS CHECKSUM_OFFLOAD_SWITCH */
++#endif /* GAZELLE_ENABLE CHECKSUM_OFFLOAD_SWITCH */
+ 
+   /** In case the user needs to store data custom data on a pbuf */
+   LWIP_PBUF_CUSTOM_DATA
+@@ -287,7 +287,7 @@ void pbuf_free_ooseq(void);
+ 
+ /* Initializes the pbuf module. This call is empty for now, but may not be in future. */
+ #define pbuf_init()
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ struct pbuf *lwip_alloc_pbuf(pbuf_layer layer, uint16_t length, pbuf_type type);
+ #endif
+ struct pbuf *pbuf_alloc(pbuf_layer l, u16_t length, pbuf_type type);
+diff --git a/src/include/lwip/priv/memp_std.h b/src/include/lwip/priv/memp_std.h
+index 395ac0c..66d7e4e 100644
+--- a/src/include/lwip/priv/memp_std.h
++++ b/src/include/lwip/priv/memp_std.h
+@@ -122,13 +122,13 @@ LWIP_MEMPOOL(MLD6_GROUP,     MEMP_NUM_MLD6_GROUP,      sizeof(struct mld_group),
+ #endif /* LWIP_IPV6 && LWIP_IPV6_MLD */
+ 
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ #if !LWIP_NETCONN_SEM_PER_THREAD
+ LWIP_MEMPOOL(SYS_SEM,     MEMP_NUM_SYS_SEM,      sizeof(struct sys_sem),     "SYS_SEM")
+ #endif
+ 
+ LWIP_MEMPOOL(SYS_MBOX,     MEMP_NUM_SYS_MBOX,      sizeof(struct sys_mbox),     "SYS_MBOX")
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+ /*
+  * A list of pools of pbuf's used by LWIP.
+  *
+diff --git a/src/include/lwip/priv/tcp_priv.h b/src/include/lwip/priv/tcp_priv.h
+index 97f799e..ddae3fd 100644
+--- a/src/include/lwip/priv/tcp_priv.h
++++ b/src/include/lwip/priv/tcp_priv.h
+@@ -340,7 +340,7 @@ extern PER_THREAD struct tcp_pcb *tcp_tw_pcbs;      /* List of all TCP PCBs in T
+ #define NUM_TCP_PCB_LISTS               4
+ extern PER_THREAD struct tcp_pcb ** tcp_pcb_lists[NUM_TCP_PCB_LISTS];
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ #include "reg_sock.h"
+ static inline int vdev_reg_done(enum reg_ring_type reg_type, const struct tcp_pcb *pcb)
+ {
+@@ -353,7 +353,7 @@ static inline int vdev_reg_done(enum reg_ring_type reg_type, const struct tcp_pc
+   qtuple.dst_ip     = pcb->remote_ip.addr;
+   qtuple.dst_port   = lwip_htons(pcb->remote_port);
+ 
+-#if REUSE_IPPORT
++#if GAZELLE_TCP_REUSE_IPPORT
+   if (reg_type == REG_RING_TCP_CONNECT_CLOSE) {
+     struct tcp_pcb_listen* lpcb = pcb->listener;
+     if (lpcb != NULL) {
+@@ -389,7 +389,7 @@ static inline void vdev_unreg_done(const struct tcp_pcb *pcb)
+ #define TCP_DEBUG_PCB_LISTS 0
+ #endif
+ #if TCP_DEBUG_PCB_LISTS
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ #define TCP_REG(pcbs, npcb) do {\
+                             struct tcp_pcb *tcp_tmp_pcb; \
+                             LWIP_DEBUGF(TCP_DEBUG, ("TCP_REG %p local port %d\n", (npcb), (npcb)->local_port)); \
+@@ -432,7 +432,7 @@ static inline void vdev_unreg_done(const struct tcp_pcb *pcb)
+                             LWIP_DEBUGF(TCP_DEBUG, ("TCP_RMV: removed %p from %p\n", (npcb), *(pcbs))); \
+                             } while(0)
+ 
+-#else /* USE_LIBOS */
++#else /* GAZELLE_ENABLE */
+ #define TCP_REG(pcbs, npcb) do {\
+                             struct tcp_pcb *tcp_tmp_pcb; \
+                             LWIP_DEBUGF(TCP_DEBUG, ("TCP_REG %p local port %"U16_F"\n", (void *)(npcb), (npcb)->local_port)); \
+@@ -465,10 +465,10 @@ static inline void vdev_unreg_done(const struct tcp_pcb *pcb)
+                             LWIP_DEBUGF(TCP_DEBUG, ("TCP_RMV: removed %p from %p\n", (void *)(npcb), (void *)(*(pcbs)))); \
+                             } while(0)
+ 
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+ #else /* LWIP_DEBUG */
+ 
+-#if TCP_PCB_HASH
++#if GAZELLE_TCP_PCB_HASH
+ #define TCP_REG_HASH(pcbs, npcb)                   \
+   do {                                             \
+     u32_t idx;                                     \
+@@ -496,9 +496,9 @@ static inline void vdev_unreg_done(const struct tcp_pcb *pcb)
+   do {                                             \
+     hlist_del_init(&(npcb)->tcp_node);             \
+   } while (0)
+-#endif /* TCP_PCB_HASH */
++#endif /* GAZELLE_TCP_PCB_HASH */
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ #define TCP_REG(pcbs, npcb)                        \
+   do {                                             \
+     if (*pcbs)                                     \
+@@ -529,7 +529,7 @@ static inline void vdev_unreg_done(const struct tcp_pcb *pcb)
+     (npcb)->next = NULL;                           \
+   } while(0)
+ 
+-#else /* USE_LIBOS */
++#else /* GAZELLE_ENABLE */
+ #define TCP_REG(pcbs, npcb)                        \
+   do {                                             \
+     (npcb)->next = *pcbs;                          \
+@@ -556,11 +556,11 @@ static inline void vdev_unreg_done(const struct tcp_pcb *pcb)
+     (npcb)->next = NULL;                           \
+   } while(0)
+ 
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+ #endif /* LWIP_DEBUG */
+ 
+ 
+-#if TCP_PCB_HASH
++#if GAZELLE_TCP_PCB_HASH
+ #define TCP_REG_ACTIVE_HASH(npcb)                  \
+   do {                                             \
+     TCP_REG_HASH(tcp_active_htable, npcb);         \
+@@ -580,7 +580,7 @@ static inline void vdev_unreg_done(const struct tcp_pcb *pcb)
+   } while (0)
+ 
+ void tcp_pcb_remove_hash(struct tcp_hash_table *htb, struct tcp_pcb *pcb);
+-#endif /* TCP_PCB_HASH */
++#endif /* GAZELLE_TCP_PCB_HASH */
+ 
+ #define TCP_REG_ACTIVE(npcb)                       \
+   do {                                             \
+diff --git a/src/include/lwip/sockets.h b/src/include/lwip/sockets.h
+index 3c5b87b..58acf0f 100644
+--- a/src/include/lwip/sockets.h
++++ b/src/include/lwip/sockets.h
+@@ -57,7 +57,7 @@ extern "C" {
+ 
+ /* If your port already typedef's sa_family_t, define SA_FAMILY_T_DEFINED
+    to prevent this code from redefining it. */
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ #define SA_FAMILY_T_DEFINED
+   typedef u16_t sa_family_t;
+ #endif
+@@ -74,7 +74,7 @@ typedef u16_t in_port_t;
+ #if LWIP_IPV4
+ /* members are in network byte order */
+ struct sockaddr_in {
+-#if !USE_LIBOS
++#if !GAZELLE_ENABLE
+   u8_t            sin_len;
+ #endif
+   sa_family_t     sin_family;
+@@ -97,7 +97,7 @@ struct sockaddr_in6 {
+ #endif /* LWIP_IPV6 */
+ 
+ struct sockaddr {
+-#if !USE_LIBOS
++#if !GAZELLE_ENABLE
+   u8_t        sa_len;
+ #endif
+   sa_family_t sa_family;
+@@ -198,7 +198,7 @@ struct ifreq {
+ #define SOCK_DGRAM      2
+ #define SOCK_RAW        3
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ #include <asm/socket.h>
+ #else
+ /*
+@@ -236,7 +236,7 @@ struct ifreq {
+  * Level number for (get/set)sockopt() to apply to socket itself.
+  */
+ #define  SOL_SOCKET  0xfff    /* options for socket level */
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+ 
+ /*
+  * Structure used for manipulating linger option.
+@@ -289,20 +289,20 @@ struct linger {
+ /*
+  * Options for level IPPROTO_TCP
+  */
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ /* come from netinet/tcp.h */
+ #define TCP_NODELAY    0x01    /* don't delay send to coalesce packets */
+ #define TCP_KEEPALIVE  0x24    /* send KEEPALIVE probes when idle for pcb->keep_idle milliseconds */
+ #define TCP_KEEPIDLE   0x04    /* set pcb->keep_idle  - Same as TCP_KEEPALIVE, but use seconds for get/setsockopt */
+ #define TCP_KEEPINTVL  0x05    /* set pcb->keep_intvl - Use seconds for get/setsockopt */
+ #define TCP_KEEPCNT    0x06    /* set pcb->keep_cnt   - Use number of probes sent for get/setsockopt */
+-#else /* USE_LIBOS */
++#else /* GAZELLE_ENABLE */
+ #define TCP_NODELAY    0x01    /* don't delay send to coalesce packets */
+ #define TCP_KEEPALIVE  0x02    /* send KEEPALIVE probes when idle for pcb->keep_idle milliseconds */
+ #define TCP_KEEPIDLE   0x03    /* set pcb->keep_idle  - Same as TCP_KEEPALIVE, but use seconds for get/setsockopt */
+ #define TCP_KEEPINTVL  0x04    /* set pcb->keep_intvl - Use seconds for get/setsockopt */
+ #define TCP_KEEPCNT    0x05    /* set pcb->keep_cnt   - Use number of probes sent for get/setsockopt */
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+ #endif /* LWIP_TCP */
+ 
+ #if LWIP_IPV6
+@@ -505,13 +505,13 @@ typedef struct fd_set
+   unsigned char fd_bits [(FD_SETSIZE+7)/8];
+ } fd_set;
+ 
+-#elif FD_SETSIZE < (LWIP_SOCKET_OFFSET + MEMP_NUM_NETCONN) && !USE_LIBOS
++#elif FD_SETSIZE < (LWIP_SOCKET_OFFSET + MEMP_NUM_NETCONN) && !GAZELLE_ENABLE
+ #error "external FD_SETSIZE too small for number of sockets"
+ #else
+ #define LWIP_SELECT_MAXNFDS FD_SETSIZE
+ #endif /* FD_SET */
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ #if !defined(POLLIN) && !defined(POLLOUT)
+ /* come from bits/poll.h */
+ #define POLLIN     0x001
+@@ -526,7 +526,7 @@ typedef struct fd_set
+ #define POLLWRBAND 0x200
+ #define POLLHUP    0x010
+ #endif
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+ 
+ #if LWIP_SOCKET_POLL
+ /* poll-related defines and types */
+@@ -664,13 +664,13 @@ int lwip_select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptse
+ int lwip_poll(struct pollfd *fds, nfds_t nfds, int timeout);
+ #endif
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ int lwip_ioctl(int s, long cmd, ...);
+ int lwip_fcntl(int s, int cmd, int val);
+ #else
+ int lwip_ioctl(int s, long cmd, void *argp);
+ int lwip_fcntl(int s, int cmd, int val);
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+ 
+ const char *lwip_inet_ntop(int af, const void *src, char *dst, socklen_t size);
+ int lwip_inet_pton(int af, const char *src, void *dst);
+@@ -740,7 +740,7 @@ int lwip_inet_pton(int af, const char *src, void *dst);
+ /** @ingroup socket */
+ #define close(s)                                  lwip_close(s)
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ #define fcntl(s,cmd...)                           lwip_fcntl(s,cmd)
+ #define ioctl(s,cmd...)                           lwip_ioctl(s,cmd)
+ #else
+@@ -748,7 +748,7 @@ int lwip_inet_pton(int af, const char *src, void *dst);
+ #define fcntl(s,cmd,val)                          lwip_fcntl(s,cmd,val)
+ /** @ingroup socket */
+ #define ioctl(s,cmd,argp)                         lwip_ioctl(s,cmd,argp)
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+ 
+ #endif /* LWIP_POSIX_SOCKETS_IO_NAMES */
+ #endif /* LWIP_COMPAT_SOCKETS != 2 */
+diff --git a/src/include/lwip/tcp.h b/src/include/lwip/tcp.h
+index c2018cb..b822f40 100644
+--- a/src/include/lwip/tcp.h
++++ b/src/include/lwip/tcp.h
+@@ -51,7 +51,7 @@
+ #include "lwip/ip6.h"
+ #include "lwip/ip6_addr.h"
+ 
+-#if TCP_PCB_HASH
++#if GAZELLE_TCP_PCB_HASH
+ #include "lwip/sys.h"
+ #include "hlist.h"
+ #endif
+@@ -214,7 +214,7 @@ typedef u16_t tcpflags_t;
+ /**
+  * members common to struct tcp_pcb and struct tcp_listen_pcb
+  */
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ #define TCP_PCB_COMMON(type) \
+   type *next; /* for the linked list */ \
+   type *prev; /* for the linked list */ \
+@@ -225,7 +225,7 @@ typedef u16_t tcpflags_t;
+   /* ports are in host byte order */ \
+   u16_t local_port
+   
+-#else /* USE_LIBOS */
++#else /* GAZELLE_ENABLE */
+ #define TCP_PCB_COMMON(type) \
+   type *next; /* for the linked list */ \
+   void *callback_arg; \
+@@ -234,7 +234,7 @@ typedef u16_t tcpflags_t;
+   u8_t prio; \
+   /* ports are in host byte order */ \
+   u16_t local_port
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+ 
+ /** the TCP protocol control block for listening pcbs */
+ struct tcp_pcb_listen {
+@@ -253,7 +253,7 @@ struct tcp_pcb_listen {
+   u8_t accepts_pending;
+ #endif /* TCP_LISTEN_BACKLOG */
+ 
+-#if REUSE_IPPORT
++#if GAZELLE_TCP_REUSE_IPPORT
+   struct tcp_pcb_listen* next_same_port_pcb;
+   u16_t connect_num;
+   int socket_fd;
+@@ -269,7 +269,7 @@ struct tcp_pcb {
+   IP_PCB;
+ /** protocol specific PCB members */
+   TCP_PCB_COMMON(struct tcp_pcb);
+-#if TCP_PCB_HASH
++#if GAZELLE_TCP_PCB_HASH
+   struct hlist_node tcp_node;
+ #endif
+ 
+@@ -421,7 +421,7 @@ struct tcp_pcb {
+   u8_t need_tso_send;
+ };
+ 
+-#if TCP_PCB_HASH
++#if GAZELLE_TCP_PCB_HASH
+ #define TCP_HTABLE_SIZE MEMP_NUM_NETCONN*12
+ 
+ struct tcp_hashbucket
+@@ -471,7 +471,7 @@ static inline unsigned int jhash_3words(unsigned int a, unsigned int b, unsigned
+ #define tcppcb_hlist_for_each(tcppcb, node, list) \
+   hlist_for_each_entry(tcppcb, node, list, tcp_node)
+ 
+-#endif /* TCP_PCB_HASH */
++#endif /* GAZELLE_TCP_PCB_HASH */
+ 
+ #if LWIP_EVENT_API
+ 
+diff --git a/src/include/lwip/timeouts.h b/src/include/lwip/timeouts.h
+index b451554..f7ffc5e 100644
+--- a/src/include/lwip/timeouts.h
++++ b/src/include/lwip/timeouts.h
+@@ -119,9 +119,9 @@ struct sys_timeo** sys_timeouts_get_next_timeout(void);
+ void lwip_cyclic_timer(void *arg);
+ #endif
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ void sys_timer_run(void);
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+ 
+ #endif /* LWIP_TIMERS */
+ 
+diff --git a/src/include/lwiplog.h b/src/include/lwiplog.h
+index 011ed21..f278ff4 100644
+--- a/src/include/lwiplog.h
++++ b/src/include/lwiplog.h
+@@ -41,7 +41,7 @@
+ 
+ #include "lwipopts.h"
+ 
+-#if USE_DPDK_LOG
++#if GAZELLE_USE_DPDK_LOG
+ 
+ #define LWIP_LOG_WARN   LWIP_DBG_LEVEL_WARNING
+ #define LWIP_LOG_ERROR  LWIP_DBG_LEVEL_SERIOUS
+@@ -75,6 +75,6 @@ do { LWIP_PLATFORM_LOG(LWIP_LOG_FATAL, "Assertion \"%s\" failed at line %d in %s
+ 
+ #define LWIP_PLATFORM_LOG(debug, message)
+ 
+-#endif /* USE_DPDK_LOG */
++#endif /* GAZELLE_USE_DPDK_LOG */
+ 
+ #endif /* __LWIPLOG_H__ */
+diff --git a/src/include/lwipopts.h b/src/include/lwipopts.h
+index be58ec3..9cc93bc 100644
+--- a/src/include/lwipopts.h
++++ b/src/include/lwipopts.h
+@@ -33,182 +33,204 @@
+ #ifndef __LWIPOPTS_H__
+ #define __LWIPOPTS_H__
+ 
+-#define LWIP_TCPIP_CORE_LOCKING 1
+-
+-#define LWIP_NETCONN_SEM_PER_THREAD 0
+-
+-#define LWIP_TCP 1
+-
+-#define LWIP_SO_SENTIMEO 0
+-
+-#define LIP_SO_LINGER 0
+-
+-#define MEMP_USE_CUSTOM_POOLS 0
+-#define MEM_USE_POOLS 0
+-
+-#define PER_TCP_PCB_BUFFER (16 * 128)
+-
+-#define MAX_CLIENTS (20000)
+-
+-#define RESERVED_CLIENTS (2000)
+-
+-#define MEMP_NUM_TCP_PCB (MAX_CLIENTS + RESERVED_CLIENTS)
+-
+-/* we use PBUF_POOL instead of PBUF_RAM in tcp_write, so reduce PBUF_RAM size,
+- * and do NOT let PBUF_POOL_BUFSIZE less then TCP_MSS
++/*
++   -------------------------------------
++   ---------- gazelle options ----------
++   -------------------------------------
+ */
+-#define MEM_SIZE (((PER_TCP_PCB_BUFFER + 128) * MEMP_NUM_TCP_SEG) >> 2)
++#define LWIP_PERF 1
++#define LWIP_RECORD_PERF 0
+ 
+-#define MEMP_NUM_TCP_PCB_LISTEN 3000
++//#define LWIP_DEBUG 1
++#define GAZELLE_USE_DPDK_LOG 1
+ 
+-#define MEMP_NUM_TCP_SEG (128 * 128 * 2)
++#define GAZELLE_ENABLE 1
++#define PER_THREAD __thread
+ 
+-#define MEMP_NUM_NETCONN (MAX_CLIENTS + RESERVED_CLIENTS)
++#define FRAME_MTU 1500
+ 
+-#define MEMP_NUM_SYS_SEM (MAX_CLIENTS + RESERVED_CLIENTS)
++#define GAZELLE_TCP_PCB_HASH 1
+ 
+-#define MEMP_NUM_SYS_MBOX (MAX_CLIENTS + RESERVED_CLIENTS)
++#define GAZELLE_TCP_MAX_DATA_ACK_NUM 256
+ 
+-#define PBUF_POOL_SIZE (MAX_CLIENTS * 2)
++#define GAZELLE_TCP_MAX_PBUF_CHAIN_LEN 40
+ 
+-#define MEMP_MEM_MALLOC 0
++/*
++   ----------------------------------
++   ---------- NIC offloads ----------
++   ----------------------------------
++*/
++#define LWIP_CHECKSUM_CTRL_PER_NETIF 1 /* checksum ability check before checksum*/
+ 
+-#define LWIP_ARP 1
++// rx cksum
++#define CHECKSUM_CHECK_IP     1 /*  master switch */
++#define CHECKSUM_CHECK_TCP    1 /*  master switch */
++// tx cksum
++#define CHECKSUM_GEN_IP       1 /*  master switch */
++#define CHECKSUM_GEN_TCP      1 /* master switch */
+ 
+-#define ETHARP_SUPPORT_STATIC_ENTRIES 1
++// rx offload cksum
++#define CHECKSUM_CHECK_IP_HW  (1 && CHECKSUM_CHECK_IP) /*  hardware switch */
++#define CHECKSUM_CHECK_TCP_HW (1 && CHECKSUM_CHECK_TCP) /*  hardware switch */
++// tx offload cksum
++#define CHECKSUM_GEN_IP_HW    (1 && CHECKSUM_GEN_IP) /* hardware switch */
++#define CHECKSUM_GEN_TCP_HW   (1 && CHECKSUM_GEN_TCP) /*  hardware switch */
+ 
+-#define LWIP_IPV4 1
++#define CHECKSUM_OFFLOAD_ALL (CHECKSUM_GEN_IP_HW || CHECKSUM_GEN_TCP_HW || CHECKSUM_CHECK_IP_HW || CHECKSUM_CHECK_TCP_HW)
+ 
+-#define IP_FORWARD 0
+ 
+-#define IP_REASSEMBLY 1
++/*
++   ---------------------------------------
++   ---------- lwIP APIs options ----------
++   ---------------------------------------
++*/
++#define LWIP_TCPIP_CORE_LOCKING 1
+ 
+-#define LWIP_UDP 0
++#define LWIP_TCPIP_TIMEOUT 0
+ 
+-#define LWIP_TCP 1
++#define TCPIP_MBOX_SIZE (MEMP_NUM_TCPIP_MSG_API)
+ 
+-#define IP_HLEN 20
++#define LWIP_NETCONN 1
+ 
+-#define TCP_HLEN 20
++#define LWIP_NETCONN_SEM_PER_THREAD 0
+ 
+-#define FRAME_MTU 1500
++#define LWIP_STATS 1
+ 
+-#define TCP_MSS (FRAME_MTU - IP_HLEN - TCP_HLEN)
++#define LWIP_STATS_DISPLAY 1
+ 
+-#define TCP_WND (2500 * TCP_MSS)
++#define LWIP_TIMERS 1
+ 
+-#define TCP_SND_BUF (2500 * TCP_MSS)
++#define LWIP_TIMEVAL_PRIVATE 0
+ 
+-#define TCP_SND_QUEUELEN (8191)
+ 
+-#define TCP_SNDLOWAT (TCP_SND_BUF / 5)
++/*
++   ------------------------------------------------
++   ---------- Internal Memory Pool Sizes ----------
++   ------------------------------------------------
++*/
++#define GAZELLE_MAX_CLIENTS (20000)
++#define GAZELLE_RESERVED_CLIENTS (2000)
+ 
+-#define TCP_SNDQUEUELOWAT (TCP_SND_QUEUELEN / 5)
++#define LWIP_SUPPORT_CUSTOM_PBUF 1
+ 
+-#define TCP_LISTEN_BACKLOG 1
++#define MEMP_MEM_MALLOC 0
++#define MEM_LIBC_MALLOC 0
++#define MEM_USE_POOLS 0
++#define MEMP_USE_CUSTOM_POOLS 0
+ 
+-#define TCP_DEFAULT_LISTEN_BACKLOG 0xff
++#define MEMP_NUM_TCP_PCB_LISTEN 3000
+ 
+-#define TCP_OVERSIZE 0
++#define MEMP_NUM_TCP_PCB (GAZELLE_MAX_CLIENTS + GAZELLE_RESERVED_CLIENTS)
+ 
+-#define LWIP_NETIF_API 1
++#define MEMP_NUM_NETCONN (GAZELLE_MAX_CLIENTS + GAZELLE_RESERVED_CLIENTS)
+ 
+-#define DEFAULT_TCP_RECVMBOX_SIZE 4096
++#define MEMP_NUM_SYS_SEM (GAZELLE_MAX_CLIENTS + GAZELLE_RESERVED_CLIENTS)
+ 
+-#define DEFAULT_ACCEPTMBOX_SIZE 1024
++#define MEMP_NUM_SYS_MBOX (GAZELLE_MAX_CLIENTS + GAZELLE_RESERVED_CLIENTS)
+ 
+-#define LWIP_NETCONN 1
++#define PBUF_POOL_SIZE (GAZELLE_MAX_CLIENTS * 2)
+ 
+-#define LWIP_TCPIP_TIMEOUT 0
++/* we use PBUF_POOL instead of PBUF_RAM in tcp_write, so reduce PBUF_RAM size,
++ * and do NOT let PBUF_POOL_BUFSIZE less then TCP_MSS
++*/
++#define MEMP_NUM_TCP_SEG (128 * 128 * 2)
++#define PER_TCP_PCB_BUFFER (16 * 128)
++#define MEM_SIZE (((PER_TCP_PCB_BUFFER + 128) * MEMP_NUM_TCP_SEG) >> 2)
+ 
+-#define LWIP_SOCKET 1
+ 
+-#define LWIP_TCP_KEEPALIVE 1
++/*
++   ---------------------------------
++   ---------- ARP options ----------
++   ---------------------------------
++*/
++#define LWIP_ARP 1
+ 
+-#define LWIP_STATS 1
++#define ARP_TABLE_SIZE 512
+ 
+-#define LWIP_STATS_DISPLAY 1
++#define ARP_QUEUEING 1
+ 
+-#define LWIP_TIMEVAL_PRIVATE 0
++#define ARP_QUEUE_LEN 32
+ 
+-#define USE_LIBOS 1
++#define ETHARP_SUPPORT_STATIC_ENTRIES 1
+ 
+-//#define LWIP_DEBUG 1
+ 
+-#define LWIP_PERF 1
++/*
++   ---------------------------------
++   ---------- IP options ----------
++   ---------------------------------
++*/
++#define LWIP_IPV4 1
+ 
+-#define LWIP_RECORD_PERF 0
++#define IP_FORWARD 0
+ 
+-#define LWIP_SOCKET_POLL   0
++#define IP_REASSEMBLY 1
+ 
+-#define USE_LIBOS_ZC_RING 0
++#define IP_HLEN 20
+ 
+-#define REUSE_IPPORT 1
+ 
+-#define MAX_CONN_NUM_PER_THREAD 65535
++/*
++   ---------------------------------
++   ---------- UDP options ----------
++   ---------------------------------
++*/
++#define LWIP_UDP 0
+ 
+-#define SO_REUSE 1
+ 
+-#define SIOCSHIWAT 1
++/*
++   ---------------------------------
++   ---------- TCP options ----------
++   ---------------------------------
++*/
++#define LWIP_TCP 1
+ 
+-#define O_NONBLOCK 04000 /* same as define in bits/fcntl-linux.h */
++#define TCP_HLEN 20
+ 
+-#define O_NDELAY O_NONBLOCK
++#define DEFAULT_ACCEPTMBOX_SIZE 1024
++#define DEFAULT_TCP_RECVMBOX_SIZE 4096
+ 
+-#define FIONBIO 0x5421 /* same as define in asm-generic/ioctls.h */
++#define TCP_LISTEN_BACKLOG 1
++#define TCP_DEFAULT_LISTEN_BACKLOG 0xff
+ 
+-#define LWIP_SUPPORT_CUSTOM_PBUF 1
++#define TCP_OVERSIZE 0
++#define LWIP_NETIF_TX_SINGLE_PBUF 0
+ 
+-#define MEM_LIBC_MALLOC 0
++#define TCP_MSS (FRAME_MTU - IP_HLEN - TCP_HLEN)
+ 
+-#define LWIP_TIMERS 1
++#define TCP_WND (2500 * TCP_MSS)
+ 
+-#define TCPIP_MBOX_SIZE (MEMP_NUM_TCPIP_MSG_API)
++#define TCP_SND_BUF (2500 * TCP_MSS)
+ 
+-#define TCP_PCB_HASH 1
++#define TCP_SND_QUEUELEN (8191)
+ 
+-#define USE_DPDK_LOG 1
++#define TCP_SNDLOWAT (TCP_SND_BUF / 5)
+ 
+-#define LWIP_EPOOL_WAIT_MAX_EVENTS 30
++#define TCP_SNDQUEUELOWAT (TCP_SND_QUEUELEN / 5)
+ 
+-#define ARP_TABLE_SIZE 512
++#define LWIP_TCP_KEEPALIVE 1
+ 
+-#define ARP_QUEUEING 1
++#define GAZELLE_TCP_MAX_CONN_PER_THREAD 65535
++#define GAZELLE_TCP_REUSE_IPPORT 1
+ 
+-#define ARP_QUEUE_LEN 32
+ 
+-#define MAX_PBUF_CHAIN_LEN 40
++/*
++   ------------------------------------
++   ---------- Socket options ----------
++   ------------------------------------
++*/
++#define LWIP_SOCKET 1
+ 
+-#define MIN_TSO_SEG_LEN 256
++#define LWIP_SOCKET_POLL   0
+ 
+-#define MAX_DATA_ACK_NUM 256
++#define LWIP_SO_SNDTIMEO 0
+ 
+-/*  ---------------------------------------
+- *  -------      NIC offloads      --------
+- *  ---------------------------------------
+- */
+-#define LWIP_CHECKSUM_CTRL_PER_NETIF 1 /* checksum ability check before checksum*/
++#define LWIP_SO_LINGER 0
+ 
+-// rx cksum
+-#define CHECKSUM_CHECK_IP     1 /*  master switch */
+-#define CHECKSUM_CHECK_TCP    1 /*  master switch */
+-// tx cksum
+-#define CHECKSUM_GEN_IP       1 /*  master switch */
+-#define CHECKSUM_GEN_TCP      1 /* master switch */
++#define SO_REUSE 1
+ 
+-// rx offload cksum
+-#define CHECKSUM_CHECK_IP_HW  (1 && CHECKSUM_CHECK_IP) /*  hardware switch */
+-#define CHECKSUM_CHECK_TCP_HW (1 && CHECKSUM_CHECK_TCP) /*  hardware switch */
+-// tx offload cksum
+-#define CHECKSUM_GEN_IP_HW    (1 && CHECKSUM_GEN_IP) /* hardware switch */
+-#define CHECKSUM_GEN_TCP_HW   (1 && CHECKSUM_GEN_TCP) /*  hardware switch */
++#define FIONBIO 0x5421 /* same as define in asm-generic/ioctls.h */
+ 
+-#define CHECKSUM_OFFLOAD_ALL (CHECKSUM_GEN_IP_HW || CHECKSUM_GEN_TCP_HW || CHECKSUM_CHECK_IP_HW || CHECKSUM_CHECK_TCP_HW)
++#define O_NONBLOCK 04000 /* same as define in bits/fcntl-linux.h */
+ 
+-#if USE_LIBOS
+-#define PER_THREAD __thread
+-#else
+-#define PER_THREAD
+-#endif
++#define SIOCSHIWAT 1
+ 
+ #endif /* __LWIPOPTS_H__ */
+diff --git a/src/include/lwipsock.h b/src/include/lwipsock.h
+index a807e3e..f78c9cf 100644
+--- a/src/include/lwipsock.h
++++ b/src/include/lwipsock.h
+@@ -59,7 +59,7 @@ union lwip_sock_lastdata {
+   struct pbuf *pbuf;
+ };
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ struct protocol_stack;
+ struct wakeup_poll;
+ struct rte_ring;
+@@ -92,7 +92,7 @@ struct lwip_sock {
+ #define LWIP_SOCK_FD_FREE_FREE 2
+ #endif
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+   char pad0 __rte_cache_aligned;
+   /* app thread use */
+   struct pbuf *recv_lastdata; /* unread data in one pbuf */
+@@ -131,7 +131,7 @@ struct lwip_sock {
+  * --------------- LIBNET references ----------------
+  * --------------------------------------------------
+  */
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+ extern uint32_t sockets_num;
+ extern struct lwip_sock *sockets;
+ extern void gazelle_connected_callback(struct netconn *conn);
+@@ -141,7 +141,7 @@ extern struct pbuf *write_lwip_data(struct lwip_sock *sock, uint16_t remain_size
+ extern void gazelle_init_sock(int32_t fd);
+ extern void gazelle_clean_sock(int32_t fd);
+ extern void write_lwip_over(struct lwip_sock *sock);
+-#endif /* USE_LIBOS */
++#endif /* GAZELLE_ENABLE */
+ 
+ struct lwip_sock *get_socket(int s);
+ struct lwip_sock *get_socket_by_fd(int s);
+diff --git a/src/netif/ethernet.c b/src/netif/ethernet.c
+index ab976a8..fd13f00 100644
+--- a/src/netif/ethernet.c
++++ b/src/netif/ethernet.c
+@@ -56,7 +56,7 @@
+ #include "netif/ppp/pppoe.h"
+ #endif /* PPPOE_SUPPORT */
+ 
+-#if USE_LIBOS && (CHECKSUM_GEN_TCP_HW || CHECKSUM_GEN_IP_HW)
++#if GAZELLE_ENABLE && (CHECKSUM_GEN_TCP_HW || CHECKSUM_GEN_IP_HW)
+ #include "dpdk_cksum.h"
+ #endif
+ 
+-- 
+2.33.0
+

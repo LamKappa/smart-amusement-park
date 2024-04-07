@@ -1,0 +1,425 @@
+From 5d9613fe21e2e02863517dbd9d5db539336351b9 Mon Sep 17 00:00:00 2001
+From: zhengjiebing <zhengjiebing_yewu@cmss.chinamobile.com>
+Date: Fri, 17 Nov 2023 20:37:56 +0800
+Subject: [PATCH] enable ipv6
+
+---
+ src/api/sockets.c                | 12 +++++++++++-
+ src/core/dir.mk                  |  4 +++-
+ src/core/init.c                  |  2 ++
+ src/core/ipv6/ip6.c              | 18 ++++++++++++++++--
+ src/core/ipv6/ip6_frag.c         |  4 ++++
+ src/core/tcp.c                   |  2 +-
+ src/core/tcp_in.c                |  4 ++--
+ src/core/tcp_out.c               |  2 ++
+ src/core/udp.c                   |  2 +-
+ src/include/dpdk_cksum.h         | 12 ++++++------
+ src/include/dpdk_version.h       |  1 +
+ src/include/lwip/priv/tcp_priv.h | 27 ++++++++++++++++++++-------
+ src/include/lwip/sockets.h       |  2 ++
+ src/include/lwip/tcp.h           | 21 ++++++++++++++++++++-
+ src/include/lwipopts.h           | 11 ++++++++++-
+ src/include/reg_sock.h           |  7 ++++++-
+ 16 files changed, 107 insertions(+), 24 deletions(-)
+
+diff --git a/src/api/sockets.c b/src/api/sockets.c
+index 6cff4cb..62052f2 100644
+--- a/src/api/sockets.c
++++ b/src/api/sockets.c
+@@ -113,6 +113,14 @@
+ #endif /* LWIP_IPV4 */
+ 
+ #if LWIP_IPV6
++#if GAZELLE_ENABLE
++#define IP6ADDR_PORT_TO_SOCKADDR(sin6, ipaddr, port) do { \
++      (sin6)->sin6_family = AF_INET6; \
++      (sin6)->sin6_port = lwip_htons((port)); \
++      (sin6)->sin6_flowinfo = 0; \
++      inet6_addr_from_ip6addr(&(sin6)->sin6_addr, ipaddr); \
++      (sin6)->sin6_scope_id = ip6_addr_zone(ipaddr); }while(0)
++#else
+ #define IP6ADDR_PORT_TO_SOCKADDR(sin6, ipaddr, port) do { \
+       (sin6)->sin6_len = sizeof(struct sockaddr_in6); \
+       (sin6)->sin6_family = AF_INET6; \
+@@ -120,6 +128,7 @@
+       (sin6)->sin6_flowinfo = 0; \
+       inet6_addr_from_ip6addr(&(sin6)->sin6_addr, ipaddr); \
+       (sin6)->sin6_scope_id = ip6_addr_zone(ipaddr); }while(0)
++#endif /* GAZELLE_ENABLE */
+ #define SOCKADDR6_TO_IP6ADDR_PORT(sin6, ipaddr, port) do { \
+     inet6_addr_to_ip6addr(ip_2_ip6(ipaddr), &((sin6)->sin6_addr)); \
+     if (ip6_addr_has_scope(ip_2_ip6(ipaddr), IP6_UNKNOWN)) { \
+@@ -555,7 +564,8 @@ alloc_socket(struct netconn *newconn, int accepted, int flags)
+   LWIP_UNUSED_ARG(accepted);
+ 
+ #if GAZELLE_ENABLE
+-  int type, protocol = 0, domain = AF_INET;
++  int type, protocol = 0;
++  int domain = NETCONNTYPE_ISIPV6(newconn->type) ? AF_INET6 : AF_INET;
+   switch (NETCONNTYPE_GROUP(newconn->type)) {
+     case NETCONN_RAW:
+       type = SOCK_RAW;
+diff --git a/src/core/dir.mk b/src/core/dir.mk
+index 57a9670..69b43d1 100644
+--- a/src/core/dir.mk
++++ b/src/core/dir.mk
+@@ -1,6 +1,8 @@
+ SRC = def.c inet_chksum.c init.c ip.c mem.c memp.c netif.c pbuf.c \
+ 	  raw.c tcp.c tcp_in.c tcp_out.c timeouts.c udp.c stats.c\
+ 	  ipv4/icmp.c ipv4/ip4_addr.c ipv4/ip4_frag.c ipv4/etharp.c \
+-	  ipv4/ip4.c ipv4/igmp.c
++	  ipv4/ip4.c ipv4/igmp.c ipv6/icmp6.c ipv6/ip6_addr.c ipv6/ip6_frag.c \
++	  ipv6/ethip6.c ipv6/ip6.c ipv6/dhcp6.c ipv6/inet6.c \
++	  ipv6/mld6.c ipv6/nd6.c
+ 
+ $(eval $(call register_dir, core, $(SRC)))
+diff --git a/src/core/init.c b/src/core/init.c
+index 60e1c68..6880fd3 100644
+--- a/src/core/init.c
++++ b/src/core/init.c
+@@ -347,7 +347,9 @@ lwip_init(void)
+   mem_init();
+   memp_init();
+   pbuf_init();
++#if !GAZELLE_ENABLE
+   netif_init();
++#endif  /* GAZELLE_ENABLE */
+ #if LWIP_IPV4
+   ip_init();
+ #if LWIP_ARP
+diff --git a/src/core/ipv6/ip6.c b/src/core/ipv6/ip6.c
+index 9d904ec..101e599 100644
+--- a/src/core/ipv6/ip6.c
++++ b/src/core/ipv6/ip6.c
+@@ -60,6 +60,10 @@
+ #include "lwip/debug.h"
+ #include "lwip/stats.h"
+ 
++#if GAZELLE_ENABLE && (CHECKSUM_CHECK_IP_HW || CHECKSUM_GEN_IP_HW)
++#include "dpdk_cksum.h"
++#endif
++
+ #ifdef LWIP_HOOK_FILENAME
+ #include LWIP_HOOK_FILENAME
+ #endif
+@@ -1232,6 +1236,10 @@ ip6_output_if_src(struct pbuf *p, const ip6_addr_t *src, const ip6_addr_t *dest,
+     /* src cannot be NULL here */
+     ip6_addr_copy_to_packed(ip6hdr->src, *src);
+ 
++#if CHECKSUM_GEN_IP_HW
++    iph_cksum_set(p, IP6_HLEN, 0);
++#endif /* CHECKSUM_GEN_IP_HW */
++
+   } else {
+     /* IP header already included in p */
+     ip6hdr = (struct ip6_hdr *)p->payload;
+@@ -1270,9 +1278,15 @@ ip6_output_if_src(struct pbuf *p, const ip6_addr_t *src, const ip6_addr_t *dest,
+ #endif /* ENABLE_LOOPBACK */
+ #if LWIP_IPV6_FRAG
+   /* don't fragment if interface has mtu set to 0 [loopif] */
+-  if (netif_mtu6(netif) && (p->tot_len > nd6_get_destination_mtu(dest, netif))) {
+-    return ip6_frag(p, netif, dest);
++#if GAZELLE_ENABLE
++  if (!(netif_get_txol_flags(netif) & DEV_TX_OFFLOAD_TCP_TSO)) {
++#endif
++    if (netif_mtu6(netif) && (p->tot_len > nd6_get_destination_mtu(dest, netif))) {
++      return ip6_frag(p, netif, dest);
++    }
++#if GAZELLE_ENABLE
+   }
++#endif
+ #endif /* LWIP_IPV6_FRAG */
+ 
+   LWIP_DEBUGF(IP6_DEBUG, ("netif->output_ip6()\n"));
+diff --git a/src/core/ipv6/ip6_frag.c b/src/core/ipv6/ip6_frag.c
+index 8b352f5..67e36bf 100644
+--- a/src/core/ipv6/ip6_frag.c
++++ b/src/core/ipv6/ip6_frag.c
+@@ -689,6 +689,7 @@ ip6_frag_free_pbuf_custom_ref(struct pbuf_custom_ref* p)
+   memp_free(MEMP_FRAG_PBUF, p);
+ }
+ 
++#if !GAZELLE_ENABLE
+ /** Free-callback function to free a 'struct pbuf_custom_ref', called by
+  * pbuf_free. */
+ static void
+@@ -702,6 +703,7 @@ ip6_frag_free_pbuf_custom(struct pbuf *p)
+   }
+   ip6_frag_free_pbuf_custom_ref(pcr);
+ }
++#endif  /* !GAZELLE_ENABLE */
+ #endif /* !LWIP_NETIF_TX_SINGLE_PBUF */
+ 
+ /**
+@@ -816,7 +818,9 @@ ip6_frag(struct pbuf *p, struct netif *netif, const ip6_addr_t *dest)
+       }
+       pbuf_ref(p);
+       pcr->original = p;
++#if !GAZELLE_ENABLE
+       pcr->pc.custom_free_function = ip6_frag_free_pbuf_custom;
++#endif  /* !GAZELLE_ENABLE */
+ 
+       /* Add it to end of rambuf's chain, but using pbuf_cat, not pbuf_chain
+        * so that it is removed when pbuf_dechain is later called on rambuf.
+diff --git a/src/core/tcp.c b/src/core/tcp.c
+index c44664e..963b8a4 100644
+--- a/src/core/tcp.c
++++ b/src/core/tcp.c
+@@ -1155,7 +1155,7 @@ tcp_new_port(void)
+ 
+       if (__atomic_load_n(&port_state[tcp_port - TCP_LOCAL_PORT_RANGE_START], __ATOMIC_ACQUIRE) == 0) {
+ #if GAZELLE_ENABLE
+-        if (port_in_stack_queue(pcb->remote_ip.addr, pcb->local_ip.addr, pcb->remote_port, tcp_port)) {
++        if (port_in_stack_queue(pcb->remote_ip, pcb->local_ip, pcb->remote_port, tcp_port)) {
+             tmp_port = tcp_port;
+             __atomic_store_n(&port_state[tcp_port - TCP_LOCAL_PORT_RANGE_START], 1, __ATOMIC_RELEASE);
+             break;
+diff --git a/src/core/tcp_in.c b/src/core/tcp_in.c
+index ecbd616..7154659 100644
+--- a/src/core/tcp_in.c
++++ b/src/core/tcp_in.c
+@@ -309,8 +309,8 @@ tcp_input(struct pbuf *p, struct netif *inp)
+   prev = NULL;
+ 
+ #if GAZELLE_TCP_PCB_HASH
+-  idx = TUPLE4_HASH_FN( ip_current_dest_addr()->addr, tcphdr->dest,
+-                      ip_current_src_addr()->addr, tcphdr->src) &
++  idx = TUPLE4_HASH_FN( ip_current_dest_addr(), tcphdr->dest,
++                      ip_current_src_addr(), tcphdr->src) &
+          (tcp_active_htable->size - 1);
+   head = &tcp_active_htable->array[idx].chain;
+   tcppcb_hlist_for_each(pcb, node, head) {
+diff --git a/src/core/tcp_out.c b/src/core/tcp_out.c
+index 073d989..137e3cf 100644
+--- a/src/core/tcp_out.c
++++ b/src/core/tcp_out.c
+@@ -139,7 +139,9 @@ static err_t tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb, struct
+ static struct netif *
+ tcp_route(const struct tcp_pcb *pcb, const ip_addr_t *src, const ip_addr_t *dst)
+ {
++#if LWIP_IPV6
+   LWIP_UNUSED_ARG(src); /* in case IPv4-only and source-based routing is disabled */
++#endif /* LWIP_IPV6 */
+ 
+   if ((pcb != NULL) && (pcb->netif_idx != NETIF_NO_INDEX)) {
+     return netif_get_by_index(pcb->netif_idx);
+diff --git a/src/core/udp.c b/src/core/udp.c
+index 828a489..727a705 100644
+--- a/src/core/udp.c
++++ b/src/core/udp.c
+@@ -132,7 +132,7 @@ udp_new_port(struct udp_pcb *dst_pcb)
+     }
+ 
+     if (__atomic_load_n(&port_state[udp_port - UDP_LOCAL_PORT_RANGE_START], __ATOMIC_ACQUIRE) == 0) {
+-      if (port_in_stack_queue(dst_pcb->remote_ip.addr, dst_pcb->local_ip.addr, dst_pcb->remote_port, udp_port)) {
++      if (port_in_stack_queue(dst_pcb->remote_ip, dst_pcb->local_ip, dst_pcb->remote_port, udp_port)) {
+           tmp_port = udp_port;
+           __atomic_store_n(&port_state[udp_port - UDP_LOCAL_PORT_RANGE_START], 1, __ATOMIC_RELEASE);
+           break;
+diff --git a/src/include/dpdk_cksum.h b/src/include/dpdk_cksum.h
+index b8056f9..38cfb96 100644
+--- a/src/include/dpdk_cksum.h
++++ b/src/include/dpdk_cksum.h
+@@ -66,7 +66,7 @@ static inline void ethh_cksum_set(struct pbuf *p, u16_t len) {
+ 
+ // replaces IPH_CHKSUM_SET
+ static inline void iph_cksum_set(struct pbuf *p, u16_t len, bool do_ipcksum) {
+-    p->ol_flags |= RTE_MBUF_F_TX_IPV4;
++    p->ol_flags |= ((len == IP_HLEN) ? RTE_MBUF_F_TX_IPV4 : RTE_MBUF_F_TX_IPV6);
+     if (do_ipcksum) {
+         p->ol_flags |= RTE_MBUF_F_TX_IP_CKSUM;
+     }
+@@ -95,16 +95,16 @@ static inline void udph_cksum_set(struct pbuf *p, u16_t len) {
+ static inline u16_t ip_chksum_pseudo_offload(u8_t proto, u16_t proto_len,
+                                              const ip_addr_t *src, const ip_addr_t *dst)
+ {
+-    struct ipv4_psd_header {
+-        uint32_t src_addr; /* IP address of source host. */
+-        uint32_t dst_addr; /* IP address of destination host. */
++    struct ip_psd_header {
++        ip_addr_t src_addr; /* IP address of source host. */
++        ip_addr_t dst_addr; /* IP address of destination host. */
+         uint8_t  zero;     /* zero. */
+         uint8_t  proto;    /* L4 protocol type. */
+         uint16_t len;      /* L4 length. */
+     } psd_hdr;
+ 
+-    psd_hdr.src_addr = ip4_addr_get_u32(src);
+-    psd_hdr.dst_addr = ip4_addr_get_u32(dst);
++    ip_addr_copy(psd_hdr.src_addr, *src);
++    ip_addr_copy(psd_hdr.dst_addr, *dst);
+     psd_hdr.proto = proto;
+     psd_hdr.len = lwip_htons(proto_len);
+     psd_hdr.zero = 0;
+diff --git a/src/include/dpdk_version.h b/src/include/dpdk_version.h
+index c90ddb8..e61d0b3 100644
+--- a/src/include/dpdk_version.h
++++ b/src/include/dpdk_version.h
+@@ -43,6 +43,7 @@
+ #define RTE_MBUF_F_RX_IP_CKSUM_BAD  PKT_RX_IP_CKSUM_BAD
+ #define RTE_MBUF_F_RX_L4_CKSUM_BAD  PKT_RX_L4_CKSUM_BAD
+ #define RTE_MBUF_F_TX_IPV4          PKT_TX_IPV4 
++#define RTE_MBUF_F_TX_IPV6          PKT_TX_IPV6
+ #define RTE_MBUF_F_TX_IP_CKSUM      PKT_TX_IP_CKSUM 
+ #define RTE_MBUF_F_TX_TCP_CKSUM     PKT_TX_TCP_CKSUM
+ #define RTE_MBUF_F_TX_TCP_SEG       PKT_TX_TCP_SEG
+diff --git a/src/include/lwip/priv/tcp_priv.h b/src/include/lwip/priv/tcp_priv.h
+index ddae3fd..9b1341c 100644
+--- a/src/include/lwip/priv/tcp_priv.h
++++ b/src/include/lwip/priv/tcp_priv.h
+@@ -347,11 +347,24 @@ static inline int vdev_reg_done(enum reg_ring_type reg_type, const struct tcp_pc
+   LWIP_ASSERT("Invalid parameter", pcb != NULL);
+ 
+   struct gazelle_quintuple qtuple;
+-  qtuple.protocol   = 0;
+-  qtuple.src_ip     = pcb->local_ip.addr;
+-  qtuple.src_port   = lwip_htons(pcb->local_port);
+-  qtuple.dst_ip     = pcb->remote_ip.addr;
+-  qtuple.dst_port   = lwip_htons(pcb->remote_port);
++  if (IP_IS_V4_VAL(pcb->local_ip)) {
++      qtuple.protocol   = 0;
++      qtuple.src_ip     = ip_2_ip4(&pcb->local_ip)->addr;
++      qtuple.src_port   = lwip_htons(pcb->local_port);
++      qtuple.dst_ip     = ip_2_ip4(&pcb->remote_ip)->addr;
++      qtuple.dst_port   = lwip_htons(pcb->remote_port);
++  } else {
++#if LWIP_IPV6
++      qtuple.protocol   = 1;
++      qtuple.src_port   = lwip_htons(pcb->local_port);
++      qtuple.dst_port   = lwip_htons(pcb->remote_port);
++
++      for (int i = 0; i < 4; i++) {
++          qtuple.src_ip6[i] = pcb->local_ip.u_addr.ip6.addr[i];
++          qtuple.dst_ip6[i] = pcb->remote_ip.u_addr.ip6.addr[i];
++      }
++#endif
++  }
+ 
+ #if GAZELLE_TCP_REUSE_IPPORT
+   if (reg_type == REG_RING_TCP_CONNECT_CLOSE) {
+@@ -474,8 +487,8 @@ static inline void vdev_unreg_done(const struct tcp_pcb *pcb)
+     u32_t idx;                                     \
+     struct hlist_head *hd;                         \
+     struct tcp_hash_table *htb = pcbs;             \
+-    idx = TUPLE4_HASH_FN((npcb)->local_ip.addr, (npcb)->local_port,  \
+-                       (npcb)->remote_ip.addr, (npcb)->remote_port) & \
++    idx = TUPLE4_HASH_FN(&((npcb)->local_ip), (npcb)->local_port,  \
++                       &((npcb)->remote_ip), (npcb)->remote_port) & \
+                        (htb->size - 1);            \
+     hd = &htb->array[idx].chain;                   \
+     hlist_add_head(&(npcb)->tcp_node, hd);         \
+diff --git a/src/include/lwip/sockets.h b/src/include/lwip/sockets.h
+index cfec6a5..5715df4 100644
+--- a/src/include/lwip/sockets.h
++++ b/src/include/lwip/sockets.h
+@@ -88,7 +88,9 @@ struct sockaddr_in {
+ 
+ #if LWIP_IPV6
+ struct sockaddr_in6 {
++#if !GAZELLE_ENABLE
+   u8_t            sin6_len;      /* length of this structure    */
++#endif /* GAZELLE_ENABLE */
+   sa_family_t     sin6_family;   /* AF_INET6                    */
+   in_port_t       sin6_port;     /* Transport layer port #      */
+   u32_t           sin6_flowinfo; /* IPv6 flow information       */
+diff --git a/src/include/lwip/tcp.h b/src/include/lwip/tcp.h
+index 959df3e..91a86c9 100644
+--- a/src/include/lwip/tcp.h
++++ b/src/include/lwip/tcp.h
+@@ -476,7 +476,26 @@ static inline unsigned int jhash_3words(unsigned int a, unsigned int b, unsigned
+   return c;
+ }
+ 
+-#define TUPLE4_HASH_FN(laddr, lport, faddr, fport)	 jhash_3words(laddr, faddr,lport|(fport<<16))
++static inline unsigned int jhash_3words6(unsigned int *a, unsigned int *b, unsigned int c)
++{
++  for (int i = 0; i < 4; i++) {
++    unsigned int e = *((unsigned int *)a + i) + JHASH_INITVAL;
++    unsigned int f = *((unsigned int *)b + i) + JHASH_INITVAL;
++
++    __jhash_final(e, f, c);
++  }
++
++  return c;
++}
++
++#if LWIP_IPV4 && LWIP_IPV6
++#define TUPLE4_HASH_FN(laddr, lport, faddr, fport)  \
++      (IP_IS_V4(laddr) ? jhash_3words(ip_2_ip4(laddr)->addr, ip_2_ip4(faddr)->addr, lport|(fport<<16))  \
++      : jhash_3words6(ip_2_ip6(laddr)->addr, ip_2_ip6(faddr)->addr, lport|(fport<<16)))
++#elif LWIP_IPV4
++#define TUPLE4_HASH_FN(laddr, lport, faddr, fport)  \
++      jhash_3words(ip_2_ip4(laddr)->addr, ip_2_ip4(faddr)->addr, lport|(fport<<16))
++#endif
+ 
+ #define tcppcb_hlist_for_each(tcppcb, node, list) \
+   hlist_for_each_entry(tcppcb, node, list, tcp_node)
+diff --git a/src/include/lwipopts.h b/src/include/lwipopts.h
+index a18179e..9ab5cde 100644
+--- a/src/include/lwipopts.h
++++ b/src/include/lwipopts.h
+@@ -178,6 +178,14 @@
+ #define IP_HLEN 20
+ 
+ 
++/*
++   -------------------------------------
++   ----------- IPv6  options -----------
++   -------------------------------------
++*/
++#define LWIP_IPV6                1
++#define IP6_HLEN                 40
++
+ /*
+    ---------------------------------
+    ---------- UDP options ----------
+@@ -211,7 +219,7 @@
+ #define TCP_OVERSIZE TCP_MSS
+ #define LWIP_NETIF_TX_SINGLE_PBUF 1
+ 
+-#define TCP_MSS (FRAME_MTU - IP_HLEN - TCP_HLEN)
++#define TCP_MSS (FRAME_MTU - IP6_HLEN - TCP_HLEN - VLAN_LEN)
+ 
+ #define TCP_WND (2500 * TCP_MSS)
+ 
+@@ -263,5 +271,6 @@
+ 
+ #define ETHARP_SUPPORT_VLAN 1
+ #define LWIP_VLAN_PCP 1
++#define VLAN_LEN 4
+ 
+ #endif /* __LWIPOPTS_H__ */
+diff --git a/src/include/reg_sock.h b/src/include/reg_sock.h
+index 5d5710d..5a5e971 100644
+--- a/src/include/reg_sock.h
++++ b/src/include/reg_sock.h
+@@ -34,6 +34,7 @@
+ #define __REG_SOCK_H__
+ 
+ #include <stdbool.h>
++#include "lwip/ip_addr.h"
+ 
+ enum reg_ring_type {
+     REG_RING_TCP_LISTEN = 0,
+@@ -50,6 +51,10 @@ struct gazelle_quintuple {
+     uint16_t dst_port;
+     uint32_t src_ip;
+     uint32_t dst_ip;
++#if LWIP_IPV6
++    uint32_t src_ip6[4];
++    uint32_t dst_ip6[4];
++#endif
+ };
+ 
+ struct reg_ring_msg {
+@@ -60,6 +65,6 @@ struct reg_ring_msg {
+ };
+ 
+ extern int vdev_reg_xmit(enum reg_ring_type type, struct gazelle_quintuple *qtuple);
+-extern bool port_in_stack_queue(uint32_t src_ip, uint32_t dst_ip, uint16_t src_port, uint16_t dst_port);
++extern bool port_in_stack_queue(ip_addr_t src_ip, ip_addr_t dst_ip, uint16_t src_port, uint16_t dst_port);
+ 
+ #endif /* __REG_SOCK_H__ */
+-- 
+2.27.0
+

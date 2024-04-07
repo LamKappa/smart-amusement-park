@@ -1,0 +1,44 @@
+# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//foundation/aafwk/standard/aafwk.gni")
+
+abilityms_files = [
+  "${services_path}/abilitymgr/src/ability_connect_manager.cpp",
+  "${services_path}/abilitymgr/src/ability_connect_callback_stub.cpp",
+  "${services_path}/abilitymgr/src/ability_event_handler.cpp",
+  "${services_path}/abilitymgr/src/ability_manager_service.cpp",
+  "${services_path}/abilitymgr/src/ability_manager_stub.cpp",
+  "${services_path}/abilitymgr/src/ability_record.cpp",
+  "${services_path}/abilitymgr/src/ability_scheduler_stub.cpp",
+  "${services_path}/abilitymgr/src/ability_stack_manager.cpp",
+  "${services_path}/abilitymgr/src/ability_token_stub.cpp",
+  "${services_path}/abilitymgr/src/app_scheduler.cpp",
+  "${services_path}/abilitymgr/src/connection_record.cpp",
+  "${services_path}/abilitymgr/src/data_ability_manager.cpp",
+  "${services_path}/abilitymgr/src/data_ability_record.cpp",
+  "${services_path}/abilitymgr/src/lifecycle_deal.cpp",
+  "${services_path}/abilitymgr/src/mission_record.cpp",
+  "${services_path}/abilitymgr/src/mission_stack.cpp",
+  "${services_path}/abilitymgr/src/lifecycle_state_info.cpp",
+  "${services_path}/abilitymgr/src/stack_info.cpp",
+  "${services_path}/abilitymgr/src/mission_stack_info.cpp",
+  "${services_path}/abilitymgr/src/mission_record_info.cpp",
+  "${services_path}/abilitymgr/src/ability_record_info.cpp",
+  "${services_path}/abilitymgr/src/recent_mission_info.cpp",
+  "${services_path}/abilitymgr/src/mission_description_info.cpp",
+  "${services_path}/abilitymgr/src/image_info.cpp",
+  "${services_path}/abilitymgr/src/mission_snapshot_info.cpp",
+  "${services_path}/abilitymgr/src/kernal_system_app_manager.cpp",
+  "${services_path}/abilitymgr/src/caller_info.cpp",
+]

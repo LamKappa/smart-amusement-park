@@ -1,0 +1,15 @@
+ohos_build_compiler_specified = "gcc"
+product_path = "/home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/vendor/chinasoftinc/hilink_3861_Soil"
+device_path = "/home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/device/hisilicon/hispark_pegasus/sdk_liteos"
+ohos_kernel_type = "liteos_m"
+enable_Soil = true
+enable_Bluetooth = true
+enable_oled = true
+enable_nfc = true
+disable_huks_binary = false
+disable_authenticate = false
+ohos_build_type = "debug"
+ohos_build_time = "1642984612677"
+ohos_build_datetime = "2022-01-24 16:36:52"
+ohos_full_compile = true
+ohos_build_enable_ccache = true

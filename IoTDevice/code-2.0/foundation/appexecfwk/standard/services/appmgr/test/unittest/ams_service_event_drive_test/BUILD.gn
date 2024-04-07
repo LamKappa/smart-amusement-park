@@ -1,0 +1,70 @@
+# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/test.gni")
+import("//foundation/appexecfwk/standard/appexecfwk.gni")
+
+module_output_path = "appexecfwk_standard/appmgrservice"
+
+ohos_unittest("AmsServiceEventDriveTest") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "//foundation/appexecfwk/standard/services/appmgr/test/mock/include",
+    "//foundation/distributedschedule/safwk/interfaces/innerkits/safwk",
+    "//utils/native/base/include",
+    "//foundation/distributedschedule/samgr/interfaces/innerkits/samgr_proxy/include/",
+    "//foundation/distributedschedule/samgr/adapter/interfaces/innerkits/include/",
+  ]
+
+  sources = [
+    "${services_path}/appmgr/src/ability_running_record.cpp",
+    "${services_path}/appmgr/src/app_death_recipient.cpp",
+    "${services_path}/appmgr/src/app_mgr_service.cpp",
+    "${services_path}/appmgr/src/app_mgr_service_event_handler.cpp",
+    "${services_path}/appmgr/src/app_mgr_service_inner.cpp",
+    "${services_path}/appmgr/src/app_running_record.cpp",
+    "${services_path}/appmgr/src/app_spawn_client.cpp",
+    "${services_path}/appmgr/src/app_spawn_msg_wrapper.cpp",
+    "${services_path}/appmgr/src/app_spawn_socket.cpp",
+  ]
+
+  sources += [ "ams_service_event_drive_test.cpp" ]
+
+  configs = [ "${libs_path}/libeventhandler:libeventhandler_config" ]
+  cflags = []
+  if (target_cpu == "arm") {
+    cflags += [ "-DBINDER_IPC_32BIT" ]
+  }
+  deps = [
+    "${libs_path}/libeventhandler:libeventhandler_target",
+    "${services_path}/appmgr/test:appmgr_test_source",
+    "//base/startup/appspawn_standard:appspawn_socket_client",
+    "//foundation/aafwk/standard/interfaces/innerkits/base:base",
+    "//foundation/aafwk/standard/interfaces/innerkits/want:want",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core:appexecfwk_core",
+    "//foundation/appexecfwk/standard/services/appmgr:libams",
+    "//foundation/distributedschedule/safwk/interfaces/innerkits/safwk:system_ability_fwk",
+  ]
+
+  external_deps = [
+    "hiviewdfx_hilog_native:libhilog",
+    "ipc:ipc_core",
+  ]
+}
+
+group("unittest") {
+  testonly = true
+
+  deps = [ ":AmsServiceEventDriveTest" ]
+}

@@ -1,0 +1,92 @@
+root {
+    device_info {
+        test_host :: host {
+            hostName = "test_host";
+            priority = 180;
+            device_hdf_test :: device {
+                device0 :: deviceNode {
+                    policy = 2;
+                    priority = 10;
+                    preload = 0;
+                    permission = 0644;
+                    moduleName = "HDF_TEST";
+                    serviceName = "HDF_TEST";
+                }
+                device1 :: deviceNode {
+                    policy = 2;
+                    priority = 10;
+                    preload = 0;
+                    permission = 0644;
+                    moduleName = "sample_driver";
+                    serviceName = "sample_service";
+                }
+            }
+            device_platform_test :: device {
+                gpio_tester :: deviceNode {
+                    policy = 1;
+                    priority = 101;
+                    preload = 0;
+                    permission = 0644;
+                    moduleName = "PLATFORM_GPIO_TEST";
+                    deviceMatchAttr = "GPIO_TEST";
+                    serviceName = "GPIO_TEST";
+                }
+                i2c_tester :: deviceNode {
+                    policy = 2;
+                    priority = 101;
+                    preload = 0;
+                    permission = 0644;
+                    moduleName = "PLATFORM_I2C_TEST";
+                    deviceMatchAttr = "I2C_TEST";
+                    serviceName = "I2C_TEST";
+                }
+                watchdog_tester :: deviceNode {
+                    policy = 1;
+                    priority = 105;
+                    preload = 0;
+                    permission = 0644;
+                    moduleName = "PLATFORM_WATCHDOG_TEST";
+                    deviceMatchAttr = "WATCHDOG_TEST";
+                    serviceName = "WATCHDOG_TEST";
+                }
+                spi_test :: deviceNode {
+                    policy = 1;
+                    priority = 100;
+                    preload = 0;
+                    permission = 0644;
+                    moduleName = "PLATFORM_SPI_TEST";
+                    serviceName = "SPI_TEST";
+                    deviceMatchAttr = "SPI_TEST";
+                }
+                uart_test :: deviceNode {
+                    policy = 1;
+                    priority = 100;
+                    preload = 0;
+                    permission = 0644;
+                    moduleName = "PLATFORM_UART_TEST";
+                    serviceName = "UART_TEST";
+                    deviceMatchAttr = "UART_TEST";
+                }
+                sdio_tester :: deviceNode {
+                    policy = 1;
+                    priority = 100;
+                    preload = 0;
+                    permission = 0644;
+                    moduleName = "PLATFORM_SDIO_TEST";
+                    serviceName = "SDIO_TEST";
+                    deviceMatchAttr = "SDIO_TEST";
+                }
+                platform_test:: deviceNode {
+                    policy = 1;
+                    priority = 150;
+                    preload = 0;
+                    permission = 0644;
+                    moduleName = "PLATFORM_TEST_DRIVER";
+                    serviceName = "PLATFORM_TEST";
+                    deviceMatchAttr = "platform_test";
+                }
+            }
+        }
+    }
+}
+

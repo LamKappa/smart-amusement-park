@@ -1,0 +1,27 @@
+From 19c51d7baf7eeeae72525f6b716253557be2b31c Mon Sep 17 00:00:00 2001
+From: wuchangsheng <wuchangsheng2@huawei.com>
+Date: Tue, 29 Jun 2021 14:12:25 +0800
+Subject: [PATCH] add-conn-check
+
+---
+ src/core/tcp_in.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/core/tcp_in.c b/src/core/tcp_in.c
+index c3d1f54..57186c7 100644
+--- a/src/core/tcp_in.c
++++ b/src/core/tcp_in.c
+@@ -752,6 +752,10 @@ tcp_listen_input(struct tcp_pcb_listen *pcb)
+ #endif
+     TCP_REG_ACTIVE(npcb);
+ 
++#if USE_LIBOS
++    vdev_reg_done(REG_RING_TCP_CONNECT, npcb);
++#endif 
++
+     /* Parse any options in the SYN. */
+     tcp_parseopt(npcb);
+     npcb->snd_wnd = tcphdr->wnd;
+-- 
+2.23.0
+

@@ -1,0 +1,11 @@
+[
+    {
+        "Name"                  : "ltp",
+        "License"               : "GPL V2.0",
+        "License File"          : "COPYING",
+        "Version Number"        : "2.0",
+        "Owner"                 : "liuxun@huawei.com",
+        "Upstream URL"          : "https://github.com/linux-test-project/ltp",
+        "Description"           : "The LTP testsuite contains a collection of tools for testing the Linux kernel and related features."
+    }
+]

@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ -->
+<configuration ver="2.0">
+<target name="ams_aa_command_test">
+    <depend resource="ams_page_ability_bundle/." pushpath="/system/vendor/" findpath="res" presetcmd=""/>
+    <preparer>
+        <option name="push" value="ams_page_ability_bundle/. -> /system/vendor/" src="res" />
+      </preparer>
+  </target>
+  <target name="ams_app_process_manage_test">
+    <depend resource="ams_page_ability_bundle/." pushpath="/system/vendor/" findpath="res" presetcmd=""/>
+    <preparer>
+        <option name="push" value="ams_page_ability_bundle/. -> /system/vendor/" src="res" />
+      </preparer>
+  </target>
+  <target name="ams_page_ability_test">
+    <depend resource="ams_page_ability_bundle/." pushpath="/system/vendor/" findpath="res" presetcmd=""/>
+    <preparer>
+        <option name="push" value="ams_page_ability_bundle/. -> /system/vendor/" src="res" />
+      </preparer>
+  </target>
+  <target name="ams_kit_test">
+    <depend resource="ams_page_ability_bundle/." pushpath="/system/vendor/" findpath="res" presetcmd=""/>
+    <depend resource="../../../../event/common/test/systemtest/common/resource/testconfig/stress/."
+        pushpath="/testconfig" findpath="res" presetcmd=""/>
+    <preparer>
+        <option name="push" value="ams_page_ability_bundle/. -> /system/vendor/" src="res" />
+      </preparer>
+  </target>
+  <target name="ams_kit_a_test">
+    <depend resource="ams_data_ability_bundle/." pushpath="/system/vendor/" findpath="res" presetcmd=""/>
+    <depend resource="../../../../event/common/test/systemtest/common/resource/testconfig/stress/."
+        pushpath="/testconfig" findpath="res" presetcmd=""/>
+    <preparer>
+        <option name="push" value="ams_data_ability_bundle/. -> /system/vendor/" src="res" />
+      </preparer>
+  </target>
+  <target name="ams_kit_service_ability_test">
+    <depend resource="ams_service_ability_bundle/." pushpath="/system/vendor/" findpath="res" presetcmd=""/>
+    <depend resource="../../../../event/common/test/systemtest/common/resource/testconfig/stress/."
+        pushpath="/testconfig" findpath="res" presetcmd=""/>
+    <preparer>
+        <option name="push" value="ams_service_ability_bundle/. -> /system/vendor/" src="res" />
+      </preparer>
+  </target>
+  <target name="ams_service_ability_test">
+    <depend resource="ams_service_ability_bundle/." pushpath="/system/vendor/" findpath="res" presetcmd=""/>
+    <preparer>
+        <option name="push" value="ams_service_ability_bundle/. -> /system/vendor/" src="res" />
+      </preparer>
+  </target>
+  <target name="ams_kit_data_test">
+    <depend resource="ams_data_ability_bundle/." pushpath="/system/vendor/" findpath="res" presetcmd=""/>
+    <depend resource="../../../../event/common/test/systemtest/common/resource/testconfig/stress/."
+        pushpath="/testconfig" findpath="res" presetcmd=""/>
+    <preparer>
+        <option name="push" value="ams_data_ability_bundle/. -> /system/vendor/" src="res" />
+      </preparer>
+  </target>
+  <target name="ams_data_ability_test">
+    <depend resource="ams_data_ability_bundle/." pushpath="/system/vendor/" findpath="res" presetcmd=""/>
+    <preparer>
+        <option name="push" value="ams_data_ability_bundle/. -> /system/vendor/" src="res" />
+      </preparer>
+  </target>
+  <target name="ams_kit_want_test">
+    <depend resource="ams_page_ability_bundle/." pushpath="/system/vendor/" findpath="res" presetcmd=""/>
+    <depend resource="../../../../event/common/test/systemtest/common/resource/testconfig/stress/."
+        pushpath="/testconfig" findpath="res" presetcmd=""/>
+    <preparer>
+        <option name="push" value="ams_page_ability_bundle/. -> /system/vendor/" src="res" />
+      </preparer>
+  </target>
+  <target name="ams_kit_skills_test">
+    <depend resource="ams_page_ability_bundle/." pushpath="/system/vendor/" findpath="res" presetcmd=""/>
+    <depend resource="../../../../event/common/test/systemtest/common/resource/testconfig/stress/."
+        pushpath="/testconfig" findpath="res" presetcmd=""/>
+    <preparer>
+        <option name="push" value="ams_page_ability_bundle/. -> /system/vendor/" src="res" />
+      </preparer>
+  </target>
+  <target name="ams_kit_lifecycle_test">
+    <depend resource="ams_service_ability_bundle/." pushpath="/system/vendor/" findpath="res" presetcmd=""/>
+    <depend resource="../../../../event/common/test/systemtest/common/resource/testconfig/stress/."
+        pushpath="/testconfig" findpath="res" presetcmd=""/>
+    <preparer>
+        <option name="push" value="ams_service_ability_bundle/. -> /system/vendor/" src="res" />
+      </preparer>
+  </target>
+  <target name="ams_kit_processinfo_test">
+    <depend resource="ams_page_ability_bundle/." pushpath="/system/vendor/" findpath="res" presetcmd=""/>
+    <depend resource="../../../../event/common/test/systemtest/common/resource/testconfig/stress/."
+        pushpath="/testconfig" findpath="res" presetcmd=""/>
+    <preparer>
+        <option name="push" value="ams_page_ability_bundle/. -> /system/vendor/" src="res" />
+      </preparer>
+  </target>
+</configuration>

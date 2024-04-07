@@ -1,0 +1,11 @@
+{
+  "name": "packing_tool",
+  "version": "1.0.0",
+  "publishAs": "code-segment",
+  "description": "packing_tool for dev",
+  "keywords": [
+    "packing",
+    "unpacking",
+    "linux"
+  ]
+}

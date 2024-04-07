@@ -1,0 +1,63 @@
+From 970d9d6fd15c433af20bbbd7418c5e9773d58471 Mon Sep 17 00:00:00 2001
+From: jiangheng <jiangheng12@huawei.com>
+Date: Mon, 7 Mar 2022 21:08:13 +0800
+Subject: [PATCH] remove chose_dlsym_handle function, set handle to RTLD_NEXT
+
+---
+ src/api/posix_api.c | 33 +--------------------------------
+ 1 file changed, 1 insertion(+), 32 deletions(-)
+
+diff --git a/src/api/posix_api.c b/src/api/posix_api.c
+index eff9f46..bce07f5 100644
+--- a/src/api/posix_api.c
++++ b/src/api/posix_api.c
+@@ -64,33 +64,6 @@ void posix_api_fork(void)
+     posix_api->get_socket = chld_get_socket;
+ }
+ 
+-static int chose_dlsym_handle(void *__restrict* khandle)
+-{
+-    void *dlhandle;
+-    int (*gazelle_epoll_create)(int size);
+-    dlhandle = dlopen ("liblstack.so", RTLD_LAZY);
+-    if (dlhandle == NULL) {
+-        return ERR_IF;
+-    }
+-
+-    gazelle_epoll_create = dlsym(dlhandle, "epoll_create");
+-    if (gazelle_epoll_create == NULL) {
+-        return ERR_MEM;
+-    }
+-
+-    dlclose(dlhandle); 
+-
+-    *khandle = RTLD_NEXT;
+-    if (dlsym(*khandle, "epoll_create") == gazelle_epoll_create) {
+-        RTE_LOG(ERR, EAL, "posix api use RTLD_DEFAULT\n");
+-        *khandle = RTLD_DEFAULT;
+-    } else {
+-        RTE_LOG(ERR, EAL, "posix api use RTLD_NEXT\n");
+-    }
+-
+-    return ERR_OK;
+-}
+-
+ int posix_api_init(void)
+ {
+ /* the symbol we use here won't be NULL, so we don't need dlerror()
+@@ -102,11 +75,7 @@ int posix_api_init(void)
+ 
+     posix_api = &posix_api_val;
+ 
+-    void *__restrict handle;
+-    int ret = chose_dlsym_handle(&handle);
+-    if (ret != ERR_OK) {
+-        return ret;
+-    }
++    void *__restrict handle = RTLD_NEXT;
+ 
+     /* glibc standard api */
+     CHECK_DLSYM_RET_RETURN(posix_api->socket_fn = dlsym(handle, "socket"));
+-- 
+1.8.3.1
+

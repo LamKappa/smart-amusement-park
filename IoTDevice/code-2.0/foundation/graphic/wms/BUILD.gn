@@ -1,0 +1,104 @@
+# Copyright (c) 2020-2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/lite/config/component/lite_component.gni")
+import("//build/lite/ndk/ndk.gni")
+
+lite_component("lite_wms") {
+  features = [
+    ":wms_server",
+    ":wms_client",
+  ]
+  public_deps = [ ":wms_client" ]
+}
+
+ndk_lib("lite_wms_ndk") {
+  lib_extension = ".so"
+  deps = [ ":wms_client" ]
+  head_files = []
+}
+
+commonDeps = [
+  "//foundation/distributedschedule/samgr_lite/samgr:samgr",
+  "//foundation/distributedschedule/samgr_lite/communication/broadcast:broadcast",
+  "//foundation/communication/ipc_lite:liteipc_adapter",
+  "//foundation/graphic/surface:surface",
+  "//foundation/graphic/utils:lite_graphic_utils",
+  "//third_party/bounds_checking_function:libsec_shared",
+]
+
+shared_library("wms_client") {
+  sources = [
+    "frameworks/ims/input_event_listener_proxy.cpp",
+    "frameworks/wms/iwindows_manager.cpp",
+    "frameworks/wms/lite_proxy_surface.cpp",
+    "frameworks/wms/lite_proxy_window.cpp",
+    "frameworks/wms/lite_proxy_windows_manager.cpp",
+    "frameworks/wms/lite_win_requestor.cpp",
+    "frameworks/wms/lite_wm_requestor.cpp",
+    "frameworks/wms/lite_wms_client.cpp",
+  ]
+  deps = commonDeps
+  public_deps = [ "//foundation/graphic/surface:lite_surface" ]
+  public_configs = [ ":wms_public_config" ]
+  ldflags = [ "-lstdc++" ]
+  cflags = [ "-Wall" ]
+  cflags_cc = cflags
+}
+
+config("wms_public_config") {
+  include_dirs = [ "interfaces/innerkits" ]
+}
+
+imsSources = [
+  "services/ims/input_event_distributer.cpp",
+  "services/ims/input_event_hub.cpp",
+  "services/ims/input_manager_service.cpp",
+  "services/ims/input_event_client_proxy.cpp",
+  "services/ims/samgr_ims.cpp",
+]
+imsInclude = [ "services/ims" ]
+imsDeps = [ "//drivers/adapter/uhdf/posix:hdf_posix_osal" ]
+
+executable("wms_server") {
+  sources = [
+    "services/wms/lite_win.cpp",
+    "services/wms/lite_wm.cpp",
+    "services/wms/lite_wms.cpp",
+    "services/wms/samgr_wms.cpp",
+    "services/wms/wms.cpp",
+  ]
+  include_dirs = [
+    "frameworks/ims",
+    "interfaces/innerkits",
+    "//drivers/peripheral/input/interfaces/include",
+    "//third_party/FreeBSD/sys/dev/evdev",
+  ]
+  ldflags = [
+    "-lstdc++",
+    "-lpthread",
+    "-Wl,-rpath-link=$ohos_root_path/$root_out_dir",
+    "-ldisplay_gfx",
+    "-ldisplay_gralloc",
+    "-ldisplay_layer",
+  ]
+  deps = [
+    "//drivers/peripheral/input/hal:hdi_input",
+    "//foundation/graphic/utils:lite_graphic_hals",
+  ]
+  deps += commonDeps
+  cflags = [ "-Wall" ]
+  cflags_cc = cflags
+
+  sources += imsSources
+  include_dirs += imsInclude
+  deps += imsDeps
+}

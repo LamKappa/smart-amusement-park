@@ -1,0 +1,78 @@
+# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+
+ohos_executable("appspawnclienttest") {
+  sources = [ "app_spawn_client_test/main.cpp" ]
+
+  configs = [
+    ":test_config",
+    "//foundation/appexecfwk/standard/libs/libeventhandler:libeventhandler_config",
+  ]
+
+  deps = [
+    #"startup:appspawn_jni",
+    "//foundation/aafwk/standard/interfaces/innerkits/base:base",
+    "//foundation/aafwk/standard/interfaces/innerkits/want:want",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_base:appexecfwk_base",
+    "//foundation/appexecfwk/standard/services/appmgr:libams",
+  ]
+}
+
+ohos_executable("appmgrserviceregtest") {
+  sources = [ "app_mgr_service_register_test/main_client.cpp" ]
+
+  configs = [
+    ":test_config",
+    "//foundation/appexecfwk/standard/libs/libeventhandler:libeventhandler_config",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core:appmgr_sdk_config",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_base:appexecfwk_base_sdk_config",
+    "//utils/native/base:utils_config",
+  ]
+  cflags = []
+  if (target_cpu == "arm") {
+    cflags += [ "-DBINDER_IPC_32BIT" ]
+  }
+  deps = [
+    "//foundation/aafwk/standard/interfaces/innerkits/base:base",
+    "//foundation/aafwk/standard/interfaces/innerkits/want:want",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_base:appexecfwk_base",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core:appexecfwk_core",
+    "//foundation/appexecfwk/standard/services/appmgr:libams",
+
+    #"startup:appspawn_jni",
+    "//foundation/distributedschedule/safwk/interfaces/innerkits/safwk:system_ability_fwk",
+    "//foundation/distributedschedule/samgr/interfaces/innerkits/samgr_proxy:samgr_proxy",
+    "//utils/native/base:utils",
+  ]
+
+  external_deps = [
+    "hiviewdfx_hilog_native:libhilog",
+    "ipc:ipc_core",
+  ]
+}
+
+config("test_config") {
+  # header file path
+  include_dirs = [
+    "//foundation/appexecfwk/standard/interfaces",
+    "//foundation/appexecfwk/standard/services/appmgr/include",
+    "//foundation/appexecfwk/standard/services/common/include",
+  ]
+
+  # enable exception
+  cflags_cc = [ "-fexceptions" ]
+
+  configs = [ "//foundation/appexecfwk/standard/services/appmgr:appmgr_config" ]
+}

@@ -1,0 +1,70 @@
+# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/test.gni")
+import("//foundation/appexecfwk/standard/appexecfwk.gni")
+
+config("private_config") {
+  include_dirs = [
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_core/include/bundlemgr",
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_base/include",
+    "${appexecfwk_path}/libs/test/mockpermission/permission",
+    "${services_path}/bundlemgr/test/mock/include",
+    "//third_party/json/include",
+  ]
+
+  cflags_cc = [ "-fexceptions" ]
+}
+
+module_output_path = "appexecfwk_standard/bundlemgrservice"
+
+ohos_unittest("BmsBundleDataStorageTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_base/src/ability_info.cpp",
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_base/src/application_info.cpp",
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_base/src/bundle_info.cpp",
+    "${services_path}/bundlemgr/src/bundle_data_storage.cpp",
+    "${services_path}/bundlemgr/src/inner_bundle_info.cpp",
+  ]
+
+  sources += [ "bms_bundle_data_storage_test.cpp" ]
+
+  configs = [
+    ":private_config",
+    "${services_path}/bundlemgr/test:bundlemgr_test_config",
+    "${services_path}/bundlemgr:bundlemgr_common_config",
+  ]
+  cflags = []
+  if (target_cpu == "arm") {
+    cflags += [ "-DBINDER_IPC_32BIT" ]
+  }
+  deps = [
+    "${services_path}/bundlemgr:bundle_parser",
+    "//foundation/aafwk/standard/interfaces/innerkits/base:base",
+    "//foundation/aafwk/standard/interfaces/innerkits/want:want",
+    "//third_party/googletest:gtest_main",
+  ]
+
+  external_deps = [
+    "hiviewdfx_hilog_native:libhilog",
+    "ipc:ipc_core",
+  ]
+}
+
+group("unittest") {
+  testonly = true
+
+  deps = [ ":BmsBundleDataStorageTest" ]
+}

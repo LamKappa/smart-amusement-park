@@ -1,0 +1,169 @@
+From 71d82a830005540ef92b2bcd7c121c9ff85beb64 Mon Sep 17 00:00:00 2001
+From: j00660176 <jiangheng14@huawei.com>
+Date: Mon, 12 Jun 2023 20:21:23 +0800
+Subject: [PATCH] fix udp send/recv in multiple queue
+
+---
+ src/core/udp.c         | 73 +++++++++++++++++++++++++++++++++++++++---
+ src/include/lwip/udp.h |  4 +++
+ 2 files changed, 73 insertions(+), 4 deletions(-)
+
+diff --git a/src/core/udp.c b/src/core/udp.c
+index fba645b..0b1fa65 100644
+--- a/src/core/udp.c
++++ b/src/core/udp.c
+@@ -65,10 +65,12 @@
+ 
+ #include <string.h>
+ 
+-#if GAZELLE_ENABLE
+-#include "lwipsock.h"
++#if GAZELLE_UDP_ENABLE
++#include <pthread.h>
+ #include <rte_prefetch.h>
++#include "lwipsock.h"
+ #include "dpdk_cksum.h"
++#include "reg_sock.h"
+ #endif
+ 
+ #ifndef UDP_LOCAL_PORT_RANGE_START
+@@ -81,10 +83,24 @@
+ 
+ /* last local UDP port */
+ static u16_t udp_port = UDP_LOCAL_PORT_RANGE_START;
++#if GAZELLE_UDP_ENABLE
++static pthread_mutex_t g_udp_port_mutex = PTHREAD_MUTEX_INITIALIZER;
++static u8_t port_state[UDP_LOCAL_PORT_RANGE_END - UDP_LOCAL_PORT_RANGE_START + 1] = {0};
++static void udp_release_port(u16_t port)
++{
++    if (port >= UDP_LOCAL_PORT_RANGE_START && port <= UDP_LOCAL_PORT_RANGE_END) {
++        port_state[port - UDP_LOCAL_PORT_RANGE_START] = 0;
++    }
++}
++#endif
+ 
+ /* The list of UDP PCBs */
+ /* exported in udp.h (was static) */
++#if GAZELLE_UDP_ENABLE
++PER_THREAD struct udp_pcb *udp_pcbs;
++#else
+ struct udp_pcb *udp_pcbs;
++#endif
+ 
+ /**
+  * Initialize this module.
+@@ -102,6 +118,37 @@ udp_init(void)
+  *
+  * @return a new (free) local UDP port number
+  */
++#if GAZELLE_UDP_ENABLE
++static u16_t
++udp_new_port(struct udp_pcb *dst_pcb)
++{
++  u16_t n = 0;
++  u16_t tmp_port = 0;
++
++  pthread_mutex_lock(&g_udp_port_mutex);
++  do {
++    if (udp_port++ == UDP_LOCAL_PORT_RANGE_END) {
++      udp_port = UDP_LOCAL_PORT_RANGE_START;
++    }
++
++    if (__atomic_load_n(&port_state[udp_port - UDP_LOCAL_PORT_RANGE_START], __ATOMIC_ACQUIRE) == 0) {
++      if (port_in_stack_queue(dst_pcb->remote_ip.addr, dst_pcb->local_ip.addr, dst_pcb->remote_port, udp_port)) {
++          tmp_port = udp_port;
++          __atomic_store_n(&port_state[udp_port - UDP_LOCAL_PORT_RANGE_START], 1, __ATOMIC_RELEASE);
++          break;
++      }
++    }
++    n++;
++    if (n > UDP_LOCAL_PORT_RANGE_END - UDP_LOCAL_PORT_RANGE_START) {
++      break;
++    }
++  } while (tmp_port == 0);
++
++  pthread_mutex_unlock(&g_udp_port_mutex);
++
++  return tmp_port;
++}
++#else
+ static u16_t
+ udp_new_port(void)
+ {
+@@ -123,6 +170,7 @@ again:
+   }
+   return udp_port;
+ }
++#endif
+ 
+ /** Common code to see if the current input packet matches the pcb
+  * (current input packet is accessed via ip(4/6)_current_* macros)
+@@ -789,7 +837,21 @@ udp_sendto_if_src_chksum(struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *d
+   /* if the PCB is not yet bound to a port, bind it here */
+   if (pcb->local_port == 0) {
+     LWIP_DEBUGF(UDP_DEBUG | LWIP_DBG_TRACE, ("udp_send: not yet bound to a port, binding now\n"));
++#if GAZELLE_UDP_ENABLE
++    ip_addr_t tmp_local_ip = pcb->local_ip;
++    ip_addr_t tmp_remote_ip = pcb->remote_ip;
++    u16_t tmp_remote_port = pcb->remote_port;
++
++    pcb->local_ip = netif->ip_addr;
++    pcb->remote_port = dst_port;
++    pcb->remote_ip = *dst_ip;
++#endif
+     err = udp_bind(pcb, &pcb->local_ip, pcb->local_port);
++#if GAZELLE_UDP_ENABLE
++      pcb->local_ip = tmp_local_ip;
++      pcb->remote_ip = tmp_remote_ip;
++      pcb->remote_port =  tmp_remote_port;
++#endif
+     if (err != ERR_OK) {
+       LWIP_DEBUGF(UDP_DEBUG | LWIP_DBG_TRACE | LWIP_DBG_LEVEL_SERIOUS, ("udp_send: forced port bind failed\n"));
+       return err;
+@@ -941,7 +1003,7 @@ udp_sendto_if_src_chksum(struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *d
+   /* @todo: must this be increased even if error occurred? */
+   MIB2_STATS_INC(mib2.udpoutdatagrams);
+ 
+-#if !GAZELLE_ENABLE
++#if !GAZELLE_UDP_ENABLE
+   /* did we chain a separate header pbuf earlier? */
+   if (q != p)
+ #endif
+@@ -1026,7 +1088,7 @@ udp_bind(struct udp_pcb *pcb, const ip_addr_t *ipaddr, u16_t port)
+ 
+   /* no port specified? */
+   if (port == 0) {
+-    port = udp_new_port();
++    port = udp_new_port(pcb);
+     if (port == 0) {
+       /* no more ports available in local range */
+       LWIP_DEBUGF(UDP_DEBUG, ("udp_bind: out of free UDP ports\n"));
+@@ -1252,6 +1314,9 @@ udp_remove(struct udp_pcb *pcb)
+       }
+     }
+   }
++#if GAZELLE_UDP_ENABLE
++  udp_release_port(pcb->local_port);
++#endif
+   memp_free(MEMP_UDP_PCB, pcb);
+ }
+ 
+diff --git a/src/include/lwip/udp.h b/src/include/lwip/udp.h
+index b1c78e5..f588d90 100644
+--- a/src/include/lwip/udp.h
++++ b/src/include/lwip/udp.h
+@@ -112,7 +112,11 @@ struct udp_pcb {
+   void *recv_arg;
+ };
+ /* udp_pcbs export for external reference (e.g. SNMP agent) */
++#if GAZELLE_UDP_ENABLE
++extern PER_THREAD struct udp_pcb *udp_pcbs;
++#else
+ extern struct udp_pcb *udp_pcbs;
++#endif
+ 
+ /* The following functions is the application layer interface to the
+    UDP code. */
+-- 
+2.33.0
+

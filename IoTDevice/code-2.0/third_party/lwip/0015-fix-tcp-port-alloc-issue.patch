@@ -1,0 +1,36 @@
+From bd0fdaf755544da1a276820a7cc3f664a2765194 Mon Sep 17 00:00:00 2001
+From: jiangheng <jiangheng12@huawei.com>
+Date: Tue, 18 Jan 2022 10:34:42 +0800
+Subject: [PATCH] fix tcp port alloc issue
+
+---
+ src/core/tcp.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/core/tcp.c b/src/core/tcp.c
+index a9a91fd..b65ab33 100644
+--- a/src/core/tcp.c
++++ b/src/core/tcp.c
+@@ -1062,6 +1062,7 @@ tcp_new_port(void)
+ {
+   u8_t i;
+   u16_t n = 0;
++  u16_t tmp_port;
+   struct tcp_pcb *pcb;
+ 
+   pthread_mutex_lock(&g_tcp_port_mutex);
+@@ -1082,9 +1083,10 @@ again:
+       }
+     }
+   }
++  tmp_port = tcp_port;
+   pthread_mutex_unlock(&g_tcp_port_mutex);
+ 
+-  return tcp_port;
++  return tmp_port;
+ }
+ 
+ /**
+-- 
+1.8.3.1
+

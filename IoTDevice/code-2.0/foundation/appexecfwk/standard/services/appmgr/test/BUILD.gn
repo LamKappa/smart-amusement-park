@@ -1,0 +1,111 @@
+# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//foundation/appexecfwk/standard/appexecfwk.gni")
+
+config("appmgr_test_config") {
+  configs = [
+    "${services_path}/appmgr:appmgr_config",
+    "${services_path}/test:services_mock_ams_config",
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_core:appmgr_sdk_config",
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_core:bundlemgr_sdk_config",
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_base:appexecfwk_base_sdk_config",
+  ]
+
+  defines = [
+    "APP_LOG_TAG = \"AppMgrService\"",
+    "LOG_DOMAIN = 0xD00111E",
+  ]
+
+  include_dirs = [ "${services_path}/appmgr/test/mock/include" ]
+}
+
+ohos_source_set("appmgr_test_source") {
+  testonly = true
+
+  sources = [
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_base/src/ability_info.cpp",
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_base/src/app_process_info.cpp",
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_base/src/application_info.cpp",
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_base/src/bundle_info.cpp",
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_base/src/element_name.cpp",
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_base/src/running_process_info.cpp",
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_core/src/appmgr/app_launch_data.cpp",
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_core/src/appmgr/app_mgr_proxy.cpp",
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_core/src/appmgr/app_mgr_stub.cpp",
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_core/src/appmgr/app_process_data.cpp",
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_core/src/appmgr/app_record_id.cpp",
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_core/src/appmgr/app_scheduler_host.cpp",
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_core/src/appmgr/app_scheduler_proxy.cpp",
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_core/src/appmgr/app_state_callback_host.cpp",
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_core/src/appmgr/app_state_callback_proxy.cpp",
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_core/src/appmgr/app_task_info.cpp",
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_core/src/appmgr/dummy_configuration.cpp",
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_core/src/appmgr/process_info.cpp",
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_core/src/appmgr/profile.cpp",
+  ]
+
+  include_dirs = [ "//third_party/json/include" ]
+
+  public_configs = [
+    ":appmgr_test_config",
+    "//utils/native/base:utils_config",
+  ]
+
+  public_deps = [
+    "${common_path}:libappexecfwk_common",
+    "//third_party/googletest:gmock_main",
+    "//third_party/googletest:gtest_main",
+    "//utils/native/base:utils",
+  ]
+  cflags = []
+  if (target_cpu == "arm") {
+    cflags += [ "-DBINDER_IPC_32BIT" ]
+  }
+  deps = [
+    "//foundation/aafwk/standard/interfaces/innerkits/base:base",
+    "//foundation/aafwk/standard/interfaces/innerkits/want:want",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_base:appexecfwk_base",
+    "//foundation/distributedschedule/samgr/interfaces/innerkits/samgr_proxy:samgr_proxy",
+  ]
+
+  external_deps = [
+    "hiviewdfx_hilog_native:libhilog",
+    "ipc:ipc_core",
+  ]
+}
+
+group("unittest") {
+  testonly = true
+
+  deps = [
+    "unittest/ams_ability_running_record_test:unittest",
+    "unittest/ams_app_death_recipient_test:unittest",
+    "unittest/ams_app_life_cycle_test:unittest",
+    "unittest/ams_app_mgr_client_test:unittest",
+    "unittest/ams_app_running_record_test:unittest",
+    "unittest/ams_app_state_callback_test:unittest",
+    "unittest/ams_app_workflow_test:unittest",
+    "unittest/ams_ipc_interface_test:unittest",
+    "unittest/ams_mgr_scheduler_test:unittest",
+    "unittest/ams_recent_app_list_test:unittest",
+    "unittest/ams_service_app_spawn_client_test:unittest",
+    "unittest/ams_service_app_spawn_msg_wrapper_test:unittest",
+    "unittest/ams_service_app_spawn_socket_test:unittest",
+    "unittest/ams_service_event_drive_test:unittest",
+    "unittest/ams_service_load_ability_process_test:unittest",
+    "unittest/ams_service_startup_test:unittest",
+    "unittest/app_mgr_service_event_handler_test:unittest",
+  ]
+}

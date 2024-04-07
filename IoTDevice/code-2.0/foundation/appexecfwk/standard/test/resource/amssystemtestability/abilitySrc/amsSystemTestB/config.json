@@ -1,0 +1,40 @@
+{
+    "app":{
+        "bundleName": "com.ohos.amsst.appB",
+        "vendor": "ix",
+        "version": {
+            "code": 1,
+            "name": "1.0"
+        },
+       "apiVersion": {
+          "compatible": 3,
+          "target": 3
+       }
+    },
+    "deviceConfig": {
+        "default": {
+        }
+    },
+    "module": {
+        "package":"com.hos.AmsSystemTestB.src",
+        "name":"AmsSystemTestB",
+        "deviceType": [
+            "tv",
+            "car"
+        ],
+        "distro": {
+            "deliveryWithInstall": true,
+            "moduleName": "testability",
+            "moduleType": "entry"
+        },
+        "abilities": [{
+            "name": "AmsStAbilityB1",
+            "icon": "$media:snowball",
+            "label": "AmsStAbilityB1 Ability",
+            "launchType": "singletop",
+            "orientation": "unspecified",
+            "type": "page",
+            "visible": true
+            }]
+    }
+}

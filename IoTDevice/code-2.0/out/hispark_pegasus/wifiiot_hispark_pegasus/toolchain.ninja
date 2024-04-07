@@ -1,0 +1,266 @@
+rule cxx
+  command = riscv32-unknown-elf-g++ ${defines} ${include_dirs} ${cflags_cc} -c ${in} -o ${out}
+  description = gcc CXX ${out}
+  depfile = ${out}.d
+  deps = gcc
+rule alink
+  command = riscv32-unknown-elf-ar cr ${out} @"${out}.rsp"
+  description = AR ${out}
+  rspfile = ${out}.rsp
+  rspfile_content = ${in}
+rule link
+  command = riscv32-unknown-elf-gcc ${ldflags}  -Wl,--start-group ${in} ${libs} -Wl,--end-group -o ${output_dir}/unstripped/bin/${target_output_name}${output_extension}  && riscv32-unknown-elf-strip --strip-unneeded "${output_dir}/unstripped/bin/${target_output_name}${output_extension}" -o "${output_dir}/bin/${target_output_name}${output_extension}"
+  description = LINK ${output_dir}/bin/${target_output_name}${output_extension}
+  rspfile = ${output_dir}/bin/${target_output_name}${output_extension}.rsp
+  rspfile_content = ${in}
+rule solink
+  command = riscv32-unknown-elf-gcc -shared ${ldflags}  -Wl,--start-group ${in} ${libs} -Wl,--end-group -o ${output_dir}/unstripped/usr/lib/${target_output_name}${output_extension} && riscv32-unknown-elf-strip --strip-unneeded "${output_dir}/unstripped/usr/lib/${target_output_name}${output_extension}" -o "${output_dir}/${target_output_name}${output_extension}"
+  description = SOLINK ${output_dir}/${target_output_name}${output_extension}
+  rspfile = ${output_dir}/${target_output_name}${output_extension}.rsp
+  rspfile_content = ${in}
+rule stamp
+  command = /usr/bin/touch ${out}
+  description = STAMP ${out}
+rule asm
+  command = riscv32-unknown-elf-gcc ${defines} ${include_dirs} ${asmflags} ${in} -c -o ${out}
+  description = gcc cross compiler ${out}
+  depfile = ${out}.d
+  deps = gcc
+rule cc
+  command = riscv32-unknown-elf-gcc ${defines} ${include_dirs} ${cflags} ${cflags_c} -c ${in} -o ${out}
+  description = gcc cross compiler ${out}
+rule copy
+  command = cp -afd ${in} ${out}
+  description = COPY ${in} ${out}
+
+build obj/applications/sample/wifi-iot/app/app.stamp: stamp obj/applications/sample/wifi-iot/app/startup/startup.stamp
+subninja obj/applications/sample/wifi-iot/app/startup/startup.ninja
+subninja obj/base/hiviewdfx/hievent_lite/hievent_lite.ninja
+subninja obj/base/hiviewdfx/hilog_lite/frameworks/mini/hilog_lite.ninja
+build obj/base/hiviewdfx/hilog_lite/frameworks/mini/hilog_lite_ndk.stamp: stamp ./libs/libhilog_lite.a
+subninja obj/base/hiviewdfx/hiview_lite/hiview_lite.ninja
+build obj/base/iot_hardware/peripheral/iothardware.stamp: stamp ./libs/libhal_iothardware.a
+build obj/base/iot_hardware/peripheral/iothardware_ndk.stamp: stamp ./libs/libhal_iothardware.a
+build obj/base/security/deviceauth/frameworks/deviceauth_lite/hichainsdk.stamp: stamp ./libs/libhichainsdk.a
+subninja obj/base/security/deviceauth/frameworks/deviceauth_lite/source/hichainsdk.ninja
+build obj/base/security/huks/frameworks/huks_lite/huks_sdk.stamp: stamp
+subninja obj/base/startup/bootstrap_lite/services/source/bootstrap.ninja
+build obj/base/startup/syspara_lite/frameworks/parameter/parameter.stamp: stamp ./libs/libsysparam.a
+build obj/base/startup/syspara_lite/frameworks/parameter/parameter_notes.stamp: stamp ./libs/libsysparam.a
+subninja obj/base/startup/syspara_lite/frameworks/parameter/src/sysparam.ninja
+build obj/base/startup/syspara_lite/frameworks/token/token.stamp: stamp ./libs/libtoken_static.a
+build obj/base/startup/syspara_lite/frameworks/token/token_notes.stamp: stamp
+subninja obj/base/startup/syspara_lite/frameworks/token/token_static.ninja
+build obj/base/update/ota_lite/frameworks/ota_lite.stamp: stamp ./libs/libhota.a
+build obj/base/update/ota_lite/frameworks/test.stamp: stamp
+build obj/base/update/ota_lite/frameworks/update_api.stamp: stamp
+subninja obj/base/update/ota_lite/frameworks/source/hota.ninja
+build obj/build/lite/ndk.stamp: stamp
+build obj/build/lite/ohos.stamp: stamp obj/applications/sample/wifi-iot/app/app.stamp obj/base/iot_hardware/peripheral/iothardware.stamp ./libs/libhilog_lite.a ./libs/libhievent_lite.a obj/foundation/distributedschedule/samgr_lite/samgr.stamp obj/base/security/deviceauth/frameworks/deviceauth_lite/hichainsdk.stamp obj/base/security/huks/frameworks/huks_lite/huks_sdk.stamp ./libs/libbootstrap.a obj/base/startup/syspara_lite/frameworks/parameter/parameter.stamp obj/base/startup/syspara_lite/frameworks/token/token.stamp obj/foundation/communication/wifi_lite/wifi.stamp obj/foundation/communication/softbus_lite/softbus.stamp ./libs/libwifiaware.a obj/base/update/ota_lite/frameworks/ota_lite.stamp obj/domains/iot/link/link.stamp obj/utils/native/lite/file/file.stamp obj/utils/native/lite/kv_store/kv_store.stamp obj/utils/native/lite/os_dump/utils_os_dump.stamp obj/foundation/distributeddatamgr/appdatamgr/appdatamgr_lite/dbm_kv_store.stamp obj/device/hisilicon/hispark_pegasus/sdk_liteos/wifiiot_sdk.stamp obj/test/xts/acts/build_lite/acts.stamp obj/test/xts/tools/lite/tools.stamp obj/device/hisilicon/hispark_pegasus/hispark_pegasus.stamp obj/vendor/hisilicon/hispark_pegasus/hispark_pegasus.stamp
+build obj/build/lite/config/component/cJSON/cjson_ndk.stamp: stamp ./libs/libcjson_static.a
+build obj/build/lite/config/component/cJSON/cjson_shared.stamp: stamp
+subninja obj/build/lite/config/component/cJSON/cjson_static.ninja
+build obj/device/hisilicon/hispark_pegasus/hispark_pegasus.stamp: stamp
+subninja obj/device/hisilicon/hispark_pegasus/hi3861_adapter/hals/communication/wifi_lite/wifiaware/hal_wifiaware.ninja
+subninja obj/device/hisilicon/hispark_pegasus/hi3861_adapter/hals/communication/wifi_lite/wifiservice/wifiservice.ninja
+build obj/device/hisilicon/hispark_pegasus/hi3861_adapter/hals/communication/wifi_lite/wifiservice/wifiservice_ndk.stamp: stamp ./libs/libwifiservice.a
+subninja obj/device/hisilicon/hispark_pegasus/hi3861_adapter/hals/iot_hardware/wifiiot_lite/hal_iothardware.ninja
+subninja obj/device/hisilicon/hispark_pegasus/hi3861_adapter/hals/update/hal_update_static.ninja
+subninja obj/device/hisilicon/hispark_pegasus/hi3861_adapter/hals/utils/file/hal_file_static.ninja
+build obj/device/hisilicon/hispark_pegasus/hi3861_adapter/kal/kal.stamp: stamp ./libs/libposix.a ./libs/libcmsis.a
+subninja obj/device/hisilicon/hispark_pegasus/hi3861_adapter/kal/cmsis/cmsis.ninja
+subninja obj/device/hisilicon/hispark_pegasus/hi3861_adapter/kal/posix/posix.ninja
+rule __device_hisilicon_hispark_pegasus_sdk_liteos_run_wifiiot_scons___build_lite_toolchain_riscv32-unknown-elf__rule
+  command = /usr/bin/python3 ../../../build/lite/build_ext_components.py --path=../../../device/hisilicon/hispark_pegasus/sdk_liteos --command=sh\$ hm_build.sh\$ /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus\$ linux --target_dir=/home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/obj/device/hisilicon/hispark_pegasus/sdk_liteos/build.log --out_dir=/home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/error.log
+  description = ACTION //device/hisilicon/hispark_pegasus/sdk_liteos:run_wifiiot_scons(//build/lite/toolchain:riscv32-unknown-elf)
+  restat = 1
+
+build obj/device/hisilicon/hispark_pegasus/sdk_liteos/run_wifiiot_scons_build_ext_components.txt: __device_hisilicon_hispark_pegasus_sdk_liteos_run_wifiiot_scons___build_lite_toolchain_riscv32-unknown-elf__rule | ../../../build/lite/build_ext_components.py obj/base/security/deviceauth/frameworks/deviceauth_lite/hichainsdk.stamp obj/build/lite/ohos.stamp obj/device/hisilicon/hispark_pegasus/sdk_liteos/sdk.stamp
+
+build obj/device/hisilicon/hispark_pegasus/sdk_liteos/run_wifiiot_scons.stamp: stamp obj/device/hisilicon/hispark_pegasus/sdk_liteos/run_wifiiot_scons_build_ext_components.txt
+build obj/device/hisilicon/hispark_pegasus/sdk_liteos/sdk.stamp: stamp ./libs/libcjson_static.a obj/device/hisilicon/hispark_pegasus/hi3861_adapter/kal/kal.stamp
+build obj/device/hisilicon/hispark_pegasus/sdk_liteos/wifiiot_sdk.stamp: stamp obj/device/hisilicon/hispark_pegasus/sdk_liteos/sdk.stamp
+build obj/domains/iot/link/iot.stamp: stamp obj/domains/iot/link/link.stamp
+build obj/domains/iot/link/link.stamp: stamp
+build obj/foundation/communication/softbus_lite/discovery_ndk.stamp: stamp ./libs/libdiscovery.a
+build obj/foundation/communication/softbus_lite/softbus.stamp: stamp ./libs/libdiscovery.a ./libs/libauthmanager.a ./libs/libtrans_service.a
+build obj/foundation/communication/softbus_lite/softbus_lite_ndk.stamp: stamp obj/foundation/communication/softbus_lite/discovery_ndk.stamp obj/foundation/communication/softbus_lite/trans_service_ndk.stamp
+build obj/foundation/communication/softbus_lite/trans_service_ndk.stamp: stamp ./libs/libtrans_service.a
+subninja obj/foundation/communication/softbus_lite/authmanager/authmanager.ninja
+subninja obj/foundation/communication/softbus_lite/discovery/discovery.ninja
+subninja obj/foundation/communication/softbus_lite/trans_service/trans_service.ninja
+subninja obj/foundation/communication/wifi_aware/wifiaware.ninja
+build obj/foundation/communication/wifi_lite/wifi.stamp: stamp ./libs/libwifiservice.a
+build obj/foundation/distributeddatamgr/appdatamgr/appdatamgr_lite/dbm_kv_store.stamp: stamp ./libs/libfoundation_dbm_kv_store.a
+subninja obj/foundation/distributeddatamgr/appdatamgr/appdatamgr_lite/dbm_kv_store/foundation_dbm_kv_store.ninja
+build obj/foundation/distributedschedule/samgr_lite/config/system_capability.json: copy ../../../foundation/distributedschedule/samgr_lite/config/system_capability.json
+
+build obj/foundation/distributedschedule/samgr_lite/ConfigFiles.stamp: stamp obj/foundation/distributedschedule/samgr_lite/config/system_capability.json
+build obj/foundation/distributedschedule/samgr_lite/samgr.stamp: stamp ./libs/libsamgr.a ./libs/libbroadcast.a
+build obj/foundation/distributedschedule/samgr_lite/samgr_lite_ndk.stamp: stamp ./libs/libbroadcast.a ./libs/libsamgr.a
+subninja obj/foundation/distributedschedule/samgr_lite/communication/broadcast/broadcast.ninja
+subninja obj/foundation/distributedschedule/samgr_lite/samgr/samgr.ninja
+subninja obj/foundation/distributedschedule/samgr_lite/samgr/adapter/samgr_adapter.ninja
+subninja obj/foundation/distributedschedule/samgr_lite/samgr/source/samgr_source.ninja
+rule __test_xts_acts_build_lite_acts___build_lite_toolchain_riscv32-unknown-elf__rule
+  command = /usr/bin/python3 ../../../test/xts/tools/lite/build/suite.py archive_suite --suite_path /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/suites/acts --build_enabled true
+  description = ACTION //test/xts/acts/build_lite:acts(//build/lite/toolchain:riscv32-unknown-elf)
+  restat = 1
+
+build suites/acts.zip: __test_xts_acts_build_lite_acts___build_lite_toolchain_riscv32-unknown-elf__rule | ../../../test/xts/tools/lite/build/suite.py obj/test/xts/acts/build_lite/acts_component.stamp obj/test/xts/acts/build_lite/acts_generate_module_data.stamp obj/test/xts/acts/build_lite/acts_xdevice.stamp
+
+build obj/test/xts/acts/build_lite/acts.stamp: stamp suites/acts.zip
+build obj/test/xts/acts/build_lite/acts_component.stamp: stamp obj/test/xts/acts/communication_lite/lwip_hal/ActsLwipTest.stamp obj/test/xts/acts/communication_lite/softbus_hal/ActsSoftBusTest.stamp obj/test/xts/acts/communication_lite/wifiservice_hal/ActsWifiServiceTest.stamp obj/test/xts/acts/utils_lite/file_hal/ActsUtilsFileTest.stamp obj/test/xts/acts/startup_lite/syspara_hal/ActsParameterTest.stamp obj/test/xts/acts/iot_hardware_lite/iot_controller_hal/ActsWifiIotTest.stamp obj/test/xts/acts/kernel_lite/kernelcmsis_hal/ActsCMSISTest.stamp obj/test/xts/acts/utils_lite/kv_store_hal/ActsKvStoreTest.stamp obj/test/xts/acts/security_lite/datahuks_hal/ActsSecurityDataTest.stamp obj/test/xts/acts/hiviewdfx_lite/hilog_hal/ActsDfxFuncTest.stamp obj/test/xts/acts/distributeddatamgr_lite/dbm_kv_store_hal/ActsDbmKvStoreTest.stamp obj/test/xts/acts/distributed_schedule_lite/system_ability_manager_hal/ActsSamgrTest.stamp obj/test/xts/acts/update_lite/updater_hal/ActsUpdaterFuncTest.stamp obj/test/xts/acts/startup_lite/bootstrap_hal/ActsBootstrapTest.stamp
+rule __test_xts_acts_build_lite_acts_generate_module_data___build_lite_toolchain_riscv32-unknown-elf__rule
+  command = /usr/bin/python3 ../../../test/xts/tools/lite/build/utils.py --method_name record_test_component_info --arguments out_dir=/home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/suites/acts/testcases\#version=OpenHarmony-ACTS-1.0.1
+  description = ACTION //test/xts/acts/build_lite:acts_generate_module_data(//build/lite/toolchain:riscv32-unknown-elf)
+  restat = 1
+
+build suites/acts/testcases/module_info.json: __test_xts_acts_build_lite_acts_generate_module_data___build_lite_toolchain_riscv32-unknown-elf__rule | ../../../test/xts/tools/lite/build/utils.py obj/test/xts/acts/build_lite/acts_component.stamp obj/test/xts/acts/build_lite/acts_xdevice.stamp
+
+build obj/test/xts/acts/build_lite/acts_generate_module_data.stamp: stamp suites/acts/testcases/module_info.json
+rule __test_xts_acts_build_lite_acts_xdevice___build_lite_toolchain_riscv32-unknown-elf__rule
+  command = /usr/bin/python3 ../../../test/xts/tools/lite/build/suite.py build_xdevice --project_dir /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/test/xdevice --output_dirs /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/suites/acts/tools,
+  description = ACTION //test/xts/acts/build_lite:acts_xdevice(//build/lite/toolchain:riscv32-unknown-elf)
+  restat = 1
+
+build suites/acts/tools: __test_xts_acts_build_lite_acts_xdevice___build_lite_toolchain_riscv32-unknown-elf__rule | ../../../test/xts/tools/lite/build/suite.py
+
+build obj/test/xts/acts/build_lite/acts_xdevice.stamp: stamp suites/acts/tools
+rule __test_xts_acts_communication_lite_lwip_hal_ActsLwipTest___build_lite_toolchain_riscv32-unknown-elf__rule
+  command = /usr/bin/python3 ../../../test/xts/tools/lite/build/suite.py build_module --build_target_name ActsLwipTest --target_file /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/libs/libmodule_ActsLwipTest.a --project_path /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/test/xts/acts/communication_lite/lwip_hal --test_xml /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/test/xts/acts/communication_lite/lwip_hal/Test.json --project_type hctest --suite_out_paths /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/suites/acts/testcases/communication, --suite_filename libActsLwipTest.a --subsystem_name communication --hap_name , --hap_sign ,
+  description = ACTION //test/xts/acts/communication_lite/lwip_hal:ActsLwipTest(//build/lite/toolchain:riscv32-unknown-elf)
+  restat = 1
+
+build suites/acts/testcases/communication/libActsLwipTest.a: __test_xts_acts_communication_lite_lwip_hal_ActsLwipTest___build_lite_toolchain_riscv32-unknown-elf__rule | ../../../test/xts/tools/lite/build/suite.py ./libs/libmodule_ActsLwipTest.a ./libs/libhctest.a
+
+build obj/test/xts/acts/communication_lite/lwip_hal/ActsLwipTest.stamp: stamp suites/acts/testcases/communication/libActsLwipTest.a
+subninja obj/test/xts/acts/communication_lite/lwip_hal/module_ActsLwipTest.ninja
+rule __test_xts_acts_communication_lite_softbus_hal_ActsSoftBusTest___build_lite_toolchain_riscv32-unknown-elf__rule
+  command = /usr/bin/python3 ../../../test/xts/tools/lite/build/suite.py build_module --build_target_name ActsSoftBusTest --target_file /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/libs/libmodule_ActsSoftBusTest.a --project_path /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/test/xts/acts/communication_lite/softbus_hal --test_xml /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/test/xts/acts/communication_lite/softbus_hal/Test.json --project_type hctest --suite_out_paths /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/suites/acts/testcases/communication, --suite_filename libActsSoftBusTest.a --subsystem_name communication --hap_name , --hap_sign ,
+  description = ACTION //test/xts/acts/communication_lite/softbus_hal:ActsSoftBusTest(//build/lite/toolchain:riscv32-unknown-elf)
+  restat = 1
+
+build suites/acts/testcases/communication/libActsSoftBusTest.a: __test_xts_acts_communication_lite_softbus_hal_ActsSoftBusTest___build_lite_toolchain_riscv32-unknown-elf__rule | ../../../test/xts/tools/lite/build/suite.py obj/foundation/communication/softbus_lite/softbus.stamp ./libs/libmodule_ActsSoftBusTest.a ./libs/libhctest.a
+
+build obj/test/xts/acts/communication_lite/softbus_hal/ActsSoftBusTest.stamp: stamp suites/acts/testcases/communication/libActsSoftBusTest.a
+subninja obj/test/xts/acts/communication_lite/softbus_hal/module_ActsSoftBusTest.ninja
+rule __test_xts_acts_communication_lite_wifiservice_hal_ActsWifiServiceTest___build_lite_toolchain_riscv32-unknown-elf__rule
+  command = /usr/bin/python3 ../../../test/xts/tools/lite/build/suite.py build_module --build_target_name ActsWifiServiceTest --target_file /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/libs/libmodule_ActsWifiServiceTest.a --project_path /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/test/xts/acts/communication_lite/wifiservice_hal --test_xml /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/test/xts/acts/communication_lite/wifiservice_hal/Test.json --project_type hctest --suite_out_paths /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/suites/acts/testcases/communication, --suite_filename libActsWifiServiceTest.a --subsystem_name communication --hap_name , --hap_sign ,
+  description = ACTION //test/xts/acts/communication_lite/wifiservice_hal:ActsWifiServiceTest(//build/lite/toolchain:riscv32-unknown-elf)
+  restat = 1
+
+build suites/acts/testcases/communication/libActsWifiServiceTest.a: __test_xts_acts_communication_lite_wifiservice_hal_ActsWifiServiceTest___build_lite_toolchain_riscv32-unknown-elf__rule | ../../../test/xts/tools/lite/build/suite.py ./libs/libmodule_ActsWifiServiceTest.a ./libs/libhctest.a
+
+build obj/test/xts/acts/communication_lite/wifiservice_hal/ActsWifiServiceTest.stamp: stamp suites/acts/testcases/communication/libActsWifiServiceTest.a
+subninja obj/test/xts/acts/communication_lite/wifiservice_hal/module_ActsWifiServiceTest.ninja
+rule __test_xts_acts_distributed_schedule_lite_system_ability_manager_hal_ActsSamgrTest___build_lite_toolchain_riscv32-unknown-elf__rule
+  command = /usr/bin/python3 ../../../test/xts/tools/lite/build/suite.py build_module --build_target_name ActsSamgrTest --target_file /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/libs/libmodule_ActsSamgrTest.a --project_path /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/test/xts/acts/distributed_schedule_lite/system_ability_manager_hal --test_xml /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/test/xts/acts/distributed_schedule_lite/system_ability_manager_hal/Test.json --project_type hctest --suite_out_paths /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/suites/acts/testcases/distributed_schedule, --suite_filename libActsSamgrTest.a --subsystem_name distributed_schedule --hap_name , --hap_sign ,
+  description = ACTION //test/xts/acts/distributed_schedule_lite/system_ability_manager_hal:ActsSamgrTest(//build/lite/toolchain:riscv32-unknown-elf)
+  restat = 1
+
+build suites/acts/testcases/distributed_schedule/libActsSamgrTest.a: __test_xts_acts_distributed_schedule_lite_system_ability_manager_hal_ActsSamgrTest___build_lite_toolchain_riscv32-unknown-elf__rule | ../../../test/xts/tools/lite/build/suite.py ./libs/libmodule_ActsSamgrTest.a ./libs/libhctest.a
+
+build obj/test/xts/acts/distributed_schedule_lite/system_ability_manager_hal/ActsSamgrTest.stamp: stamp suites/acts/testcases/distributed_schedule/libActsSamgrTest.a
+subninja obj/test/xts/acts/distributed_schedule_lite/system_ability_manager_hal/module_ActsSamgrTest.ninja
+rule __test_xts_acts_distributeddatamgr_lite_dbm_kv_store_hal_ActsDbmKvStoreTest___build_lite_toolchain_riscv32-unknown-elf__rule
+  command = /usr/bin/python3 ../../../test/xts/tools/lite/build/suite.py build_module --build_target_name ActsDbmKvStoreTest --target_file /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/libs/libmodule_ActsDbmKvStoreTest.a --project_path /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/test/xts/acts/distributeddatamgr_lite/dbm_kv_store_hal --test_xml /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/test/xts/acts/distributeddatamgr_lite/dbm_kv_store_hal/Test.json --project_type hctest --suite_out_paths /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/suites/acts/testcases/distributeddatamgr, --suite_filename libActsDbmKvStoreTest.a --subsystem_name distributeddatamgr --hap_name , --hap_sign ,
+  description = ACTION //test/xts/acts/distributeddatamgr_lite/dbm_kv_store_hal:ActsDbmKvStoreTest(//build/lite/toolchain:riscv32-unknown-elf)
+  restat = 1
+
+build suites/acts/testcases/distributeddatamgr/libActsDbmKvStoreTest.a: __test_xts_acts_distributeddatamgr_lite_dbm_kv_store_hal_ActsDbmKvStoreTest___build_lite_toolchain_riscv32-unknown-elf__rule | ../../../test/xts/tools/lite/build/suite.py ./libs/libmodule_ActsDbmKvStoreTest.a ./libs/libhctest.a
+
+build obj/test/xts/acts/distributeddatamgr_lite/dbm_kv_store_hal/ActsDbmKvStoreTest.stamp: stamp suites/acts/testcases/distributeddatamgr/libActsDbmKvStoreTest.a
+subninja obj/test/xts/acts/distributeddatamgr_lite/dbm_kv_store_hal/module_ActsDbmKvStoreTest.ninja
+rule __test_xts_acts_hiviewdfx_lite_hilog_hal_ActsDfxFuncTest___build_lite_toolchain_riscv32-unknown-elf__rule
+  command = /usr/bin/python3 ../../../test/xts/tools/lite/build/suite.py build_module --build_target_name ActsDfxFuncTest --target_file /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/libs/libmodule_ActsDfxFuncTest.a --project_path /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/test/xts/acts/hiviewdfx_lite/hilog_hal --test_xml /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/test/xts/acts/hiviewdfx_lite/hilog_hal/Test.json --project_type hctest --suite_out_paths /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/suites/acts/testcases/hiviewdfx, --suite_filename libActsDfxFuncTest.a --subsystem_name hiviewdfx --hap_name , --hap_sign ,
+  description = ACTION //test/xts/acts/hiviewdfx_lite/hilog_hal:ActsDfxFuncTest(//build/lite/toolchain:riscv32-unknown-elf)
+  restat = 1
+
+build suites/acts/testcases/hiviewdfx/libActsDfxFuncTest.a: __test_xts_acts_hiviewdfx_lite_hilog_hal_ActsDfxFuncTest___build_lite_toolchain_riscv32-unknown-elf__rule | ../../../test/xts/tools/lite/build/suite.py ./libs/libmodule_ActsDfxFuncTest.a ./libs/libhctest.a
+
+build obj/test/xts/acts/hiviewdfx_lite/hilog_hal/ActsDfxFuncTest.stamp: stamp suites/acts/testcases/hiviewdfx/libActsDfxFuncTest.a
+subninja obj/test/xts/acts/hiviewdfx_lite/hilog_hal/module_ActsDfxFuncTest.ninja
+rule __test_xts_acts_iot_hardware_lite_iot_controller_hal_ActsWifiIotTest___build_lite_toolchain_riscv32-unknown-elf__rule
+  command = /usr/bin/python3 ../../../test/xts/tools/lite/build/suite.py build_module --build_target_name ActsWifiIotTest --target_file /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/libs/libmodule_ActsWifiIotTest.a --project_path /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/test/xts/acts/iot_hardware_lite/iot_controller_hal --test_xml /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/test/xts/acts/iot_hardware_lite/iot_controller_hal/Test.json --project_type hctest --suite_out_paths /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/suites/acts/testcases/iot_hardware, --suite_filename libActsWifiIotTest.a --subsystem_name iot_hardware --hap_name , --hap_sign ,
+  description = ACTION //test/xts/acts/iot_hardware_lite/iot_controller_hal:ActsWifiIotTest(//build/lite/toolchain:riscv32-unknown-elf)
+  restat = 1
+
+build suites/acts/testcases/iot_hardware/libActsWifiIotTest.a: __test_xts_acts_iot_hardware_lite_iot_controller_hal_ActsWifiIotTest___build_lite_toolchain_riscv32-unknown-elf__rule | ../../../test/xts/tools/lite/build/suite.py ./libs/libmodule_ActsWifiIotTest.a ./libs/libhctest.a
+
+build obj/test/xts/acts/iot_hardware_lite/iot_controller_hal/ActsWifiIotTest.stamp: stamp suites/acts/testcases/iot_hardware/libActsWifiIotTest.a
+subninja obj/test/xts/acts/iot_hardware_lite/iot_controller_hal/module_ActsWifiIotTest.ninja
+rule __test_xts_acts_kernel_lite_kernelcmsis_hal_ActsCMSISTest___build_lite_toolchain_riscv32-unknown-elf__rule
+  command = /usr/bin/python3 ../../../test/xts/tools/lite/build/suite.py build_module --build_target_name ActsCMSISTest --target_file /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/libs/libmodule_ActsCMSISTest.a --project_path /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/test/xts/acts/kernel_lite/kernelcmsis_hal --test_xml /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/test/xts/acts/kernel_lite/kernelcmsis_hal/Test.json --project_type hctest --suite_out_paths /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/suites/acts/testcases/kernel, --suite_filename libActsCMSISTest.a --subsystem_name kernel --hap_name , --hap_sign ,
+  description = ACTION //test/xts/acts/kernel_lite/kernelcmsis_hal:ActsCMSISTest(//build/lite/toolchain:riscv32-unknown-elf)
+  restat = 1
+
+build suites/acts/testcases/kernel/libActsCMSISTest.a: __test_xts_acts_kernel_lite_kernelcmsis_hal_ActsCMSISTest___build_lite_toolchain_riscv32-unknown-elf__rule | ../../../test/xts/tools/lite/build/suite.py ./libs/libmodule_ActsCMSISTest.a ./libs/libhctest.a
+
+build obj/test/xts/acts/kernel_lite/kernelcmsis_hal/ActsCMSISTest.stamp: stamp suites/acts/testcases/kernel/libActsCMSISTest.a
+subninja obj/test/xts/acts/kernel_lite/kernelcmsis_hal/module_ActsCMSISTest.ninja
+rule __test_xts_acts_security_lite_datahuks_hal_ActsSecurityDataTest___build_lite_toolchain_riscv32-unknown-elf__rule
+  command = /usr/bin/python3 ../../../test/xts/tools/lite/build/suite.py build_module --build_target_name ActsSecurityDataTest --target_file /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/libs/libmodule_ActsSecurityDataTest.a --project_path /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/test/xts/acts/security_lite/datahuks_hal --test_xml /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/test/xts/acts/security_lite/datahuks_hal/Test.json --project_type hctest --suite_out_paths /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/suites/acts/testcases/security, --suite_filename libActsSecurityDataTest.a --subsystem_name security --hap_name , --hap_sign ,
+  description = ACTION //test/xts/acts/security_lite/datahuks_hal:ActsSecurityDataTest(//build/lite/toolchain:riscv32-unknown-elf)
+  restat = 1
+
+build suites/acts/testcases/security/libActsSecurityDataTest.a: __test_xts_acts_security_lite_datahuks_hal_ActsSecurityDataTest___build_lite_toolchain_riscv32-unknown-elf__rule | ../../../test/xts/tools/lite/build/suite.py ./libs/libmodule_ActsSecurityDataTest.a ./libs/libhctest.a
+
+build obj/test/xts/acts/security_lite/datahuks_hal/ActsSecurityDataTest.stamp: stamp suites/acts/testcases/security/libActsSecurityDataTest.a
+subninja obj/test/xts/acts/security_lite/datahuks_hal/module_ActsSecurityDataTest.ninja
+rule __test_xts_acts_startup_lite_bootstrap_hal_ActsBootstrapTest___build_lite_toolchain_riscv32-unknown-elf__rule
+  command = /usr/bin/python3 ../../../test/xts/tools/lite/build/suite.py build_module --build_target_name ActsBootstrapTest --target_file /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/libs/libmodule_ActsBootstrapTest.a --project_path /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/test/xts/acts/startup_lite/bootstrap_hal --test_xml /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/test/xts/acts/startup_lite/bootstrap_hal/Test.json --project_type hctest --suite_out_paths /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/suites/acts/testcases/startup, --suite_filename libActsBootstrapTest.a --subsystem_name startup --hap_name , --hap_sign ,
+  description = ACTION //test/xts/acts/startup_lite/bootstrap_hal:ActsBootstrapTest(//build/lite/toolchain:riscv32-unknown-elf)
+  restat = 1
+
+build suites/acts/testcases/startup/libActsBootstrapTest.a: __test_xts_acts_startup_lite_bootstrap_hal_ActsBootstrapTest___build_lite_toolchain_riscv32-unknown-elf__rule | ../../../test/xts/tools/lite/build/suite.py ./libs/libmodule_ActsBootstrapTest.a ./libs/libhctest.a
+
+build obj/test/xts/acts/startup_lite/bootstrap_hal/ActsBootstrapTest.stamp: stamp suites/acts/testcases/startup/libActsBootstrapTest.a
+subninja obj/test/xts/acts/startup_lite/bootstrap_hal/module_ActsBootstrapTest.ninja
+rule __test_xts_acts_startup_lite_syspara_hal_ActsParameterTest___build_lite_toolchain_riscv32-unknown-elf__rule
+  command = /usr/bin/python3 ../../../test/xts/tools/lite/build/suite.py build_module --build_target_name ActsParameterTest --target_file /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/libs/libmodule_ActsParameterTest.a --project_path /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/test/xts/acts/startup_lite/syspara_hal --test_xml /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/test/xts/acts/startup_lite/syspara_hal/Test.json --project_type hctest --suite_out_paths /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/suites/acts/testcases/startup, --suite_filename libActsParameterTest.a --subsystem_name startup --hap_name , --hap_sign ,
+  description = ACTION //test/xts/acts/startup_lite/syspara_hal:ActsParameterTest(//build/lite/toolchain:riscv32-unknown-elf)
+  restat = 1
+
+build suites/acts/testcases/startup/libActsParameterTest.a: __test_xts_acts_startup_lite_syspara_hal_ActsParameterTest___build_lite_toolchain_riscv32-unknown-elf__rule | ../../../test/xts/tools/lite/build/suite.py ./libs/libmodule_ActsParameterTest.a ./libs/libhctest.a
+
+build obj/test/xts/acts/startup_lite/syspara_hal/ActsParameterTest.stamp: stamp suites/acts/testcases/startup/libActsParameterTest.a
+subninja obj/test/xts/acts/startup_lite/syspara_hal/module_ActsParameterTest.ninja
+rule __test_xts_acts_update_lite_updater_hal_ActsUpdaterFuncTest___build_lite_toolchain_riscv32-unknown-elf__rule
+  command = /usr/bin/python3 ../../../test/xts/tools/lite/build/suite.py build_module --build_target_name ActsUpdaterFuncTest --target_file /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/libs/libmodule_ActsUpdaterFuncTest.a --project_path /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/test/xts/acts/update_lite/updater_hal --test_xml /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/test/xts/acts/update_lite/updater_hal/Test.json --project_type hctest --suite_out_paths /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/suites/acts/testcases/update, --suite_filename libActsUpdaterFuncTest.a --subsystem_name update --hap_name , --hap_sign ,
+  description = ACTION //test/xts/acts/update_lite/updater_hal:ActsUpdaterFuncTest(//build/lite/toolchain:riscv32-unknown-elf)
+  restat = 1
+
+build suites/acts/testcases/update/libActsUpdaterFuncTest.a: __test_xts_acts_update_lite_updater_hal_ActsUpdaterFuncTest___build_lite_toolchain_riscv32-unknown-elf__rule | ../../../test/xts/tools/lite/build/suite.py ./libs/libmodule_ActsUpdaterFuncTest.a ./libs/libhctest.a
+
+build obj/test/xts/acts/update_lite/updater_hal/ActsUpdaterFuncTest.stamp: stamp suites/acts/testcases/update/libActsUpdaterFuncTest.a
+subninja obj/test/xts/acts/update_lite/updater_hal/module_ActsUpdaterFuncTest.ninja
+rule __test_xts_acts_utils_lite_file_hal_ActsUtilsFileTest___build_lite_toolchain_riscv32-unknown-elf__rule
+  command = /usr/bin/python3 ../../../test/xts/tools/lite/build/suite.py build_module --build_target_name ActsUtilsFileTest --target_file /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/libs/libmodule_ActsUtilsFileTest.a --project_path /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/test/xts/acts/utils_lite/file_hal --test_xml /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/test/xts/acts/utils_lite/file_hal/Test.json --project_type hctest --suite_out_paths /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/suites/acts/testcases/utils, --suite_filename libActsUtilsFileTest.a --subsystem_name utils --hap_name , --hap_sign ,
+  description = ACTION //test/xts/acts/utils_lite/file_hal:ActsUtilsFileTest(//build/lite/toolchain:riscv32-unknown-elf)
+  restat = 1
+
+build suites/acts/testcases/utils/libActsUtilsFileTest.a: __test_xts_acts_utils_lite_file_hal_ActsUtilsFileTest___build_lite_toolchain_riscv32-unknown-elf__rule | ../../../test/xts/tools/lite/build/suite.py ./libs/libmodule_ActsUtilsFileTest.a ./libs/libhctest.a
+
+build obj/test/xts/acts/utils_lite/file_hal/ActsUtilsFileTest.stamp: stamp suites/acts/testcases/utils/libActsUtilsFileTest.a
+subninja obj/test/xts/acts/utils_lite/file_hal/module_ActsUtilsFileTest.ninja
+rule __test_xts_acts_utils_lite_kv_store_hal_ActsKvStoreTest___build_lite_toolchain_riscv32-unknown-elf__rule
+  command = /usr/bin/python3 ../../../test/xts/tools/lite/build/suite.py build_module --build_target_name ActsKvStoreTest --target_file /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/libs/libmodule_ActsKvStoreTest.a --project_path /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/test/xts/acts/utils_lite/kv_store_hal --test_xml /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/test/xts/acts/utils_lite/kv_store_hal/Test.json --project_type hctest --suite_out_paths /home/wangbinquan01/ly-evk-release/hi3861-evk-bank-2022-01-14/out/hispark_pegasus/wifiiot_hispark_pegasus/suites/acts/testcases/utils, --suite_filename libActsKvStoreTest.a --subsystem_name utils --hap_name , --hap_sign ,
+  description = ACTION //test/xts/acts/utils_lite/kv_store_hal:ActsKvStoreTest(//build/lite/toolchain:riscv32-unknown-elf)
+  restat = 1
+
+build suites/acts/testcases/utils/libActsKvStoreTest.a: __test_xts_acts_utils_lite_kv_store_hal_ActsKvStoreTest___build_lite_toolchain_riscv32-unknown-elf__rule | ../../../test/xts/tools/lite/build/suite.py ./libs/libmodule_ActsKvStoreTest.a ./libs/libhctest.a
+
+build obj/test/xts/acts/utils_lite/kv_store_hal/ActsKvStoreTest.stamp: stamp suites/acts/testcases/utils/libActsKvStoreTest.a
+subninja obj/test/xts/acts/utils_lite/kv_store_hal/module_ActsKvStoreTest.ninja
+build obj/test/xts/tools/lite/tools.stamp: stamp ./libs/libhctest.a
+subninja obj/test/xts/tools/lite/hctest/hctest.ninja
+build obj/utils/native/lite/file/file.stamp: stamp ./libs/libnative_file.a
+subninja obj/utils/native/lite/file/native_file.ninja
+build obj/utils/native/lite/kv_store/kv_store.stamp: stamp ./libs/libutils_kv_store.a
+subninja obj/utils/native/lite/kv_store/src/utils_kv_store.ninja
+subninja obj/utils/native/lite/os_dump/dump_static.ninja
+build obj/utils/native/lite/os_dump/utils_os_dump.stamp: stamp ./libs/libdump_static.a
+build obj/vendor/hisilicon/hispark_pegasus/hispark_pegasus.stamp: stamp
+subninja obj/vendor/hisilicon/hispark_pegasus/hals/utils/sys_param/hal_sysparam.ninja
+subninja obj/vendor/hisilicon/hispark_pegasus/hals/utils/token/hal_token_static.ninja

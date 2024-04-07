@@ -1,0 +1,90 @@
+# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//foundation/appexecfwk/standard/appexecfwk.gni")
+
+config("appmgr_config") {
+  include_dirs = [
+    "include",
+    "${appspawn_path}/include",
+    "//utils/system/safwk/native/include",
+  ]
+}
+
+group("ams_target") {
+  deps = [
+    ":libams",
+    "examples:appmgrserviceregtest",
+    "examples:appspawnclienttest",
+  ]
+}
+
+ohos_shared_library("libams") {
+  sources = [
+    "src/ability_running_record.cpp",
+    "src/ams_mgr_scheduler.cpp",
+    "src/app_death_recipient.cpp",
+    "src/app_lifecycle_deal.cpp",
+    "src/app_mgr_service.cpp",
+    "src/app_mgr_service_event_handler.cpp",
+    "src/app_mgr_service_inner.cpp",
+    "src/app_process_manager.cpp",
+    "src/app_running_manager.cpp",
+    "src/app_running_record.cpp",
+    "src/app_spawn_client.cpp",
+    "src/app_spawn_msg_wrapper.cpp",
+    "src/app_spawn_socket.cpp",
+    "src/cgroup_manager.cpp",
+    "src/lmk_util.cpp",
+    "src/lmkd_client.cpp",
+    "src/process_optimizer.cpp",
+    "src/process_optimizer_uba.cpp",
+    "src/remote_client_manager.cpp",
+  ]
+
+  defines = [
+    "APP_LOG_TAG = \"AppMgrService\"",
+    "LOG_DOMAIN = 0xD001110",
+  ]
+
+  configs = [
+    ":appmgr_config",
+    "${libs_path}/libeventhandler:libeventhandler_config",
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_core:appmgr_sdk_config",
+  ]
+  cflags = []
+  if (target_cpu == "arm") {
+    cflags += [ "-DBINDER_IPC_32BIT" ]
+  }
+  deps = [
+    "${appexecfwk_path}/common:libappexecfwk_common",
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_base:appexecfwk_base",
+    "${appexecfwk_path}/interfaces/innerkits/appexecfwk_core:appexecfwk_core",
+    "${libs_path}/libeventhandler:libeventhandler_target",
+    "//base/startup/appspawn_standard:appspawn_socket_client",
+    "//foundation/aafwk/standard/interfaces/innerkits/base:base",
+    "//foundation/aafwk/standard/interfaces/innerkits/want:want",
+    "//foundation/distributedschedule/safwk/interfaces/innerkits/safwk:system_ability_fwk",
+    "//foundation/distributedschedule/samgr/interfaces/innerkits/samgr_proxy:samgr_proxy",
+    "//utils/native/base:utils",
+  ]
+
+  external_deps = [
+    "hiviewdfx_hilog_native:libhilog",
+    "ipc:ipc_core",
+  ]
+
+  subsystem_name = "appexecfwk"
+  part_name = "appexecfwk_standard"
+}

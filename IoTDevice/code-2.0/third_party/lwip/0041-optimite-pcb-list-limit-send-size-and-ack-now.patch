@@ -1,0 +1,374 @@
+From 08716b71ccb93c6d998d1654c1fac137f29d2851 Mon Sep 17 00:00:00 2001
+From: wuchangsheng <wuchangsheng2@huawei.com>
+Date: Tue, 13 Dec 2022 22:27:33 +0800
+Subject: [PATCH] optimite pcb-list limit , send size and ack now
+
+---
+ src/core/tcp.c         |   1 +
+ src/core/tcp_in.c      |  16 +++++++-
+ src/core/tcp_out.c     | 103 ++++++++++++++++++++++++++++++-------------------
+ src/include/lwip/opt.h |   2 +-
+ src/include/lwip/tcp.h |   2 +
+ src/include/lwipsock.h |   2 -
+ 6 files changed, 83 insertions(+), 43 deletions(-)
+
+diff --git a/src/core/tcp.c b/src/core/tcp.c
+index 51ada38..cb08f95 100644
+--- a/src/core/tcp.c
++++ b/src/core/tcp.c
+@@ -2297,6 +2297,7 @@ tcp_pcb_purge(struct tcp_pcb *pcb)
+     tcp_segs_free(pcb->unsent);
+     tcp_segs_free(pcb->unacked);
+     pcb->unacked = pcb->unsent = NULL;
++    pcb->last_unacked = pcb->last_unsent = NULL;
+ #if TCP_OVERSIZE
+     pcb->unsent_oversize = 0;
+ #endif /* TCP_OVERSIZE */
+diff --git a/src/core/tcp_in.c b/src/core/tcp_in.c
+index 2d6cb6a..78954bd 100644
+--- a/src/core/tcp_in.c
++++ b/src/core/tcp_in.c
+@@ -976,8 +976,14 @@ tcp_process(struct tcp_pcb *pcb)
+           rseg = pcb->unsent;
+           LWIP_ASSERT("no segment to free", rseg != NULL);
+           pcb->unsent = rseg->next;
++          if (pcb->last_unsent == rseg) {
++            pcb->last_unsent = rseg->next;
++          }
+         } else {
+           pcb->unacked = rseg->next;
++          if (pcb->last_unacked == rseg) {
++            pcb->last_unacked = rseg->next;
++          }
+         }
+         tcp_seg_free(rseg);
+ 
+@@ -1393,6 +1399,8 @@ tcp_receive(struct tcp_pcb *pcb)
+       /* Remove segment from the unacknowledged list if the incoming
+          ACK acknowledges them. */
+       pcb->unacked = tcp_free_acked_segments(pcb, pcb->unacked, "unacked", pcb->unsent);
++      if (pcb->unacked == NULL)
++        pcb->last_unacked = NULL;
+       /* We go through the ->unsent list to see if any of the segments
+          on the list are acknowledged by the ACK. This may seem
+          strange since an "unsent" segment shouldn't be acked. The
+@@ -1400,6 +1408,8 @@ tcp_receive(struct tcp_pcb *pcb)
+          ->unsent list after a retransmission, so these segments may
+          in fact have been sent once. */
+       pcb->unsent = tcp_free_acked_segments(pcb, pcb->unsent, "unsent", pcb->unacked);
++      if (pcb->unsent == NULL)
++        pcb->last_unsent = NULL;
+ 
+       /* If there's nothing left to acknowledge, stop the retransmit
+          timer, otherwise reset it to start again */
+@@ -1736,7 +1746,11 @@ tcp_receive(struct tcp_pcb *pcb)
+ 
+ 
+         /* Acknowledge the segment(s). */
+-        tcp_ack(pcb);
++        if (flags & TCP_PSH) {
++            tcp_ack_now(pcb);
++        } else {
++            tcp_ack(pcb);
++        }
+ 
+ #if LWIP_TCP_SACK_OUT
+         if (LWIP_TCP_SACK_VALID(pcb, 0)) {
+diff --git a/src/core/tcp_out.c b/src/core/tcp_out.c
+index f53750b..55053d8 100644
+--- a/src/core/tcp_out.c
++++ b/src/core/tcp_out.c
+@@ -631,11 +631,7 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
+ #endif /* TCP_OVERSIZE */
+   }
+ #else /* USE_LIBOS */
+-  if (pcb->unsent != NULL) {
+-    /* @todo: this could be sped up by keeping last_unsent in the pcb */
+-    for (last_unsent = pcb->unsent; last_unsent->next != NULL;
+-         last_unsent = last_unsent->next);
+-  }
++  last_unsent = pcb->last_unsent;
+ #endif /* USE_LIBOS */
+ 
+   /*
+@@ -851,6 +847,9 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
+    * Finally update the pcb state.
+    */
+ #if USE_LIBOS
++  if (queue) {
++    pcb->last_unsent = prev_seg;
++  }
+   pcb->snd_lbb += pos;
+   pcb->snd_buf -= pos;
+ #else
+@@ -1050,6 +1049,8 @@ tcp_split_unsent_seg(struct tcp_pcb *pcb, u16_t split)
+   /* Finally insert remainder into queue after split (which stays head) */
+   seg->next = useg->next;
+   useg->next = seg;
++  if (pcb->last_unsent == useg)
++    pcb->last_unsent = seg;
+ 
+ #if TCP_OVERSIZE
+   /* If remainder is last segment on the unsent, ensure we clear the oversize amount
+@@ -1086,9 +1087,7 @@ tcp_send_fin(struct tcp_pcb *pcb)
+ 
+   /* first, try to add the fin to the last unsent segment */
+   if (pcb->unsent != NULL) {
+-    struct tcp_seg *last_unsent;
+-    for (last_unsent = pcb->unsent; last_unsent->next != NULL;
+-         last_unsent = last_unsent->next);
++    struct tcp_seg *last_unsent = pcb->unsent;
+ 
+     if ((TCPH_FLAGS(last_unsent->tcphdr) & (TCP_SYN | TCP_FIN | TCP_RST)) == 0) {
+       /* no SYN/FIN/RST flag in the header, we can add the FIN flag */
+@@ -1182,10 +1181,10 @@ tcp_enqueue_flags(struct tcp_pcb *pcb, u8_t flags)
+   if (pcb->unsent == NULL) {
+     pcb->unsent = seg;
+   } else {
+-    struct tcp_seg *useg;
+-    for (useg = pcb->unsent; useg->next != NULL; useg = useg->next);
++    struct tcp_seg *useg = pcb->last_unsent;
+     useg->next = seg;
+   }
++  pcb->last_unsent = seg;
+ #if TCP_OVERSIZE
+   /* The new unsent tail has no space */
+   pcb->unsent_oversize = 0;
+@@ -1314,6 +1313,7 @@ static struct tcp_seg *tcp_output_over(struct tcp_pcb *pcb, struct tcp_seg *seg,
+     seg->next = NULL;
+     if (useg == NULL) {
+       pcb->unacked = seg;
++      pcb->last_unacked = seg;
+       useg = seg;
+     } else {
+       if (TCP_SEQ_LT(lwip_ntohl(seg->tcphdr->seqno), lwip_ntohl(useg->tcphdr->seqno))) {
+@@ -1329,6 +1329,7 @@ static struct tcp_seg *tcp_output_over(struct tcp_pcb *pcb, struct tcp_seg *seg,
+         /* add segment to tail of unacked list */
+         useg->next = seg;
+         useg = seg;
++        pcb->last_unacked = seg;
+       }
+     }
+   } else {
+@@ -1460,15 +1461,14 @@ tcp_output(struct tcp_pcb *pcb)
+   pcb->persist_backoff = 0;
+ 
+   /* useg should point to last segment on unacked queue */
+-  useg = pcb->unacked;
+-  if (useg != NULL) {
+-    for (; useg->next != NULL; useg = useg->next);
+-  }
++  useg = pcb->last_unacked;
++
+   /* data available and window allows it to be sent? */
+ 
++  u32_t send_len = 0;
+ #if USE_LIBOS
+   if (get_eth_params_tx_ol() & DEV_TX_OFFLOAD_TCP_TSO) {
+-    while(seg) {
++    while(seg && send_len < 0xffff) {
+       /**
+        * 1）遍历unsent队列，找到所有的待发送seg. 将seg的buf串起来
+        * 2) 生成新的seg, 调用tcp_output_segment, 新的seg释放掉
+@@ -1510,6 +1510,7 @@ tcp_output(struct tcp_pcb *pcb)
+           pre_pbuf->next = seg->p;
+         }
+ 
++        send_len += seg->len;
+         pre_pbuf = seg->p;
+         next_seqno = seg_seqno + TCP_TCPLEN(seg);
+         seg = seg->next;
+@@ -1519,8 +1520,11 @@ tcp_output(struct tcp_pcb *pcb)
+ 
+       if (first_pbuf == NULL) {
+         err = tcp_output_seg(pcb, seg, netif, next_seqno + seg->len);
+-        if (err != ERR_OK)
++        if (err != ERR_OK) {
++          if (pcb->unsent == NULL)
++            pcb->last_unsent = NULL;
+           return err;
++        }
+         pcb->unsent = seg->next;
+         useg = tcp_output_over(pcb, seg, useg);
+         seg = pcb->unsent;
+@@ -1545,7 +1549,7 @@ tcp_output(struct tcp_pcb *pcb)
+   } else
+ #endif
+ {
+-  while (seg != NULL &&
++  while (seg != NULL && send_len < 0xffff &&
+          lwip_ntohl(seg->tcphdr->seqno) - pcb->lastack + seg->len <= wnd) {
+     LWIP_ASSERT("RST not expected here!",
+                 (TCPH_FLAGS(seg->tcphdr) & TCP_RST) == 0);
+@@ -1560,6 +1564,7 @@ tcp_output(struct tcp_pcb *pcb)
+         ((pcb->flags & (TF_NAGLEMEMERR | TF_FIN)) == 0)) {
+       break;
+     }
++    send_len += seg->len;
+ #if TCP_CWND_DEBUG
+     LWIP_DEBUGF(TCP_CWND_DEBUG, ("tcp_output: snd_wnd %"TCPWNDSIZE_F", cwnd %"TCPWNDSIZE_F", wnd %"U32_F", effwnd %"U32_F", seq %"U32_F", ack %"U32_F", i %"S16_F"\n",
+                                  pcb->snd_wnd, pcb->cwnd, wnd,
+@@ -1577,6 +1582,8 @@ tcp_output(struct tcp_pcb *pcb)
+     if (err != ERR_OK) {
+       /* segment could not be sent, for whatever reason */
+       tcp_set_flags(pcb, TF_NAGLEMEMERR);
++      if (pcb->unsent == NULL)
++        pcb->last_unsent = NULL;
+       return err;
+     }
+ #if TCP_OVERSIZE_DBGCHECK
+@@ -1596,6 +1603,7 @@ tcp_output(struct tcp_pcb *pcb)
+       /* unacked list is empty? */
+       if (pcb->unacked == NULL) {
+         pcb->unacked = seg;
++        pcb->last_unacked = seg;
+         useg = seg;
+         /* unacked list is not empty? */
+       } else {
+@@ -1615,6 +1623,7 @@ tcp_output(struct tcp_pcb *pcb)
+           /* add segment to tail of unacked list */
+           useg->next = seg;
+           useg = useg->next;
++          pcb->last_unacked = seg;
+         }
+       }
+       /* do not queue empty segments on the unacked list */
+@@ -1632,6 +1641,8 @@ tcp_output(struct tcp_pcb *pcb)
+ #endif /* TCP_OVERSIZE */
+ 
+ output_done:
++  if (pcb->unsent == NULL)
++    pcb->last_unsent = NULL;
+   tcp_clear_flags(pcb, TF_NAGLEMEMERR);
+   return ERR_OK;
+ }
+@@ -1932,9 +1943,13 @@ tcp_rexmit_rto_prepare(struct tcp_pcb *pcb)
+   }
+ #endif /* TCP_OVERSIZE_DBGCHECK */
+   /* unsent queue is the concatenated queue (of unacked, unsent) */
++  if (pcb->unsent == NULL) {
++    pcb->last_unsent = pcb->last_unacked;
++  }
+   pcb->unsent = pcb->unacked;
+   /* unacked queue is now empty */
+   pcb->unacked = NULL;
++  pcb->last_unacked = NULL;
+ 
+   /* Mark RTO in-progress */
+   tcp_set_flags(pcb, TF_RTO);
+@@ -2004,32 +2019,42 @@ tcp_rexmit(struct tcp_pcb *pcb)
+   }
+ 
+   seg = pcb->unacked;
++  while (seg) {
++    /* Give up if the segment is still referenced by the netif driver
++      due to deferred transmission. */
++    if (tcp_output_segment_busy(seg)) {
++      LWIP_DEBUGF(TCP_RTO_DEBUG, ("tcp_rexmit busy\n"));
++      if (seg == pcb->unacked)
++        return ERR_VAL;
++      else
++        break;
++    }
+ 
+-  /* Give up if the segment is still referenced by the netif driver
+-     due to deferred transmission. */
+-  if (tcp_output_segment_busy(seg)) {
+-    LWIP_DEBUGF(TCP_RTO_DEBUG, ("tcp_rexmit busy\n"));
+-    return ERR_VAL;
+-  }
+-
+-  /* Move the first unacked segment to the unsent queue */
+-  /* Keep the unsent queue sorted. */
+-  pcb->unacked = seg->next;
++    /* Move the first unacked segment to the unsent queue */
++    /* Keep the unsent queue sorted. */
++    if (pcb->last_unacked == pcb->unacked)
++      pcb->last_unacked = pcb->unacked->next;
++    pcb->unacked = pcb->unacked->next;
+ 
+-  cur_seg = &(pcb->unsent);
+-  while (*cur_seg &&
+-         TCP_SEQ_LT(lwip_ntohl((*cur_seg)->tcphdr->seqno), lwip_ntohl(seg->tcphdr->seqno))) {
+-    cur_seg = &((*cur_seg)->next );
+-  }
+-  seg->next = *cur_seg;
+-  *cur_seg = seg;
++    cur_seg = &(pcb->unsent);
++    while (*cur_seg &&
++          TCP_SEQ_LT(lwip_ntohl((*cur_seg)->tcphdr->seqno), lwip_ntohl(seg->tcphdr->seqno))) {
++      cur_seg = &((*cur_seg)->next);
++    }
++    if (*cur_seg == NULL)
++      pcb->last_unsent = seg;
++    seg->next = *cur_seg;
++    *cur_seg = seg;
+ #if TCP_OVERSIZE
+-  if (seg->next == NULL) {
+-    /* the retransmitted segment is last in unsent, so reset unsent_oversize */
+-    pcb->unsent_oversize = 0;
+-  }
++    if (seg->next == NULL) {
++      /* the retransmitted segment is last in unsent, so reset unsent_oversize */
++      pcb->unsent_oversize = 0;
++    }
+ #endif /* TCP_OVERSIZE */
+ 
++    seg = pcb->unacked;
++  }
++
+   if (pcb->nrtx < 0xFF) {
+     ++pcb->nrtx;
+   }
+@@ -2207,7 +2232,7 @@ tcp_output_control_segment(const struct tcp_pcb *pcb, struct pbuf *p,
+       struct tcp_hdr *tcphdr = (struct tcp_hdr *)p->payload;
+ #if CHECKSUM_GEN_TCP_HW
+     if (get_eth_params_tx_ol() & DEV_TX_OFFLOAD_TCP_CKSUM) {
+-      tcph_cksum_set(p, TCP_HLEN);
++      tcph_cksum_set(p, TCPH_HDRLEN_BYTES(tcphdr));
+       tcphdr->chksum = ip_chksum_pseudo_offload(IP_PROTO_TCP, p->tot_len, src, dst);
+     } else {
+       tcphdr->chksum = ip_chksum_pseudo(p, IP_PROTO_TCP, p->tot_len,
+diff --git a/src/include/lwip/opt.h b/src/include/lwip/opt.h
+index 8294cdd..83e7e93 100644
+--- a/src/include/lwip/opt.h
++++ b/src/include/lwip/opt.h
+@@ -1281,7 +1281,7 @@
+  * LWIP_TCP_SACK_OUT==1: TCP will support sending selective acknowledgements (SACKs).
+  */
+ #if !defined LWIP_TCP_SACK_OUT || defined __DOXYGEN__
+-#define LWIP_TCP_SACK_OUT               0
++#define LWIP_TCP_SACK_OUT               1
+ #endif
+ 
+ /**
+diff --git a/src/include/lwip/tcp.h b/src/include/lwip/tcp.h
+index b36bf33..b0ae02c 100644
+--- a/src/include/lwip/tcp.h
++++ b/src/include/lwip/tcp.h
+@@ -356,7 +356,9 @@ struct tcp_pcb {
+ 
+   /* These are ordered by sequence number: */
+   struct tcp_seg *unsent;   /* Unsent (queued) segments. */
++  struct tcp_seg *last_unsent;
+   struct tcp_seg *unacked;  /* Sent but unacknowledged segments. */
++  struct tcp_seg *last_unacked;
+ #if TCP_QUEUE_OOSEQ
+   struct tcp_seg *ooseq;    /* Received out of sequence segments. */
+ #endif /* TCP_QUEUE_OOSEQ */
+diff --git a/src/include/lwipsock.h b/src/include/lwipsock.h
+index f919330..bf0d753 100644
+--- a/src/include/lwipsock.h
++++ b/src/include/lwipsock.h
+@@ -112,8 +112,6 @@ struct lwip_sock {
+   struct list_node send_list;
+   struct pbuf *send_lastdata;
+   struct pbuf *send_pre_del;
+-  uint64_t recv_all;
+-  uint64_t send_all;
+ 
+   char pad3 __rte_cache_aligned;
+   /* nerver change */
+-- 
+2.8.4.windows.1
+

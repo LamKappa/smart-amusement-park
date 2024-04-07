@@ -1,0 +1,42 @@
+From 73d78d322ba8bb997d74c92727d1ec8b8640607f Mon Sep 17 00:00:00 2001
+From: kircher <majun65@huawei.com>
+Date: Wed, 21 Jun 2023 16:59:34 +0800
+Subject: [PATCH] enable UDP CKSUM in lwip
+
+---
+ src/include/dpdk_cksum.h | 1 +
+ src/include/lwipopts.h   | 6 ++++++
+ 2 files changed, 7 insertions(+)
+
+diff --git a/src/include/dpdk_cksum.h b/src/include/dpdk_cksum.h
+index b48c926..2c5b31e 100644
+--- a/src/include/dpdk_cksum.h
++++ b/src/include/dpdk_cksum.h
+@@ -87,6 +87,7 @@ static inline void tcph_cksum_set(struct pbuf *p, u16_t len) {
+ 
+ static inline void udph_cksum_set(struct pbuf *p, u16_t len) {
+     p->l4_len = len;
++    p->ol_flags |= RTE_MBUF_F_TX_UDP_CKSUM;
+ }
+ 
+ static inline u16_t ip_chksum_pseudo_offload(u8_t proto, u16_t proto_len,
+diff --git a/src/include/lwipopts.h b/src/include/lwipopts.h
+index f0df0e3..2ba1e4c 100644
+--- a/src/include/lwipopts.h
++++ b/src/include/lwipopts.h
+@@ -180,6 +180,12 @@
+    ---------------------------------
+ */
+ #define LWIP_UDP 1
++
++#define UDP_HLEN 8
++
++#define MEMP_NUM_UDP_PCB 16
++#define MEMP_NUM_IGMP_GROUP 16
++
+ #define DEFAULT_UDP_RECVMBOX_SIZE 4096
+ 
+ 
+-- 
+2.33.0
+

@@ -1,0 +1,25 @@
+From c2c7c2f5bbf84f62acc6468113b1f11cdc6b8410 Mon Sep 17 00:00:00 2001
+From: jiangheng <jiangheng14@huawei.com>
+Date: Sat, 22 Oct 2022 16:05:37 +0800
+Subject: [PATCH] add fs secure compilation option
+
+---
+ src/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/Makefile b/src/Makefile
+index 1676a71..f445601 100644
+--- a/src/Makefile
++++ b/src/Makefile
+@@ -4,7 +4,7 @@ ROOT_DIR := $(dir $(abspath $(LWIP_DIR)))
+ LWIP_INC = $(LWIP_DIR)/include
+ DPDK_INCLUDE_FILE ?= /usr/include/dpdk
+ 
+-SEC_FLAGS = -fstack-protector-strong -Werror -Wall -Wl,-z,relro,-z,now -Wl,-z,noexecstack -Wtrampolines -fPIC
++SEC_FLAGS = -fstack-protector-strong -Werror -Wall -Wl,-z,relro,-z,now -Wl,-z,noexecstack -Wtrampolines -fPIC -D_FORTIRY_SOURCE=2 -O2
+ 
+ CC = gcc
+ AR = ar
+-- 
+2.23.0
+

@@ -1,0 +1,4 @@
+[compile exit status]:1
+[compile console output]:
+Error: ./20_broken_array_ei/case.hcs:5
+	syntax error, unexpected '}', expecting NUMBER

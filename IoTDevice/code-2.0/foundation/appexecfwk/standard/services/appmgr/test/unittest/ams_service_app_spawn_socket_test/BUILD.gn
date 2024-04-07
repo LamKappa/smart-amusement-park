@@ -1,0 +1,51 @@
+# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/test.gni")
+import("//foundation/appexecfwk/standard/appexecfwk.gni")
+
+module_output_path = "appexecfwk_standard/appmgrservice"
+
+ohos_unittest("AmsServiceAppSpawnSocketTest") {
+  module_out_path = module_output_path
+
+  include_dirs = [ "//base/startup/appspawn_standard/test/mock/include" ]
+
+  defines = [ "usleep(time) = MockSleep(time)" ]
+
+  sources = [ "${services_path}/appmgr/src/app_spawn_socket.cpp" ]
+
+  sources += [ "ams_service_app_spawn_socket_test.cpp" ]
+
+  configs = [ "${libs_path}/libeventhandler:libeventhandler_config" ]
+  cflags = []
+  if (target_cpu == "arm") {
+    cflags += [ "-DBINDER_IPC_32BIT" ]
+  }
+  deps = [
+    "${libs_path}/libeventhandler:libeventhandler_target",
+    "${services_path}/appmgr/test:appmgr_test_source",
+    "//base/startup/appspawn_standard:appspawn_socket_client",
+  ]
+
+  external_deps = [
+    "hiviewdfx_hilog_native:libhilog",
+    "ipc:ipc_core",
+  ]
+}
+
+group("unittest") {
+  testonly = true
+
+  deps = [ ":AmsServiceAppSpawnSocketTest" ]
+}

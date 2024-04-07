@@ -1,0 +1,325 @@
+From abeef0770f76cd0eff8e5c6e50de0b280079d7f0 Mon Sep 17 00:00:00 2001
+From: jiangheng <jiangheng14@huawei.com>
+Date: Mon, 13 Mar 2023 19:25:42 +0800
+Subject: [PATCH] fix tso small packet drop in kernel server
+
+---
+ src/core/tcp_out.c     | 254 +++++++++++++++++++++--------------------
+ src/include/lwipopts.h |   2 +
+ 2 files changed, 130 insertions(+), 126 deletions(-)
+
+diff --git a/src/core/tcp_out.c b/src/core/tcp_out.c
+index 8a0d653..b1c317d 100644
+--- a/src/core/tcp_out.c
++++ b/src/core/tcp_out.c
+@@ -1312,60 +1312,33 @@ tcp_build_wnd_scale_option(u32_t *opts)
+ #endif
+ 
+ #if GAZELLE_ENABLE
+-static struct tcp_seg *tcp_output_over(struct tcp_pcb *pcb, struct tcp_seg *seg, struct tcp_seg *useg)
+-{
+-  if (TCP_TCPLEN(seg) > 0) {
+-    seg->next = NULL;
+-    if (useg == NULL) {
+-      pcb->unacked = seg;
+-      pcb->last_unacked = seg;
+-      useg = seg;
+-    } else {
+-      if (TCP_SEQ_LT(lwip_ntohl(seg->tcphdr->seqno), lwip_ntohl(useg->tcphdr->seqno))) {
+-        /* add segment to before tail of unacked list, keeping the list sorted */
+-        struct tcp_seg **cur_seg = &(pcb->unacked);
+-        while (*cur_seg &&
+-              TCP_SEQ_LT(lwip_ntohl((*cur_seg)->tcphdr->seqno), lwip_ntohl(seg->tcphdr->seqno))) {
+-          cur_seg = &((*cur_seg)->next );
+-        }
+-        seg->next = (*cur_seg);
+-        (*cur_seg) = seg;
+-      } else {
+-        /* add segment to tail of unacked list */
+-        useg->next = seg;
+-        useg = seg;
+-        pcb->last_unacked = seg;
+-      }
+-    }
+-  } else {
+-    tcp_seg_free(seg);
+-  }
+-
+-  return useg;
+-}
+-static err_t tcp_output_seg(struct tcp_pcb *pcb, struct tcp_seg *seg, struct netif *netif, u32_t snd_nxt)
+-{
+-  if (pcb->state != SYN_SENT) {
+-    TCPH_SET_FLAG(seg->tcphdr, TCP_ACK);
+-  }
+-
+-  err_t err = tcp_output_segment(seg, pcb, netif);
+-  if (err != ERR_OK) {
+-    /* segment could not be sent, for whatever reason */
+-    tcp_set_flags(pcb, TF_NAGLEMEMERR);
+-    return err;
+-  }
+-
+-  if (pcb->state != SYN_SENT) {
+-    tcp_clear_flags(pcb, TF_ACK_DELAY | TF_ACK_NOW);
+-  }
+-
+-  if (TCP_SEQ_LT(pcb->snd_nxt, snd_nxt)) {
+-      pcb->snd_nxt = snd_nxt;
+-  }
+-
+-  return ERR_OK;
+-}
++u32_t start_seqno = 0;
++#define TCP_INIT_SEGMENT(tem_seg, _pcb, _p, _hdrflags, _seqno, _optflags) \
++do { \
++  struct tcp_seg *_seg = tem_seg; \
++  u8_t _optlen; \
++  rte_prefetch2(_p); \
++ \
++  _optlen = LWIP_TCP_OPT_LENGTH_SEGMENT(_optflags, _pcb); \
++  _seg->flags = _optflags; \
++  _seg->next = NULL; \
++  _seg->p = _p; \
++  _seg->len = _p->tot_len - _optlen; \
++  /* build TCP header */ \
++  pbuf_add_header(_p, TCP_HLEN); \
++  _seg->tcphdr = (struct tcp_hdr *)_seg->p->payload; \
++  _seg->tcphdr->src = lwip_htons(_pcb->local_port); \
++  _seg->tcphdr->dest = lwip_htons(_pcb->remote_port); \
++ /* _seg->tcphdr->src = lwip_htons(_pcb->local_port); \ */ \
++ /* _seg->tcphdr->dest = lwip_htons(_pcb->remote_port); \ */ \
++  _seg->tcphdr->seqno = lwip_htonl(_seqno); \
++                                          \
++  if (start_seqno == 0) {\
++      start_seqno = _seqno; \
++  } \
++  TCPH_HDRLEN_FLAGS_SET(_seg->tcphdr, (5 + _optlen / 4), _hdrflags); \
++  _seg->tcphdr->urgp = 0; \
++} while(0)
+ #endif
+ /**
+  * @ingroup tcp_raw
+@@ -1471,97 +1444,127 @@ tcp_output(struct tcp_pcb *pcb)
+   pcb->persist_backoff = 0;
+ 
+   /* useg should point to last segment on unacked queue */
+-  useg = pcb->last_unacked;
++  useg = pcb->unacked;
++  if (useg != NULL) {
++    for (; useg->next != NULL; useg = useg->next);
++  }
+ 
+   /* data available and window allows it to be sent? */
+-
+-  u32_t send_len = 0;
+ #if GAZELLE_ENABLE
+   if ((get_eth_params_tx_ol() & DEV_TX_OFFLOAD_TCP_TSO) && pcb->need_tso_send) {
+-    while(seg && send_len < 0xffff) {
+-      /**
+-       * 1) walk unsent queue, find all seg witch wait to send. chain buf in these segs.
+-       * 2) create new segment, send and free new segment.
+-       * 3) update snd_nxt, unacked queue, and unsent queue
+-       */
+-      struct tcp_seg *start_seg = seg;
+-      struct pbuf *first_pbuf = NULL;
+-      struct pbuf *pre_pbuf = NULL;
+-      u8_t pbuf_chain_len = 0;
+-      u32_t next_seqno = lwip_ntohl(seg->tcphdr->seqno);
+-      while (seg != NULL && pbuf_chain_len < GAZELLE_TCP_MAX_PBUF_CHAIN_LEN) {
++     uint16_t send_pkt = 0;
++
++     do {
++        struct tcp_seg * start_seg = seg;
++        struct pbuf *new_pbuf = NULL;
++
++        struct pbuf *tmp_pbuf = NULL;
+         u32_t seg_seqno = lwip_ntohl(seg->tcphdr->seqno);
+-        if (seg_seqno - pcb->lastack + seg->len > wnd) {
+-          if (first_pbuf)
+-            break;
+-          else
+-            goto output_done;
++        u32_t last_seg_seqno = seg_seqno;
++
++        struct tcp_seg *last_seg = NULL;
++        u16_t last_seg_len = 0;
++        u8_t pbuf_chain_len = 0;
++        while (seg != NULL && seg_seqno - pcb->lastack + seg->len <= wnd && pbuf_chain_len < GAZELLE_TCP_MAX_PBUF_CHAIN_LEN) {
++            if (last_seg_len != 0 && (last_seg_len + seg->len < 1460) && seg->len < GAZELLE_TCP_MIN_TSO_SEG_LEN) {
++                break;
++            }
++
++            if ((tcp_do_output_nagle(pcb) == 0) &&
++                ((pcb->flags & (TF_NAGLEMEMERR | TF_FIN)) == 0)) {
++                break;
++            }
++            if (last_seg_seqno + last_seg_len == seg_seqno) {
++                pbuf_remove_header(seg->p, seg->p->tot_len - seg->len);
++                if (new_pbuf == NULL) {
++                    new_pbuf = seg->p;
++                    tmp_pbuf = new_pbuf;
++                } else {
++                    new_pbuf->tot_len += seg->p->len;
++                    tmp_pbuf->next = seg->p;
++                    tmp_pbuf = tmp_pbuf->next;
++                }
++            } else {
++                break;
++            }
++
++            last_seg = seg;
++            last_seg_len = seg->len;
++            last_seg_seqno = seg_seqno;
++            seg = seg->next;
++            seg_seqno = (seg != NULL) ? lwip_ntohl(seg->tcphdr->seqno) : seg_seqno;
++            pbuf_chain_len++;
+         }
+ 
+-        if ((tcp_do_output_nagle(pcb) == 0) && ((pcb->flags & (TF_NAGLEMEMERR | TF_FIN)) == 0)) {
+-          if (first_pbuf)
+-            break;
+-          else
+-            goto output_done;
++        // tcp_do_output_nagle, break
++        if (new_pbuf == NULL) {
++            goto end_loop;
+         }
+ 
+-        if (seg->len < TCP_MSS || next_seqno != seg_seqno || pbuf_chain_len >= GAZELLE_TCP_MAX_PBUF_CHAIN_LEN) {
+-          break;
+-        }
+-        if (first_pbuf == NULL && (seg->next == NULL || seg->next->len < TCP_MSS)) {
+-          break;
+-        }
++        struct tcp_seg new_seg;
++        TCP_INIT_SEGMENT(&new_seg, pcb, new_pbuf, 0, lwip_ntohl(start_seg->tcphdr->seqno), 0);
+ 
+-        pbuf_remove_header(seg->p, seg->p->tot_len - seg->len);
+-        if (first_pbuf == NULL) {
+-          first_pbuf = seg->p;
+-        } else {
+-          first_pbuf->tot_len += seg->p->len;
+-          pre_pbuf->next = seg->p;
++        if (pcb->state != SYN_SENT) {
++              TCPH_SET_FLAG(new_seg.tcphdr, TCP_ACK);
+         }
+ 
+-        send_len += seg->len;
+-        pre_pbuf = seg->p;
+-        next_seqno = seg_seqno + TCP_TCPLEN(seg);
+-        seg = seg->next;
+-        pcb->unsent = seg;
+-        pbuf_chain_len++;
+-      }
+-
+-      if (first_pbuf == NULL) {
+-        err = tcp_output_seg(pcb, seg, netif, next_seqno + seg->len);
++        err = tcp_output_segment(&new_seg, pcb, netif);
+         if (err != ERR_OK) {
+-          if (pcb->unsent == NULL)
+-            pcb->last_unsent = NULL;
+-	  pcb->need_tso_send = 0;
+-          return err;
++            /* segment could not be sent, for whatever reason */
++            tcp_set_flags(pcb, TF_NAGLEMEMERR);
++            return err;
+         }
+-        pcb->unsent = seg->next;
+-        useg = tcp_output_over(pcb, seg, useg);
+-        seg = pcb->unsent;
+-        continue;
+-      }
+-
+-      struct tcp_seg new_seg;
+-      tcp_init_segment(&new_seg, pcb, first_pbuf, 0, lwip_ntohl(start_seg->tcphdr->seqno), 0);
+ 
+-      err = tcp_output_seg(pcb, &new_seg, netif, next_seqno);
++        pcb->unsent = last_seg->next;
++        if (pcb->state != SYN_SENT) {
++            tcp_clear_flags(pcb, TF_ACK_DELAY | TF_ACK_NOW);
++        }
+ 
+-      for (u32_t i = 0; i < pbuf_chain_len; i++) {
+-        struct tcp_seg *next_seg = start_seg->next;
+-        start_seg->p->next = NULL;
+-        useg = tcp_output_over(pcb, start_seg, useg);
+-        start_seg = next_seg;
+-      }
++        snd_nxt = last_seg_seqno + TCP_TCPLEN(last_seg);
++        if (TCP_SEQ_LT(pcb->snd_nxt, snd_nxt)) {
++            pcb->snd_nxt = snd_nxt;
++        }
+ 
+-      pbuf_remove_header(new_seg.p, new_seg.p->tot_len - new_seg.len - TCPH_HDRLEN_BYTES(new_seg.tcphdr));
+-      new_seg.p->tot_len = new_seg.p->len;
+-    }
+-  pcb->need_tso_send = 0;
++        pbuf_remove_header(new_seg.p, new_seg.p->tot_len - new_seg.len - TCP_HLEN);
++        new_seg.p->tot_len = new_seg.p->len;
++
++        for (int start = pbuf_chain_len; start > 0; start--) {
++            struct tcp_seg *tmp_seg = start_seg;
++            start_seg = start_seg->next;
++            tmp_seg->p->next = NULL;
++            if (TCP_TCPLEN(tmp_seg) > 0) {
++                tmp_seg->next = NULL;
++                if (pcb->unacked == NULL) {
++                    pcb->unacked = tmp_seg;
++                    useg = tmp_seg;
++                } else {
++                    if (TCP_SEQ_LT(lwip_ntohl(tmp_seg->tcphdr->seqno), lwip_ntohl(useg->tcphdr->seqno))) {
++                        /* add segment to before tail of unacked list, keeping the list sorted */
++                        struct tcp_seg **cur_seg = &(pcb->unacked);
++                        while (*cur_seg &&
++                            TCP_SEQ_LT(lwip_ntohl((*cur_seg)->tcphdr->seqno), lwip_ntohl(tmp_seg->tcphdr->seqno)))     {
++                            cur_seg = &((*cur_seg)->next );
++                        }
++                        tmp_seg->next = (*cur_seg);
++                        (*cur_seg) = tmp_seg;
++                    } else {
++                        /* add segment to tail of unacked list */
++                        useg->next = tmp_seg;
++                        useg = useg->next;
++                    }
++                }
++            } else {
++              tcp_seg_free(tmp_seg);
++            }
++        }
++     } while(seg != NULL && lwip_ntohl(seg->tcphdr->seqno) - pcb->lastack + seg->len <= wnd && send_pkt++ < 10);
++end_loop:
++    pcb->need_tso_send = 0;
+   } else
+ #endif
+ {
+-  while (seg != NULL && send_len < 0xffff &&
++  uint16_t send_pkt = 0;
++  while (seg != NULL && send_pkt++ < 10 &&
+          lwip_ntohl(seg->tcphdr->seqno) - pcb->lastack + seg->len <= wnd) {
+     LWIP_ASSERT("RST not expected here!",
+                 (TCPH_FLAGS(seg->tcphdr) & TCP_RST) == 0);
+@@ -1576,7 +1579,6 @@ tcp_output(struct tcp_pcb *pcb)
+         ((pcb->flags & (TF_NAGLEMEMERR | TF_FIN)) == 0)) {
+       break;
+     }
+-    send_len += seg->len;
+ #if TCP_CWND_DEBUG
+     LWIP_DEBUGF(TCP_CWND_DEBUG, ("tcp_output: snd_wnd %"TCPWNDSIZE_F", cwnd %"TCPWNDSIZE_F", wnd %"U32_F", effwnd %"U32_F", seq %"U32_F", ack %"U32_F", i %"S16_F"\n",
+                                  pcb->snd_wnd, pcb->cwnd, wnd,
+diff --git a/src/include/lwipopts.h b/src/include/lwipopts.h
+index 742b4a9..0d2a6d9 100644
+--- a/src/include/lwipopts.h
++++ b/src/include/lwipopts.h
+@@ -55,6 +55,8 @@
+ 
+ #define GAZELLE_TCP_MAX_PBUF_CHAIN_LEN 40
+ 
++#define GAZELLE_TCP_MIN_TSO_SEG_LEN 256
++
+ /*
+    ----------------------------------
+    ---------- NIC offloads ----------
+-- 
+2.33.0
+

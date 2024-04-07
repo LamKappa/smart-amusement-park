@@ -1,0 +1,30 @@
+From ab62f970793c257c712c357a6976b9aca2e63b98 Mon Sep 17 00:00:00 2001
+From: wu-changsheng <wuchangsheng2@huawei.com>
+Date: Tue, 26 Jul 2022 17:36:29 +0800
+Subject: [PATCH] del redundant wait_close and move epoll_events pos
+
+---
+ src/include/lwipsock.h | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/src/include/lwipsock.h b/src/include/lwipsock.h
+index 500292d..16e0dd3 100644
+--- a/src/include/lwipsock.h
++++ b/src/include/lwipsock.h
+@@ -98,12 +98,11 @@ struct lwip_sock {
+   struct list_node recv_list __rte_cache_aligned;
+   struct list_node event_list __rte_cache_aligned;
+   struct list_node send_list __rte_cache_aligned;
++  uint32_t epoll_events; /* registered events, EPOLLONESHOT write frequently */
+   char pad __rte_cache_aligned;
+ 
+-  uint32_t epoll_events; /* registered events */
+   struct wakeup_poll *wakeup;
+   epoll_data_t ep_data;
+-  bool wait_close;
+   struct lwip_sock *listen_next; /* listenfd list */
+   struct protocol_stack *stack;
+   struct rte_ring *recv_ring;
+-- 
+2.23.0
+

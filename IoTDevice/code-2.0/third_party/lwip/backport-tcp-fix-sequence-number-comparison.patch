@@ -1,0 +1,36 @@
+From 003d34eebd223c16a3dbf6a970bb6e23cb7d1a24 Mon Sep 17 00:00:00 2001
+From: Simon Goldschmidt <goldsimon@gmx.de>
+Date: Fri, 27 Mar 2020 22:59:05 +0100
+Subject: [PATCH] tcp: fix sequence number comparison
+This fixes both undefined behavior (see bug #51447) as well as a possible bug
+where sequence numbers in 31 bit distance may come through.
+Conflict: NA
+Reference: https://git.savannah.gnu.org/cgit/lwip.git/commit/?id=003d34eebd223c16a3dbf6a970bb6e23cb7d1a24
+---
+ src/include/lwip/priv/tcp_priv.h | 11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
+diff --git a/src/include/lwip/priv/tcp_priv.h b/src/include/lwip/priv/tcp_priv.h
+index 72f9126d..c84b5be8 100644
+--- a/src/include/lwip/priv/tcp_priv.h
++++ b/src/include/lwip/priv/tcp_priv.h
+@@ -106,14 +106,11 @@ err_t            tcp_process_refused_data(struct tcp_pcb *pcb);
+ #define tcp_output_nagle(tpcb) (tcp_do_output_nagle(tpcb) ? tcp_output(tpcb) : ERR_OK)
+ 
+ 
+-#define TCP_SEQ_LT(a,b)     ((s32_t)((u32_t)(a) - (u32_t)(b)) < 0)
+-#define TCP_SEQ_LEQ(a,b)    ((s32_t)((u32_t)(a) - (u32_t)(b)) <= 0)
+-#define TCP_SEQ_GT(a,b)     ((s32_t)((u32_t)(a) - (u32_t)(b)) > 0)
+-#define TCP_SEQ_GEQ(a,b)    ((s32_t)((u32_t)(a) - (u32_t)(b)) >= 0)
++#define TCP_SEQ_LT(a,b)     (((u32_t)((u32_t)(a) - (u32_t)(b)) & 0x80000000u) != 0)
++#define TCP_SEQ_LEQ(a,b)    (!(TCP_SEQ_LT(b,a)))
++#define TCP_SEQ_GT(a,b)     TCP_SEQ_LT(b,a)
++#define TCP_SEQ_GEQ(a,b)    TCP_SEQ_LEQ(b,a)
+ /* is b<=a<=c? */
+-#if 0 /* see bug #10548 */
+-#define TCP_SEQ_BETWEEN(a,b,c) ((c)-(b) >= (a)-(b))
+-#endif
+ #define TCP_SEQ_BETWEEN(a,b,c) (TCP_SEQ_GEQ(a,b) && TCP_SEQ_LEQ(a,c))
+ 
+ #ifndef TCP_TMR_INTERVAL
+-- 
+2.28.0.windows.1

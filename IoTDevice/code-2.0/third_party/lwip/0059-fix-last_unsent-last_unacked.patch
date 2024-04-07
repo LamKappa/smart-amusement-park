@@ -1,0 +1,114 @@
+From f1692b0c380241699f70adbf7796cb2c7b3a5c94 Mon Sep 17 00:00:00 2001
+From: jiangheng12 <jiangheng14@huawei.com>
+Date: Sat, 1 Apr 2023 16:59:28 +0800
+Subject: [PATCH] fix last_unsent/last_unacked
+
+---
+ src/core/tcp_in.c  | 25 +++++++++++++------------
+ src/core/tcp_out.c | 18 +++++++++++++-----
+ 2 files changed, 26 insertions(+), 17 deletions(-)
+
+diff --git a/src/core/tcp_in.c b/src/core/tcp_in.c
+index 719cf04..7e7d70a 100644
+--- a/src/core/tcp_in.c
++++ b/src/core/tcp_in.c
+@@ -1375,18 +1375,19 @@ tcp_receive(struct tcp_pcb *pcb)
+             }
+           }
+         }
+-      }
+-      /* fast rexmit when receive too many acks with data */
+-      if (TCP_SEQ_LT(ackno + 1, pcb->snd_nxt)) {
+-        if (pcb->snd_wl2 + pcb->snd_wnd == right_wnd_edge) {
+-          if (pcb->rtime >= 0) {
+-            if (pcb->lastack == ackno) {
+-              found_dataack = 1;
+-              ++pcb->dataacks;
+-              if (pcb->dataacks > GAZELLE_TCP_MAX_DATA_ACK_NUM) {
+-                if (tcp_rexmit(pcb) == ERR_OK) {
+-                  pcb->rtime = 0;
+-                  pcb->dataacks = 0;
++      } else {
++        /* fast rexmit when receive too many acks with data */
++        if (TCP_SEQ_LT(ackno + 1, pcb->snd_nxt)) {
++          if (pcb->snd_wl2 + pcb->snd_wnd == right_wnd_edge) {
++            if (pcb->rtime >= 0) {
++              if (pcb->lastack == ackno) {
++                found_dataack = 1;
++                ++pcb->dataacks;
++                if ((pcb->dataacks > GAZELLE_TCP_MAX_DATA_ACK_NUM) && (pcb->nrtx < (TCP_MAXRTX / 2))) {
++                  if (tcp_rexmit(pcb) == ERR_OK) {
++                    pcb->rtime = 0;
++                    pcb->dataacks = 0;
++                  }
+                 }
+               }
+             }
+diff --git a/src/core/tcp_out.c b/src/core/tcp_out.c
+index b1c317d..6250e6b 100644
+--- a/src/core/tcp_out.c
++++ b/src/core/tcp_out.c
+@@ -1444,10 +1444,7 @@ tcp_output(struct tcp_pcb *pcb)
+   pcb->persist_backoff = 0;
+ 
+   /* useg should point to last segment on unacked queue */
+-  useg = pcb->unacked;
+-  if (useg != NULL) {
+-    for (; useg->next != NULL; useg = useg->next);
+-  }
++  useg = pcb->last_unacked;
+ 
+   /* data available and window allows it to be sent? */
+ #if GAZELLE_ENABLE
+@@ -1515,7 +1512,11 @@ tcp_output(struct tcp_pcb *pcb)
+             return err;
+         }
+ 
++        if (pcb->last_unsent == pcb->unsent) {
++            pcb->last_unsent = last_seg->next;
++        }
+         pcb->unsent = last_seg->next;
++
+         if (pcb->state != SYN_SENT) {
+             tcp_clear_flags(pcb, TF_ACK_DELAY | TF_ACK_NOW);
+         }
+@@ -1535,6 +1536,7 @@ tcp_output(struct tcp_pcb *pcb)
+             if (TCP_TCPLEN(tmp_seg) > 0) {
+                 tmp_seg->next = NULL;
+                 if (pcb->unacked == NULL) {
++                    pcb->last_unacked = tmp_seg;
+                     pcb->unacked = tmp_seg;
+                     useg = tmp_seg;
+                 } else {
+@@ -1550,6 +1552,9 @@ tcp_output(struct tcp_pcb *pcb)
+                     } else {
+                         /* add segment to tail of unacked list */
+                         useg->next = tmp_seg;
++                        if (pcb->last_unacked == useg) {
++                            pcb->last_unacked = tmp_seg;
++                        }
+                         useg = useg->next;
+                     }
+                 }
+@@ -1603,6 +1608,9 @@ end_loop:
+ #if TCP_OVERSIZE_DBGCHECK
+     seg->oversize_left = 0;
+ #endif /* TCP_OVERSIZE_DBGCHECK */
++    if (pcb->last_unsent == pcb->unsent) {
++      pcb->last_unsent = seg->next;
++    }
+     pcb->unsent = seg->next;
+     if (pcb->state != SYN_SENT) {
+       tcp_clear_flags(pcb, TF_ACK_DELAY | TF_ACK_NOW);
+@@ -1709,7 +1717,7 @@ tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb, struct netif *netif
+   int seg_chksum_was_swapped = 0;
+ #endif
+ 
+-#if USE_LIBOS
++#if GAZELLE_ENABLE
+   lstack_calculate_aggregate(1, seg->len);
+ #endif
+ 
+-- 
+2.23.0
+

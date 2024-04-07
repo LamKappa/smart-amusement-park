@@ -1,0 +1,126 @@
+From afd0d39d31196a74d6808120d1ca5664825d477c Mon Sep 17 00:00:00 2001
+From: wuchangsheng <wuchangsheng2@huawei.com>
+Date: Mon, 6 Sep 2021 22:52:41 +0800
+Subject: [PATCH] aaa
+
+---
+ src/api/sockets.c       | 17 -----------------
+ src/include/eventpoll.h |  1 -
+ src/include/lwipopts.h  | 17 -----------------
+ src/include/lwipsock.h  |  5 -----
+ 4 files changed, 40 deletions(-)
+
+diff --git a/src/api/sockets.c b/src/api/sockets.c
+index ac4cccb..8719568 100644
+--- a/src/api/sockets.c
++++ b/src/api/sockets.c
+@@ -755,10 +755,6 @@ lwip_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
+   sock = posix_api->get_socket(s);
+   /*AF_UNIX case*/
+   if (!sock) {
+-    if (rearm_accept_fd(s) < 0) {
+-      LWIP_DEBUGF(SOCKETS_DEBUG,
+-          ("failed to rearm accept fd=%d errno=%d\n", s, errno));
+-    }
+     return posix_api->accept_fn(s, addr, addrlen);
+   }
+   
+@@ -769,11 +765,6 @@ lwip_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
+     return -1;
+   }
+   
+-  if (rearm_accept_fd(s) < 0) {
+-    LWIP_DEBUGF(SOCKETS_DEBUG,
+-        ("failed to rearm accept fd=%d errno=%d\n", s, errno));
+-  }
+-  
+   /* raise accept syscall in palce */
+   newsock = posix_api->accept_fn(s, addr, addrlen);
+   if (newsock >= 0) {
+@@ -977,8 +968,6 @@ lwip_close(int s)
+   ret = posix_api->close_fn(s);
+   if ((ret < 0) && (errno == EINTR))
+     ret = posix_api->close_fn(s);
+-  if (posix_api->is_chld == 0)
+-    clean_host_fd(s);
+ 
+   sock = posix_api->get_socket(s);
+   /*AF_UNIX case*/
+@@ -1481,9 +1470,6 @@ static inline enum KERNEL_LWIP_PATH select_path(int s)
+   sock = posix_api->get_socket(s);
+   /*AF_UNIX case*/
+   if (!sock) {
+-    if (rearm_host_fd(s) < 0) {
+-      LWIP_DEBUGF(SOCKETS_DEBUG, ("failed to rearm fd=%d errno=%d\n", s, errno));
+-    }
+     return PATH_KERNEL;
+   }
+ 
+@@ -1494,9 +1480,6 @@ static inline enum KERNEL_LWIP_PATH select_path(int s)
+ 
+   /*for AF_INET, we can try erther linux or lwip*/
+   if (CONN_TYPE_IS_HOST(sock->conn)) {
+-    if (rearm_host_fd(s) < 0) {
+-      LWIP_DEBUGF(SOCKETS_DEBUG, ("failed to rearm read fd=%d errno=%d\n", s, errno));
+-    }
+     return PATH_KERNEL;
+   }
+ 
+diff --git a/src/include/eventpoll.h b/src/include/eventpoll.h
+index 01f8d64..f525bc2 100644
+--- a/src/include/eventpoll.h
++++ b/src/include/eventpoll.h
+@@ -57,7 +57,6 @@ struct event_array {
+ 
+ struct libos_epoll {
+     struct event_queue *libos_queue;
+-    struct event_array *host_queue;
+     int num_hostfds;
+     int hints;
+     int fd;  /* self fd */
+diff --git a/src/include/lwipopts.h b/src/include/lwipopts.h
+index 8893a5f..e0364a2 100644
+--- a/src/include/lwipopts.h
++++ b/src/include/lwipopts.h
+@@ -177,23 +177,6 @@
+ 
+ #define ARP_TABLE_SIZE 512
+ 
+-/*
+-   ---------------------------------------
+-   ------- Syscall thread options --------
+-   ---------------------------------------
+-*/
+-#define USE_SYSCALL_THREAD 1
+-
+-#define MAX_BLOCKING_ACCEPT_FD (100)
+-
+-#define MAX_BLOCKING_CONNECT_FD (100)
+-
+-#define MAX_BLOCKING_EPOLL_FD (100)
+-
+-#define MAX_SYSCALL_EVENTS (MAX_BLOCKING_ACCEPT_FD + MAX_BLOCKING_CONNECT_FD + MAX_BLOCKING_EPOLL_FD)
+-
+-#define MAX_HOST_FD (MAX_CLIENTS + RESERVED_CLIENTS)
+-
+ #if USE_LIBOS
+ #define PER_THREAD __thread
+ #else
+diff --git a/src/include/lwipsock.h b/src/include/lwipsock.h
+index dbc67b9..e9ffbb1 100644
+--- a/src/include/lwipsock.h
++++ b/src/include/lwipsock.h
+@@ -146,10 +146,5 @@ void lwip_sock_init(void);
+ void lwip_exit(void);
+ 
+ extern int is_host_ipv4(uint32_t ipv4);
+-extern int rearm_host_fd(int fd);
+-extern int rearm_accept_fd(int fd);
+-extern void unarm_host_fd(int fd);
+-extern void clean_host_fd(int fd);
+-extern int arm_host_fd(struct libos_epoll *ep, int op, int fd, struct epoll_event *event);
+ 
+ #endif /* __LWIPSOCK_H__ */
+-- 
+2.23.0
+

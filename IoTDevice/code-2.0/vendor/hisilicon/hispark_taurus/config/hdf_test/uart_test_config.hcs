@@ -1,0 +1,9 @@
+root {
+    uart_test {
+        module = "uart_test";
+        match_attr = "UART_TEST";
+        port = 1;
+        len = 8;
+        wbuf = [0xa1, 0xb2, 0xc3, 0xd4, 0xe5, 0xf6, 0x78, 0x90];
+    }
+}

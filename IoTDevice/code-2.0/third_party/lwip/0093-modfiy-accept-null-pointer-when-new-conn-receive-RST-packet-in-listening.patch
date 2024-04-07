@@ -1,0 +1,37 @@
+From dcdd7d73c6083a63fe966a68f11eddcafa3fd743 Mon Sep 17 00:00:00 2001
+From: hantwofish <hankangkang5@huawei.com>
+Date: Thu, 14 Dec 2023 14:51:37 +0800
+Subject: [PATCH] resove null pointer
+
+---
+ src/api/sockets.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/src/api/sockets.c b/src/api/sockets.c
+index a9d39ae..0b3e4ea 100644
+--- a/src/api/sockets.c
++++ b/src/api/sockets.c
+@@ -801,15 +801,17 @@ lwip_accept4(int s, struct sockaddr *addr, socklen_t *addrlen, int flags)
+ #endif /* GAZELLE_ENABLE */
+   nsock = &sockets[newsock - LWIP_SOCKET_OFFSET];
+ #if GAZELLE_ENABLE
++  int ret = 0;
+   struct tcp_pcb *pcb = newconn->pcb.tcp;
+-  if (pcb->client_rx_ring != NULL && pcb->client_tx_ring != NULL) {
+-    if (find_same_node_memzone(pcb, nsock) != 0) {
++  if (pcb != NULL && pcb->client_rx_ring != NULL && pcb->client_tx_ring != NULL) {
++    ret = find_same_node_memzone(pcb, nsock);
++  }
++  if (pcb == NULL || ret != 0) {
+       netconn_delete(newconn);
+       free_socket(nsock, 1);
+       sock_set_errno(sock, ENOTCONN);
+       done_socket(sock);
+       return -1;
+-    }
+   }
+ #endif
+ 
+-- 
+2.33.0
+

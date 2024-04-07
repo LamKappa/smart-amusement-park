@@ -1,0 +1,12 @@
+root {
+    module = "i2c";
+    i2c_config {
+        i2c_controller_tester {
+            match_attr = "I2C_TEST";
+            bus_num  = 2;
+            dev_addr = 0x0;
+            reg_addr = 0;
+            buf_size = 7;
+        }
+    }
+}

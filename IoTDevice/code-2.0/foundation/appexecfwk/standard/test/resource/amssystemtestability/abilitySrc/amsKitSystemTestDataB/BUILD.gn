@@ -1,0 +1,71 @@
+# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//foundation/appexecfwk/standard/appexecfwk.gni")
+EVENT_DIR = "//base/notification/ces_standard/cesfwk"
+SUBDEMOSYSTEM_DIR = "${appexecfwk_path}/test/resource/amssystemtestability/abilitySrc/amsKitSystemTestDataB"
+SUBST_TOOLS_DIR =
+    "${appexecfwk_path}/test/resource/amssystemtestability/abilitySrc/tools"
+config("amsKitSystemTestDataBConfig") {
+  visibility = [ ":*" ]
+  include_dirs = [
+    "${SUBDEMOSYSTEM_DIR}/include",
+    "${kits_path}/appkit/native/app",
+    "${aafwk_path}/interfaces/innerkits/want/include/ohos/aafwk/content",
+    "${aafwk_path}/interfaces/innerkits/ability_manager/include",
+    "${innerkits_path}/libeventhandler/include",
+    "${services_path}/bundlemgr/include",
+    "${aafwk_path}/services/abilitymgr/include",
+    "${common_path}/log/include",
+    "//foundation/distributedschedule/dmsfwk/services/dtbschedmgr/include",
+    "${EVENT_DIR}/kits/native/include",
+    "${SUBST_TOOLS_DIR}/include",
+  ]
+  defines = [
+    "APP_LOG_TAG = \"amsKitDataSystemTestB\"",
+    "LOG_DOMAIN = 0xD002200",
+  ]
+  cflags = []
+  if (target_cpu == "arm") {
+    cflags += [ "-DBINDER_IPC_32BIT" ]
+  }
+}
+ohos_shared_library("amsKitSystemTestDataB") {
+  sources = [
+    "${SUBDEMOSYSTEM_DIR}/src/ams_st_kit_data_ability_data_b.cpp",
+    "${SUBDEMOSYSTEM_DIR}/src/ams_st_kit_data_ability_page_b.cpp",
+    "${SUBDEMOSYSTEM_DIR}/src/ams_st_kit_data_ability_service_b.cpp",
+    "${SUBST_TOOLS_DIR}/src/event.cpp",
+    "${SUBST_TOOLS_DIR}/src/stoperator.cpp",
+  ]
+  configs = [ ":amsKitSystemTestDataBConfig" ]
+  deps = [
+    "${EVENT_DIR}/kits/native:cesfwk_kits",
+    "${aafwk_path}/frameworks/kits/ability/native:abilitykit_native",
+    "${aafwk_path}/frameworks/kits/ability/native:dummy_classes",
+    "${aafwk_path}/interfaces/innerkits/want:want",
+    "${common_path}:libappexecfwk_common",
+    "${innerkits_path}/appexecfwk_base:appexecfwk_base",
+    "${innerkits_path}/appexecfwk_core:appexecfwk_core",
+    "${kits_path}:appkit_native",
+    "${services_path}/bundlemgr:libbms",
+    "//foundation/distributedschedule/dmsfwk/interfaces/innerkits/uri:zuri",
+    "//utils/native/base:utilsbase",
+  ]
+  external_deps = [
+    "hiviewdfx_hilog_native:libhilog",
+    "ipc:ipc_core",
+  ]
+  subsystem_name = "amssystemtestability"
+}

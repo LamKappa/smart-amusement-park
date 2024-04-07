@@ -1,0 +1,35 @@
+From d1f9ccd5da1712477f30bf2662e8888395ed95cd Mon Sep 17 00:00:00 2001
+From: wuchangsheng <wuchangsheng2@huawei.com>
+Date: Wed, 21 Jul 2021 20:01:47 +0800
+Subject: [PATCH] fix stack-buffer-overflow in lwip_sock_make_addr and
+ lwip_getaddrname
+
+---
+ src/api/sockets.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/api/sockets.c b/src/api/sockets.c
+index e640945..7ce9378 100644
+--- a/src/api/sockets.c
++++ b/src/api/sockets.c
+@@ -1319,6 +1319,8 @@ lwip_sock_make_addr(struct netconn *conn, ip_addr_t *fromaddr, u16_t port,
+   } else if (*fromlen > saddr.sa.sa_len) {
+     *fromlen = saddr.sa.sa_len;
+   }
++#else
++  *fromlen = LWIP_MIN(*fromlen, sizeof(saddr));
+ #endif
+   MEMCPY(from, &saddr, *fromlen);
+   return truncated;
+@@ -3133,6 +3135,8 @@ lwip_getaddrname(int s, struct sockaddr *name, socklen_t *namelen, u8_t local)
+   if (*namelen > saddr.sa.sa_len) {
+     *namelen = saddr.sa.sa_len;
+   }
++#else
++  *namelen = LWIP_MIN(*namelen, sizeof(saddr));
+ #endif
+   MEMCPY(name, &saddr, *namelen);
+ 
+-- 
+2.23.0
+

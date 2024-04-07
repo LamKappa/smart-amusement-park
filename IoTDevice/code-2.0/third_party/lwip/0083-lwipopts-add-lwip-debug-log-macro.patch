@@ -1,0 +1,75 @@
+From afa156f10bdabe937e37080918f669937343eb54 Mon Sep 17 00:00:00 2001
+From: yangchen <yangchen145@huawei.com>
+Date: Tue, 28 Nov 2023 09:22:34 +0800
+Subject: [PATCH] lwipopts: add lwip debug log macro
+
+---
+ src/include/lwiplog.h  | 15 ++++++++-------
+ src/include/lwipopts.h | 10 +++++++++-
+ 2 files changed, 17 insertions(+), 8 deletions(-)
+
+diff --git a/src/include/lwiplog.h b/src/include/lwiplog.h
+index f278ff4..80ed0fc 100644
+--- a/src/include/lwiplog.h
++++ b/src/include/lwiplog.h
+@@ -43,21 +43,22 @@
+ 
+ #if GAZELLE_USE_DPDK_LOG
+ 
+-#define LWIP_LOG_WARN   LWIP_DBG_LEVEL_WARNING
+-#define LWIP_LOG_ERROR  LWIP_DBG_LEVEL_SERIOUS
+-#define LWIP_LOG_FATAL  LWIP_DBG_LEVEL_SEVERE
++#define LWIP_LOG_WARN    LWIP_DBG_LEVEL_WARNING
++#define LWIP_LOG_ERROR   LWIP_DBG_LEVEL_SERIOUS
++#define LWIP_LOG_FATAL   LWIP_DBG_LEVEL_SEVERE
++#define RTE_LOGTYPE_LWIP RTE_LOGTYPE_USER2
+ 
+ #define LWIP_PLATFORM_LOG(level, fmt, ...) \
+ do { \
+     if ((level) & LWIP_LOG_FATAL) { \
+-        RTE_LOG(ERR, EAL, fmt, ##__VA_ARGS__); \
++        RTE_LOG(ERR, LWIP, fmt, ##__VA_ARGS__); \
+         abort();                             \
+     } else if ((level) & LWIP_LOG_ERROR) { \
+-        RTE_LOG(ERR, EAL, fmt, ##__VA_ARGS__); \
++        RTE_LOG(ERR, LWIP, fmt, ##__VA_ARGS__); \
+     } else if ((level) & LWIP_LOG_WARN) { \
+-        RTE_LOG(WARNING, EAL, fmt, ##__VA_ARGS__); \
++        RTE_LOG(WARNING, LWIP, fmt, ##__VA_ARGS__); \
+     } else { \
+-        RTE_LOG(INFO, EAL, fmt, ##__VA_ARGS__); \
++        RTE_LOG(INFO, LWIP, fmt, ##__VA_ARGS__); \
+     } \
+ } while(0)
+ 
+diff --git a/src/include/lwipopts.h b/src/include/lwipopts.h
+index 9ab5cde..06b3ae5 100644
+--- a/src/include/lwipopts.h
++++ b/src/include/lwipopts.h
+@@ -41,7 +41,6 @@
+ #define LWIP_PERF 1
+ #define LWIP_RECORD_PERF 0
+ 
+-//#define LWIP_DEBUG 1
+ #define GAZELLE_USE_DPDK_LOG 1
+ 
+ #define GAZELLE_ENABLE 1
+@@ -262,6 +261,15 @@
+ 
+ #define SIOCSHIWAT 1
+ 
++/*
++   ------------------------------------
++   --------- Debug log options --------
++   ------------------------------------
++*/
++#define LWIP_DEBUG 1
++
++#define GAZELLE_DEBUG LWIP_DBG_ON
++
+ /*
+    ------------------------------------
+    ---------- Netif options ----------
+-- 
+2.23.0
+
