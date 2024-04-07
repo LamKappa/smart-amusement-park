@@ -6,6 +6,7 @@ import com.chinasoft.backend.model.entity.IoTData;
 import com.chinasoft.backend.service.AmusementFacilityService;
 import com.chinasoft.backend.service.CrowdingLevelService;
 import com.chinasoft.backend.service.MqttService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@Slf4j
 public class MqttServiceImpl implements MqttService {
 
     /**
@@ -22,7 +24,7 @@ public class MqttServiceImpl implements MqttService {
      */
     private Map<Integer, List<IoTData>> map = new HashMap<>();
 
-    private static final Integer PER_DEVICE_DETECTION_LENGTH = 2;
+    private static final Integer PER_DEVICE_DETECTION_LENGTH = 5;
     private static final Double PER_PERSON_LENGTH = 0.5;
 
     @Autowired
@@ -61,6 +63,7 @@ public class MqttServiceImpl implements MqttService {
         // Integer facilityType = ioTData.getFacilityType();
         // Integer detection = ioTData.getDetection();
 
+
         // 获取每一个设施五分钟的数据，并计算预计等待时间和存储到数据库
         for (Integer facilityId : map.keySet()) {
             List<IoTData> dataList = map.get(facilityId);
@@ -82,7 +85,7 @@ public class MqttServiceImpl implements MqttService {
                 for (Integer detection : detections) {
                     count[detection]++;
                 }
-                if (count[0] > count[1]) {
+                if (count[0] > count[1] * 2) {
                     handledDeviceDetectionMap.put(deviceId, 0);
                 } else {
                     handledDeviceDetectionMap.put(deviceId, 1);
@@ -93,7 +96,9 @@ public class MqttServiceImpl implements MqttService {
             //（队列的长度（通过传感器算出） / 一个人的长度 ）/ 每个设施游玩人数 * 每个设施游玩时长
             int queueLength = 0;
             for (Integer detection : handledDeviceDetectionMap.values()) {
-                queueLength += PER_DEVICE_DETECTION_LENGTH;
+                if (detection == 1) {
+                    queueLength += PER_DEVICE_DETECTION_LENGTH;
+                }
             }
             int peopleCount = (int) (queueLength / PER_PERSON_LENGTH);
 
@@ -102,7 +107,9 @@ public class MqttServiceImpl implements MqttService {
             Integer expectTime = amusementFacility.getExpectTime();
 
             Integer expectWaitTime = peopleCount / perUserCount * expectTime;
-
+            if (expectWaitTime == 0) {
+                expectWaitTime = expectTime;
+            }
             // 将预计等待时间插入数据库
             CrowdingLevel crowdingLevel = new CrowdingLevel();
             crowdingLevel.setFacilityId(Long.valueOf(facilityId));

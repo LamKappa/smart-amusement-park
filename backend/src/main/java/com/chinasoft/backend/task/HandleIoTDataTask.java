@@ -15,10 +15,13 @@ public class HandleIoTDataTask {
     @Autowired
     MqttService mqttService;
 
-    @Scheduled(cron = "0 0/5 * * * * ")
+    // @Scheduled(cron = "* 0/5 * * * ? ")
+    @Scheduled(cron = "0/10 * * * * ? ")
     public void handleIoTDataTask() {
+        log.info("定时任务开始执行：{}", new Date());
+
         mqttService.handleIoTData();
 
-        log.info("定时任务开始执行：{}", new Date());
+
     }
 }

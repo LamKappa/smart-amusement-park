@@ -5,10 +5,12 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.chinasoft.backend.mapper.AmusementFacilityMapper;
 import com.chinasoft.backend.mapper.FacilityImageMapper;
 import com.chinasoft.backend.model.entity.AmusementFacility;
+import com.chinasoft.backend.model.entity.CrowdingLevel;
 import com.chinasoft.backend.model.entity.FacilityImage;
 import com.chinasoft.backend.model.request.AmusementFilterRequest;
 import com.chinasoft.backend.model.vo.AmusementFacilityVO;
 import com.chinasoft.backend.service.AmusementFacilityService;
+import com.chinasoft.backend.service.CrowdingLevelService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -28,6 +30,9 @@ public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityM
 
     @Autowired
     FacilityImageMapper facilityImageMapper;
+
+    @Autowired
+    CrowdingLevelService crowdingLevelService;
 
     @Override
     public List<AmusementFacilityVO> getAmusementFacility(AmusementFilterRequest amusementFilterRequest) {
@@ -85,6 +90,13 @@ public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityM
             // 将imageUrls放入VO对象
             facilityVO.setImageUrls(imageUrls);
 
+            // 查询预计等待时间
+            // QueryWrapper<CrowdingLevel> crowdingQueryWrapper = new QueryWrapper<>();
+            // crowdingQueryWrapper.eq("")
+            CrowdingLevel crowdingLevelQuery = new CrowdingLevel();
+            crowdingLevelQuery.setFacilityId(facility.getId());
+            CrowdingLevel crowdingLevel = crowdingLevelService.getById(crowdingLevelQuery);
+            facilityVO.setExpectWaitTime(crowdingLevel.getExpectWaitTime());
             // 将VO对象加入列表
             facilityVOList.add(facilityVO);
         }
