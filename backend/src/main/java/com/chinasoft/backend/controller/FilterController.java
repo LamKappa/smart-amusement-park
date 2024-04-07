@@ -2,9 +2,6 @@ package com.chinasoft.backend.controller;
 
 import com.chinasoft.backend.common.BaseResponse;
 import com.chinasoft.backend.common.ResultUtils;
-import com.chinasoft.backend.model.entity.AmusementFacility;
-import com.chinasoft.backend.model.entity.BaseFacility;
-import com.chinasoft.backend.model.entity.RestaurantFacility;
 import com.chinasoft.backend.model.request.AmusementFilterRequest;
 import com.chinasoft.backend.model.request.BaseFilterRequest;
 import com.chinasoft.backend.model.request.RestaurantFilterRequest;
