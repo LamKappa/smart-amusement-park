@@ -10,7 +10,6 @@ public class NavigationRequest {
     private String userLongitude;
 
     private String userLatitude;
-
-
+    
     private List<FacilityIdType> facilities;
 }
