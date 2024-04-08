@@ -1,15 +1,13 @@
 package com.chinasoft.backend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.chinasoft.backend.constant.FacilityTypeConstant;
 import com.chinasoft.backend.mapper.AmusementFacilityMapper;
-import com.chinasoft.backend.mapper.BaseFacilityMapper;
 import com.chinasoft.backend.mapper.FacilityImageMapper;
-import com.chinasoft.backend.mapper.RestaurantFacilityMapper;
-import com.chinasoft.backend.model.entity.*;
-import com.chinasoft.backend.model.vo.AmusementFacilityVO;
-import com.chinasoft.backend.service.SearchService;
+import com.chinasoft.backend.model.entity.AmusementFacility;
+import com.chinasoft.backend.model.entity.FacilityImage;
+import com.chinasoft.backend.model.entity.Swiper;
 import com.chinasoft.backend.service.SwiperService;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -19,10 +17,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
-* @author 皎皎
-* @description 针对轮播图的数据库操作Service实现
-* @createDate 2024-04-07 16:24:00
-*/
+ * @author 皎皎
+ * @description 针对轮播图的数据库操作Service实现
+ * @createDate 2024-04-07 16:24:00
+ */
 @Service
 public class SwiperServiceImpl implements SwiperService {
 
@@ -53,7 +51,7 @@ public class SwiperServiceImpl implements SwiperService {
             QueryWrapper<FacilityImage> queryWrapper2 = new QueryWrapper<>();
 
             // 设置查询条件
-            queryWrapper2.eq("facility_type", facilityType)
+            queryWrapper2.eq("facility_type", FacilityTypeConstant.AMUSEMENT_TYPE)
                     .eq("facility_id", facility.getId());
 
             List<FacilityImage> facilityImages = facilityImageMapper.selectList(queryWrapper2);

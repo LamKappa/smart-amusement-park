@@ -7,10 +7,22 @@ spring:
     allow-circular-references: true
   # DataSource Config
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: ${sql.url}
-    username: ${sql.username}
-    password: ${sql.password}
+    druid:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      url: ${sql.url}
+      username: ${sql.username}
+      password: ${sql.password}
+      # 超过时间限制是否回收
+      remove-abandoned: true
+      # 超时时间；单位为秒。1800秒=30分钟
+      remove-abandoned-timeout: 1800
+      initialSize: 0
+      minIdle: 5
+      maxActive: 20
+      maxWait: 600000
+  
+  
+  
   # session 失效时间（分钟）
   mvc:
     pathmatch:

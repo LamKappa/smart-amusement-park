@@ -30,7 +30,7 @@ public class RecommController {
         }
 
         // 查询数据库
-        RouteVO data = recommService.getRecommdation(routeId);
+        RouteVO data = recommService.getRecommendation(routeId);
 
         // 返回响应
         return ResultUtils.success(data);

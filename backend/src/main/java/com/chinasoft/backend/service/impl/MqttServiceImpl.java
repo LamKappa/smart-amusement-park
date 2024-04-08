@@ -24,7 +24,7 @@ public class MqttServiceImpl implements MqttService {
      */
     private Map<Integer, List<IoTData>> map = new HashMap<>();
 
-    private static final Integer PER_DEVICE_DETECTION_LENGTH = 5;
+    private static final Integer PER_DEVICE_DETECTION_LENGTH = 1;
     private static final Double PER_PERSON_LENGTH = 0.5;
 
     @Autowired
@@ -62,9 +62,10 @@ public class MqttServiceImpl implements MqttService {
         // Integer facilityId = ioTData.getFacilityId();
         // Integer facilityType = ioTData.getFacilityType();
         // Integer detection = ioTData.getDetection();
-        
+
 
         // 获取每一个设施五分钟的数据，并计算预计等待时间和存储到数据库
+        List<CrowdingLevel> crowdingLevelList = new ArrayList<>();
         for (Integer facilityId : map.keySet()) {
             List<IoTData> dataList = map.get(facilityId);
             // 获取每一个device的detectionList
@@ -115,8 +116,10 @@ public class MqttServiceImpl implements MqttService {
             crowdingLevel.setFacilityId(Long.valueOf(facilityId));
             crowdingLevel.setFacilityType(0);
             crowdingLevel.setExpectWaitTime(expectWaitTime);
-            crowdingLevelService.save(crowdingLevel);
+            crowdingLevelList.add(crowdingLevel);
         }
+        // 批量插入减少数据库压力
+        crowdingLevelService.saveBatch(crowdingLevelList);
 
         // 清空map中暂存的数据
         map = new HashMap<>();

@@ -36,7 +36,7 @@ public class RecommServiceImpl implements RecommService {
     RecommRouteMapper recommRouteMapper;
 
     @Override
-    public RouteVO getRecommdation(Integer routeId) {
+    public RouteVO getRecommendation(Integer routeId) {
 
         // 查询推荐路线信息
         Route route = routeMapper.selectById(routeId);

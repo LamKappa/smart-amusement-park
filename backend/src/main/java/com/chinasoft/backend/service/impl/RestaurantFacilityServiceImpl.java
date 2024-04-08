@@ -2,15 +2,14 @@ package com.chinasoft.backend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.chinasoft.backend.constant.FacilityTypeConstant;
 import com.chinasoft.backend.mapper.FacilityImageMapper;
-import com.chinasoft.backend.model.entity.AmusementFacility;
+import com.chinasoft.backend.mapper.RestaurantFacilityMapper;
 import com.chinasoft.backend.model.entity.FacilityImage;
 import com.chinasoft.backend.model.entity.RestaurantFacility;
 import com.chinasoft.backend.model.request.RestaurantFilterRequest;
-import com.chinasoft.backend.model.vo.AmusementFacilityVO;
 import com.chinasoft.backend.model.vo.RestaurantFacilityVO;
 import com.chinasoft.backend.service.RestaurantFacilityService;
-import com.chinasoft.backend.mapper.RestaurantFacilityMapper;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,13 +19,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
-* @author 皎皎
-* @description 针对表【restaurant_facility(餐饮设施表)】的数据库操作Service实现
-* @createDate 2024-04-05 09:53:39
-*/
+ * @author 皎皎
+ * @description 针对表【restaurant_facility(餐饮设施表)】的数据库操作Service实现
+ * @createDate 2024-04-05 09:53:39
+ */
 @Service
 public class RestaurantFacilityServiceImpl extends ServiceImpl<RestaurantFacilityMapper, RestaurantFacility>
-    implements RestaurantFacilityService{
+        implements RestaurantFacilityService {
 
     @Autowired
     FacilityImageMapper facilityImageMapper;
@@ -63,7 +62,7 @@ public class RestaurantFacilityServiceImpl extends ServiceImpl<RestaurantFacilit
             QueryWrapper<FacilityImage> queryWrapper2 = new QueryWrapper<>();
 
             // 设置查询条件
-            queryWrapper2.eq("facility_type", facilityType)
+            queryWrapper2.eq("facility_type", FacilityTypeConstant.RESTAURANT_TYPE)
                     .eq("facility_id", facility.getId());
 
             List<FacilityImage> facilityImages = facilityImageMapper.selectList(queryWrapper2);
