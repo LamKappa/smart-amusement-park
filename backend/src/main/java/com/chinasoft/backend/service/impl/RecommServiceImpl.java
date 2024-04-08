@@ -1,6 +1,5 @@
 package com.chinasoft.backend.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.chinasoft.backend.mapper.AmusementFacilityMapper;
 import com.chinasoft.backend.mapper.FacilityImageMapper;
@@ -9,20 +8,18 @@ import com.chinasoft.backend.mapper.RouteMapper;
 import com.chinasoft.backend.model.entity.*;
 import com.chinasoft.backend.model.vo.RouteVO;
 import com.chinasoft.backend.service.RecommService;
-import com.chinasoft.backend.service.SwiperService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
-* @author 皎皎
-* @description 针对轮播图的数据库操作Service实现
-* @createDate 2024-04-07 16:24:00
-*/
+ * @author 皎皎
+ * @description 针对轮播图的数据库操作Service实现
+ * @createDate 2024-04-07 16:24:00
+ */
 @Service
 public class RecommServiceImpl implements RecommService {
 

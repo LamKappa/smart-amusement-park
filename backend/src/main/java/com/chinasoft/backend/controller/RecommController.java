@@ -6,13 +6,10 @@ import com.chinasoft.backend.common.ResultUtils;
 import com.chinasoft.backend.exception.BusinessException;
 import com.chinasoft.backend.model.vo.RouteVO;
 import com.chinasoft.backend.service.RecommService;
-import com.chinasoft.backend.service.SearchService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.query.Param;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 public class RecommController {
@@ -26,8 +23,8 @@ public class RecommController {
      * @param routeId
      * @return
      */
-    @GetMapping("/recommdation")
-    public BaseResponse<RouteVO> getRecommdation(@Param("id") Integer routeId) {
+    @GetMapping("/recommendation")
+    public BaseResponse<RouteVO> getRecommendation(@Param("id") Integer routeId) {
         if (routeId == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
