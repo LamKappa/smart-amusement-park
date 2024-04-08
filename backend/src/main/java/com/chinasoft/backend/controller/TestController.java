@@ -1,8 +1,7 @@
 package com.chinasoft.backend.controller;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.chinasoft.backend.model.request.NavigationRequest;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/test")
@@ -12,6 +11,12 @@ public class TestController {
     public String hello() {
         System.out.println("hello");
         return "hello";
+    }
+
+    @PostMapping("/testPosition")
+    public String testPosition(@RequestBody NavigationRequest navigationRequest) {
+        System.out.println(navigationRequest);
+        return "hi";
     }
 
 }
