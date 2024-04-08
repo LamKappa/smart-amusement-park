@@ -34,6 +34,11 @@ public class BaseFacilityServiceImpl extends ServiceImpl<BaseFacilityMapper, Bas
     public List<BaseFacilityVO> getBaseFacility(BaseFilterRequest baseFilterRequest) {
         QueryWrapper<BaseFacility> queryWrapper = new QueryWrapper<>();
 
+        // 检查id是否非空
+        if (baseFilterRequest.getId() != null) {
+            queryWrapper.eq("id", baseFilterRequest.getId());
+        }
+
         // 检查name是否非空
         if (baseFilterRequest.getName() != null && !baseFilterRequest.getName().isEmpty()) {
             queryWrapper.eq("name", baseFilterRequest.getName());

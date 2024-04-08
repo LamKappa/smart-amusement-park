@@ -57,7 +57,8 @@ public class RecommServiceImpl implements RecommService {
             swiper.setCloseTime(facility.getCloseTime());
 
             // 随机选择一张设施图片
-            List<FacilityImage> images = facilityImageMapper.selectList(Wrappers.<FacilityImage>query()
+            Integer facilityType = 0;
+            List<FacilityImage> images = facilityImageMapper.selectList(Wrappers.<FacilityImage>query().eq("facility_type", facilityType)
                     .eq("facility_id", recommRoute.getFacilityId()));
 
             Collections.shuffle(images);

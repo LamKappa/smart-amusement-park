@@ -4,5 +4,6 @@ import lombok.Data;
 
 @Data
 public class BaseFilterRequest {
+    private Integer id;
     private String name;
 }

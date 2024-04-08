@@ -34,6 +34,11 @@ public class RestaurantFacilityServiceImpl extends ServiceImpl<RestaurantFacilit
     public List<RestaurantFacilityVO> getRestaurantFacility(RestaurantFilterRequest restaurantFilterRequest) {
         QueryWrapper<RestaurantFacility> queryWrapper = new QueryWrapper<>();
 
+        // 检查id是否非空
+        if (restaurantFilterRequest.getId() != null) {
+            queryWrapper.eq("id", restaurantFilterRequest.getId());
+        }
+
         // 检查name是否非空
         if (restaurantFilterRequest.getName() != null && !restaurantFilterRequest.getName().isEmpty()) {
             queryWrapper.eq("name", restaurantFilterRequest.getName());
