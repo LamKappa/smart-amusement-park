@@ -4,7 +4,7 @@ import com.chinasoft.backend.common.BaseResponse;
 import com.chinasoft.backend.common.ErrorCode;
 import com.chinasoft.backend.common.ResultUtils;
 import com.chinasoft.backend.exception.BusinessException;
-import com.chinasoft.backend.model.request.NavigationRequest;
+import com.chinasoft.backend.model.request.EENavigationRequest;
 import com.chinasoft.backend.model.vo.PositionPoint;
 import com.chinasoft.backend.service.MapService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,18 +23,32 @@ public class MapController {
     private MapService mapService;
 
     /**
-     * 多个设施进行最优路径导航
+     * 单个设施进行最优路径导航
      */
-    @PostMapping("/mulFacilityNav")
-    public BaseResponse mulFacilityNav(@RequestBody NavigationRequest navigationRequest) {
-        if (navigationRequest == null) {
+    @PostMapping("/sinFacilityNav")
+    public BaseResponse sinFacilityNav(@RequestBody EENavigationRequest eeNavigationRequest) {
+        if (eeNavigationRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
 
-        List<PositionPoint> positionPointList = mapService.mulFacilityNav(navigationRequest);
+        List<PositionPoint> positionPointList = mapService.getTwoPointNav(eeNavigationRequest.getUserLongitude(),eeNavigationRequest.getUserLatitude(),eeNavigationRequest.getFacilityId(),eeNavigationRequest.getFacilityType());
 
         return ResultUtils.success(positionPointList);
     }
+
+//    /**
+//     * 多个设施进行最优路径导航
+//     */
+//    @PostMapping("/mulFacilityNav")
+//    public BaseResponse mulFacilityNav(@RequestBody NavigationRequest navigationRequest) {
+//        if (navigationRequest == null) {
+//            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+//        }
+//
+//        List<PositionPoint> positionPointList = mapService.mulFacilityNav(navigationRequest);
+//
+//        return ResultUtils.success(positionPointList);
+//    }
 }
 
 
