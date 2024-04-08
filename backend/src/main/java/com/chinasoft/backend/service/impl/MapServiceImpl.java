@@ -78,6 +78,7 @@ public class MapServiceImpl implements MapService {
         List<PositionPoint> resPositionPointList = new ArrayList<>();
 
         PositionPoint currPositionPoint = new PositionPoint(userLongitude, userLatitude);
+        
 
         for (AmusementFacilityVO amusementFacilityVO : facilityVOList) {
             PositionPoint targetPositionPoint = new PositionPoint(amusementFacilityVO.getLongitude(), amusementFacilityVO.getLatitude());
@@ -138,6 +139,7 @@ public class MapServiceImpl implements MapService {
         JSONObject resObj = JSONUtil.parseObj(result);
         List steps = (List) resObj.getByPath("route.paths.0.steps");
         List<PositionPoint> dataList = new ArrayList<>();
+
 
         // 遍历steps
         for (int i = 0; i < steps.size(); i++) {
