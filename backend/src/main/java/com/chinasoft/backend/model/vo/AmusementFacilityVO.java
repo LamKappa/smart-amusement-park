@@ -91,7 +91,7 @@ public class AmusementFacilityVO {
     private List<String> imageUrls;
 
     /**
-     * 预期等待时间
+     * 预计等待时间
      */
     private Integer expectWaitTime;
 }

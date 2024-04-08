@@ -56,7 +56,7 @@ public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityM
 
         // 检查crowd是否非空
         if (amusementFilterRequest.getCrowd() != null && !amusementFilterRequest.getCrowd().isEmpty()) {
-            queryWrapper.eq("crowd", amusementFilterRequest.getCrowd());
+            queryWrapper.like("crowd_type", amusementFilterRequest.getCrowd());
         }
 
         // 搜索图片
