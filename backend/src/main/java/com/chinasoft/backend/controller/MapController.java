@@ -31,7 +31,7 @@ public class MapController {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
 
-        List<PositionPoint> positionPointList = mapService.getTwoPointNav(eeNavigationRequest.getUserLongitude(),eeNavigationRequest.getUserLatitude(),eeNavigationRequest.getFacilityId(),eeNavigationRequest.getFacilityType());
+        List<PositionPoint> positionPointList = mapService.sinFacilityNav(eeNavigationRequest);
 
         return ResultUtils.success(positionPointList);
     }

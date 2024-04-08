@@ -12,5 +12,5 @@ public interface MapService {
      */
     List<PositionPoint> mulFacilityNav(NavigationRequest navigationRequest);
 
-    List<PositionPoint> getTwoPointNav(String userLongitude, String userLatitude, Integer facilityId, Integer facilityType);
+    List<PositionPoint> sinFacilityNav(EENavigationRequest eeNavigationRequest);
 }

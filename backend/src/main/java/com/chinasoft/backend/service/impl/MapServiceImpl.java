@@ -1,10 +1,8 @@
 package com.chinasoft.backend.service.impl;
 
 import cn.hutool.http.HttpUtil;
-import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.chinasoft.backend.constant.FacilityTypeConstant;
 import com.chinasoft.backend.mapper.AmusementFacilityMapper;
@@ -13,23 +11,20 @@ import com.chinasoft.backend.mapper.CrowdingLevelMapper;
 import com.chinasoft.backend.mapper.RestaurantFacilityMapper;
 import com.chinasoft.backend.model.entity.AmusementFacility;
 import com.chinasoft.backend.model.entity.BaseFacility;
-import com.chinasoft.backend.model.entity.FacilityImage;
 import com.chinasoft.backend.model.entity.RestaurantFacility;
+import com.chinasoft.backend.model.request.AmusementFilterRequest;
 import com.chinasoft.backend.model.request.EENavigationRequest;
 import com.chinasoft.backend.model.request.FacilityIdType;
 import com.chinasoft.backend.model.request.NavigationRequest;
+import com.chinasoft.backend.model.vo.AmusementFacilityVO;
 import com.chinasoft.backend.model.vo.PositionPoint;
 import com.chinasoft.backend.service.AmusementFacilityService;
-import com.chinasoft.backend.service.BaseFacilityService;
 import com.chinasoft.backend.service.MapService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -40,6 +35,9 @@ public class MapServiceImpl implements MapService {
 
     @Autowired
     private AmusementFacilityMapper amusementFacilityMapper;
+
+    @Autowired
+    private AmusementFacilityService amusementFacilityService;
 
     @Autowired
     private RestaurantFacilityMapper restaurantFacilityMapper;
@@ -61,42 +59,77 @@ public class MapServiceImpl implements MapService {
             }
         }
 
-        // 根据设施id查询经纬度和预期等待时间
+        // 根据设施id查询所有设施的经纬度和预期等待时间
 
+        List<AmusementFacilityVO> facilityVOList = new ArrayList<>();
+        for (Integer facilityId : amuseFacilityIdList) {
+            AmusementFilterRequest amusementFilterRequest = new AmusementFilterRequest();
+            amusementFilterRequest.setId(facilityId);
+            List<AmusementFacilityVO> amusementFacility = amusementFacilityService.getAmusementFacility(amusementFilterRequest);
+            facilityVOList.add(amusementFacility.get(0));
+        }
 
-        // QueryWrapper queryWrapper = new QueryWrapper<>();
-        // queryWrapper.in("id", amuseFacilityIdList);
+        // 通过预计等待时间进行从小到大排序
+        Collections.sort(facilityVOList, (a, b) -> {
+            return a.getExpectWaitTime() - b.getExpectWaitTime();
+        });
 
-        // amusementFacilityService.getMap(queryWrapper)
+        // 计算出最终的路径坐标点
+        List<PositionPoint> resPositionPointList = new ArrayList<>();
 
-        return null;
+        PositionPoint currPositionPoint = new PositionPoint(userLongitude, userLatitude);
+
+        for (AmusementFacilityVO amusementFacilityVO : facilityVOList) {
+            PositionPoint targetPositionPoint = new PositionPoint(amusementFacilityVO.getLongitude(), amusementFacilityVO.getLatitude());
+            resPositionPointList.addAll(getTwoPointNav(currPositionPoint, targetPositionPoint));
+            currPositionPoint = targetPositionPoint;
+        }
+
+        return resPositionPointList;
     }
 
     @Override
-    public List<PositionPoint> getTwoPointNav(String userLongitude, String userLatitude, Integer facilityId, Integer facilityType) {
+    public List<PositionPoint> sinFacilityNav(EENavigationRequest eeNavigationRequest) {
+        String userLongitude = eeNavigationRequest.getUserLongitude();
+        String userLatitude = eeNavigationRequest.getUserLatitude();
+        Integer facilityId = eeNavigationRequest.getFacilityId();
+        Integer facilityType = eeNavigationRequest.getFacilityType();
+
 
         // 获取设施位置
         String facilityLongitude = null;
         String facilityLatitude = null;
 
-        if(facilityType == 0){
+        if (facilityType == 0) {
             AmusementFacility facility = amusementFacilityMapper.selectOne(Wrappers.<AmusementFacility>query().eq("id", facilityId));
             facilityLongitude = facility.getLongitude();
             facilityLatitude = facility.getLatitude();
-        }else if(facilityType == 1){
+        } else if (facilityType == 1) {
             RestaurantFacility facility = restaurantFacilityMapper.selectOne(Wrappers.<RestaurantFacility>query().eq("id", facilityId));
             facilityLongitude = facility.getLongitude();
             facilityLatitude = facility.getLatitude();
-        }else if(facilityType == 2){
+        } else if (facilityType == 2) {
             BaseFacility facility = baseFacilityMapper.selectOne(Wrappers.<BaseFacility>query().eq("id", facilityId));
             facilityLongitude = facility.getLongitude();
             facilityLatitude = facility.getLatitude();
         }
 
+        List<PositionPoint> resList = getTwoPointNav(new PositionPoint(userLongitude, userLatitude), new PositionPoint(facilityLongitude, facilityLatitude));
+
+        return resList;
+    }
+
+    private List<PositionPoint> getTwoPointNav(PositionPoint sourcePoint, PositionPoint targetPoint) {
+
+
         // 调用高德地图api
+        String sourceLongitude = sourcePoint.getLongitude();
+        String sourceLatitude = sourcePoint.getLatitude();
+        String targetLongitude = targetPoint.getLongitude();
+        String targetLatitude = targetPoint.getLatitude();
         HashMap<String, Object> paramMap = new HashMap<>();
-        paramMap.put("origin", userLongitude + "," + userLatitude);
-        paramMap.put("destination", facilityLongitude + "," + facilityLatitude);
+        paramMap.put("origin", sourceLongitude + "," + sourceLatitude);
+        paramMap.put("destination", targetLongitude + "," + targetLatitude);
         paramMap.put("key", "a78b0915a81134b501c379379e908f12");
 
         String result = HttpUtil.get("https://restapi.amap.com/v3/direction/walking", paramMap);
