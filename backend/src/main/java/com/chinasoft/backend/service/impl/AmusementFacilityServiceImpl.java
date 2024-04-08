@@ -45,6 +45,10 @@ public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityM
     public List<AmusementFacilityVO> getAmusementFacility(AmusementFilterRequest amusementFilterRequest) {
         QueryWrapper<AmusementFacility> queryWrapper = new QueryWrapper<>();
 
+        if (amusementFilterRequest.getId() != null) {
+            queryWrapper.eq("id", amusementFilterRequest.getId());
+        }
+
         // 检查name是否非空
         if (amusementFilterRequest.getName() != null && !amusementFilterRequest.getName().isEmpty()) {
             queryWrapper.eq("name", amusementFilterRequest.getName());
