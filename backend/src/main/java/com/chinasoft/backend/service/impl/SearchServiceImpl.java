@@ -8,7 +8,14 @@ import com.chinasoft.backend.mapper.RestaurantFacilityMapper;
 import com.chinasoft.backend.model.entity.AmusementFacility;
 import com.chinasoft.backend.model.entity.BaseFacility;
 import com.chinasoft.backend.model.entity.RestaurantFacility;
+import com.chinasoft.backend.model.request.AmusementFilterRequest;
+import com.chinasoft.backend.model.request.BaseFilterRequest;
+import com.chinasoft.backend.model.request.RestaurantFilterRequest;
+import com.chinasoft.backend.service.AmusementFacilityService;
+import com.chinasoft.backend.service.BaseFacilityService;
+import com.chinasoft.backend.service.RestaurantFacilityService;
 import com.chinasoft.backend.service.SearchService;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -32,15 +39,39 @@ public class SearchServiceImpl implements SearchService {
     @Autowired
     private BaseFacilityMapper baseFacilityMapper;
 
+    @Autowired
+    private AmusementFacilityService amusementFacilityService;
+
+    @Autowired
+    private RestaurantFacilityService restaurantFacilityService;
+
+    @Autowired
+    private BaseFacilityService baseFacilityService;
+
     @Override
     public List<Object> search(String keyword) {
         List<Object> resultList = new ArrayList<>();
 
         // 如果关键字为空，则分别查询每个表的所有数据
         if (keyword == null || keyword.isEmpty()) {
-            resultList.addAll(amusementFacilityMapper.selectList(null));
-            resultList.addAll(restaurantFacilityMapper.selectList(null));
-            resultList.addAll(baseFacilityMapper.selectList(null));
+            List<AmusementFacility> amusementFacilities = amusementFacilityMapper.selectList(null);
+            for (AmusementFacility amusementFacility : amusementFacilities){
+                AmusementFilterRequest amusementFilterRequest = new AmusementFilterRequest();
+                BeanUtils.copyProperties(amusementFacility, amusementFilterRequest);
+                resultList.addAll(amusementFacilityService.getAmusementFacility(amusementFilterRequest));
+            }
+            List<RestaurantFacility> restaurantFacilities = restaurantFacilityMapper.selectList(null);
+            for (RestaurantFacility restaurantFacility : restaurantFacilities){
+                RestaurantFilterRequest restaurantFilterRequest = new RestaurantFilterRequest();
+                BeanUtils.copyProperties(restaurantFacility, restaurantFilterRequest);
+                resultList.addAll(restaurantFacilityService.getRestaurantFacility(restaurantFilterRequest));
+            }
+            List<BaseFacility> baseFacilities = baseFacilityMapper.selectList(null);
+            for (BaseFacility baseFacility : baseFacilities){
+                BaseFilterRequest baseFilterRequest = new BaseFilterRequest();
+                BeanUtils.copyProperties(baseFacility, baseFilterRequest);
+                resultList.addAll(baseFacilityService.getBaseFacility(baseFilterRequest));
+            }
         } else {
             // 创建QueryWrapper对象用于构建查询条件
             QueryWrapper<AmusementFacility> amusementQueryWrapper = new QueryWrapper<>();
@@ -48,14 +79,32 @@ public class SearchServiceImpl implements SearchService {
             QueryWrapper<BaseFacility> baseQueryWrapper = new QueryWrapper<>();
 
             // 对关键字进行模糊查询
-            amusementQueryWrapper.like("name", keyword).or().like("introduction", keyword).or().like("type", keyword);
-            restaurantQueryWrapper.like("name", keyword).or().like("introduction", keyword).or().like("type", keyword);
+            amusementQueryWrapper.like("name", keyword).or().like("type", keyword);
+            restaurantQueryWrapper.like("name", keyword).or().like("type", keyword);
             baseQueryWrapper.like("name", keyword);
 
             // 执行查询并将结果添加到结果列表中
-            resultList.addAll(amusementFacilityMapper.selectList(amusementQueryWrapper));
-            resultList.addAll(restaurantFacilityMapper.selectList(restaurantQueryWrapper));
-            resultList.addAll(baseFacilityMapper.selectList(baseQueryWrapper));
+            List<AmusementFacility> amusementFacilities = amusementFacilityMapper.selectList(amusementQueryWrapper);
+            for (AmusementFacility amusementFacility : amusementFacilities){
+                AmusementFilterRequest amusementFilterRequest = new AmusementFilterRequest();
+                BeanUtils.copyProperties(amusementFacility, amusementFilterRequest);
+                resultList.addAll(amusementFacilityService.getAmusementFacility(amusementFilterRequest));
+            }
+
+            List<RestaurantFacility> restaurantFacilities = restaurantFacilityMapper.selectList(restaurantQueryWrapper);
+            for (RestaurantFacility restaurantFacility : restaurantFacilities){
+                RestaurantFilterRequest restaurantFilterRequest = new RestaurantFilterRequest();
+                BeanUtils.copyProperties(restaurantFacility, restaurantFilterRequest);
+                resultList.addAll(restaurantFacilityService.getRestaurantFacility(restaurantFilterRequest));
+            }
+
+            List<BaseFacility> baseFacilities = baseFacilityMapper.selectList(baseQueryWrapper);
+            for (BaseFacility baseFacility : baseFacilities){
+                BaseFilterRequest baseFilterRequest = new BaseFilterRequest();
+                BeanUtils.copyProperties(baseFacility, baseFilterRequest);
+                resultList.addAll(baseFacilityService.getBaseFacility(baseFilterRequest));
+            }
+
         }
 
         return resultList;
