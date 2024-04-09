@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class FacilityIdType {
-    private Integer facilityId;
+    private Long facilityId;
     private Integer facilityType;
+
 }

@@ -8,7 +8,7 @@ import java.util.Date;
 import java.util.List;
 
 @Data
-public class BaseFacilityVO {
+public class BaseVandSVO {
     /**
      * 设施ID
      */
@@ -59,4 +59,14 @@ public class BaseFacilityVO {
      * 是否订阅
      */
     private Integer isSubscribed;
+
+    /**
+     * 打卡记录ID
+     */
+    private Long visitId;
+
+    /**
+     * 订阅记录ID
+     */
+    private Long subscribeId;
 }

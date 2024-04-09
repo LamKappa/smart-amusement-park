@@ -7,27 +7,32 @@ import java.util.Date;
 import lombok.Data;
 
 /**
- * 路线表
- * @TableName route
+ * 用户订阅记录表
+ * @TableName subscribe
  */
-@TableName(value ="route")
+@TableName(value ="subscribe")
 @Data
-public class Route implements Serializable {
+public class Subscribe implements Serializable {
     /**
-     * 
+     * 主键ID
      */
     @TableId(type = IdType.AUTO)
     private Long id;
 
     /**
-     * 路线名称
+     * 用户ID
      */
-    private String name;
+    private Long userId;
 
     /**
-     * 路线图片URL
+     * 设施ID
      */
-    private String imgUrl;
+    private Long facilityId;
+
+    /**
+     * 设施类别（0-游乐设施，1-餐厅设施，2-基础设施）
+     */
+    private Integer facilityType;
 
     /**
      * 添加时间
@@ -40,7 +45,7 @@ public class Route implements Serializable {
     private Date updateTime;
 
     /**
-     * 逻辑删除标志（0-未删除 1-已删除）
+     * 逻辑删除（0-未删除 1-已删除）
      */
     @TableLogic
     private Integer isDeleted;

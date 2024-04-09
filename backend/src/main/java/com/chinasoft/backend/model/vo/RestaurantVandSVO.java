@@ -8,7 +8,7 @@ import java.util.Date;
 import java.util.List;
 
 @Data
-public class BaseFacilityVO {
+public class RestaurantVandSVO {
     /**
      * 设施ID
      */
@@ -21,6 +21,11 @@ public class BaseFacilityVO {
     private String name;
 
     /**
+     * 设施介绍
+     */
+    private String introduction;
+
+    /**
      * 纬度
      */
     private String longitude;
@@ -29,6 +34,11 @@ public class BaseFacilityVO {
      * 经度
      */
     private String latitude;
+
+    /**
+     * 设施类型（中式快餐、西式快餐、面点、饮品、小吃）
+     */
+    private String type;
 
     /**
      * 开放开始时间
@@ -59,4 +69,15 @@ public class BaseFacilityVO {
      * 是否订阅
      */
     private Integer isSubscribed;
+
+    /**
+     * 打卡记录ID
+     */
+    private Long visitId;
+
+    /**
+     * 订阅记录ID
+     */
+    private Long subscribeId;
+
 }

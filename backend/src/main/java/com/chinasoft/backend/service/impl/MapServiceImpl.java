@@ -69,7 +69,7 @@ public class MapServiceImpl implements MapService {
         List<FacilityIdType> facilityIdTypeList = navigationRequest.getFacilities();
 
         // 获得所有设施id
-        List<Integer> amuseFacilityIdList = new ArrayList<>();
+        List<Long> amuseFacilityIdList = new ArrayList<>();
         for (FacilityIdType facilityIdType : facilityIdTypeList) {
             if (facilityIdType.getFacilityType() == FacilityTypeConstant.AMUSEMENT_TYPE) {
                 amuseFacilityIdList.add(facilityIdType.getFacilityId());
@@ -81,7 +81,7 @@ public class MapServiceImpl implements MapService {
 
         // 根据设施id查询所有设施的经纬度和预期等待时间
         List<AmusementFacilityVO> facilityVOList = new ArrayList<>();
-        for (Integer facilityId : amuseFacilityIdList) {
+        for (Long facilityId : amuseFacilityIdList) {
             AmusementFilterRequest amusementFilterRequest = new AmusementFilterRequest();
             amusementFilterRequest.setId(facilityId);
             List<AmusementFacilityVO> amusementFacility = amusementFacilityService.getAmusementFacility(amusementFilterRequest);
@@ -128,7 +128,7 @@ public class MapServiceImpl implements MapService {
     public NavVO sinFacilityNav(EENavigationRequest eeNavigationRequest) {
         String userLongitude = eeNavigationRequest.getUserLongitude();
         String userLatitude = eeNavigationRequest.getUserLatitude();
-        Integer facilityId = eeNavigationRequest.getFacilityId();
+        Long facilityId = eeNavigationRequest.getFacilityId();
         Integer facilityType = eeNavigationRequest.getFacilityType();
 
 

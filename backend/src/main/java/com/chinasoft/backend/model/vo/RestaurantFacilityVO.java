@@ -59,4 +59,14 @@ public class RestaurantFacilityVO {
      * 设施图片
      */
     private List<String> imageUrls;
+
+    /**
+     * 是否打卡
+     */
+    private Integer isVisited;
+
+    /**
+     * 是否订阅
+     */
+    private Integer isSubscribed;
 }

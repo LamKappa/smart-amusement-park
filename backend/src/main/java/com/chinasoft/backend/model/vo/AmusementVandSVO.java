@@ -8,7 +8,7 @@ import java.util.Date;
 import java.util.List;
 
 @Data
-public class AmusementFacilityVO {
+public class AmusementVandSVO {
     /**
      *
      */
@@ -94,5 +94,25 @@ public class AmusementFacilityVO {
      * 预计等待时间
      */
     private Integer expectWaitTime;
+
+    /**
+     * 是否打卡
+     */
+    private Integer isVisited;
+
+    /**
+     * 是否订阅
+     */
+    private Integer isSubscribed;
+
+    /**
+     * 打卡记录ID
+     */
+    private Long visitId;
+
+    /**
+     * 订阅记录ID
+     */
+    private Long subscribeId;
 
 }

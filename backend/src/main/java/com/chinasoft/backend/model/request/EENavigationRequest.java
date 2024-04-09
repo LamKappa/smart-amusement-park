@@ -11,7 +11,7 @@ public class EENavigationRequest {
 
     private String userLatitude;
     
-    private Integer facilityId;
+    private Long facilityId;
 
     private Integer facilityType;
 }
