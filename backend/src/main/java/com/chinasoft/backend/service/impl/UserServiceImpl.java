@@ -8,6 +8,7 @@ import com.chinasoft.backend.constant.UserConstant;
 import com.chinasoft.backend.exception.BusinessException;
 import com.chinasoft.backend.mapper.UserMapper;
 import com.chinasoft.backend.model.entity.User;
+import com.chinasoft.backend.model.request.user.UserUpdateRequest;
 import com.chinasoft.backend.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -26,7 +27,8 @@ import java.util.regex.Pattern;
 public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         implements UserService {
 
-    private static final String DEFAULT_AVATAR_URL = "https://leimo-picgo.oss-cn-chengdu.aliyuncs.com/picgoimg/leimo.png";
+    // private static final String DEFAULT_AVATAR_URL = "https://leimo-picgo.oss-cn-chengdu.aliyuncs.com/picgoimg/leimo.png";
+    private static final String DEFAULT_AVATAR_URL = "https://avatars.githubusercontent.com/u/88019289?v=4";
 
     private static final String SALT = "chinasoft";
 
@@ -113,13 +115,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         queryWrapper.eq("phone", phone);
         queryWrapper.eq("password", encryptPassword);
         User user = userMapper.selectOne(queryWrapper);
-        // 脱敏
-        user.setPassword(null);
         // 用户不存在
         if (user == null) {
             log.info("user login failed, userAccount cannot match userPassword");
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在或密码错误");
         }
+        // 脱敏
+        user.setPassword(null);
         // 3. 记录用户的登录态
         request.getSession().setAttribute(UserConstant.USER_LOGIN_STATE, user);
         return user;
@@ -156,6 +158,58 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 移除登录态
         request.getSession().removeAttribute(UserConstant.USER_LOGIN_STATE);
         return true;
+    }
+
+    /**
+     * 用户信息修改
+     */
+    @Override
+    public User userUpdate(UserUpdateRequest userUpdateRequest, HttpServletRequest request) {
+        String phone = userUpdateRequest.getPhone();
+        String username = userUpdateRequest.getUsername();
+        String password = userUpdateRequest.getPassword();
+        String avatarUrl = userUpdateRequest.getAvatarUrl();
+
+        // User user = new User();
+
+        // 校验
+        if (StringUtils.isNotBlank(phone) && !Pattern.matches("^1[3-9]\\d{9}$", phone)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户手机号格式错误");
+        }
+        if (StringUtils.isNotBlank(password) && (password.length() < 8 || password.length() > 16)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户密码过短或过短");
+        }
+
+        // 获取当前登录的用户
+        User currUser = getLoginUser(request);
+
+        // 设置要修改的信息
+        if (StringUtils.isNotBlank(phone)) {
+            currUser.setPhone(phone);
+        }
+        if (StringUtils.isNotBlank(username)) {
+            currUser.setUsername(username);
+        }
+        if (StringUtils.isNotBlank(password)) {
+            String encryptPassword = DigestUtils.md5DigestAsHex((SALT + password).getBytes());
+            currUser.setPassword(encryptPassword);
+        }
+        if (StringUtils.isNotBlank(avatarUrl)) {
+            currUser.setAvatarUrl(avatarUrl);
+        }
+
+        // Long userId = currUser.getId();
+        //
+        // user.setId(userId);
+
+        // 进行信息修改
+        boolean result = this.updateById(currUser);
+
+        // 记录用户的登录态
+        currUser.setPassword(null);
+        request.getSession().setAttribute(UserConstant.USER_LOGIN_STATE, currUser);
+
+        return currUser;
     }
 }
 

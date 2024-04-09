@@ -4,6 +4,7 @@ import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.chinasoft.backend.config.AmapProperties;
 import com.chinasoft.backend.constant.FacilityTypeConstant;
 import com.chinasoft.backend.mapper.AmusementFacilityMapper;
 import com.chinasoft.backend.mapper.BaseFacilityMapper;
@@ -29,6 +30,9 @@ import java.util.*;
 @Service
 @Slf4j
 public class MapServiceImpl implements MapService {
+
+    @Autowired
+    private AmapProperties amapProperties;
 
     @Autowired
     private CrowdingLevelMapper crowdingLevelMapper;
@@ -60,7 +64,6 @@ public class MapServiceImpl implements MapService {
         }
 
         // 根据设施id查询所有设施的经纬度和预期等待时间
-
         List<AmusementFacilityVO> facilityVOList = new ArrayList<>();
         for (Integer facilityId : amuseFacilityIdList) {
             AmusementFilterRequest amusementFilterRequest = new AmusementFilterRequest();
@@ -78,7 +81,7 @@ public class MapServiceImpl implements MapService {
         List<PositionPoint> resPositionPointList = new ArrayList<>();
 
         PositionPoint currPositionPoint = new PositionPoint(userLongitude, userLatitude);
-        
+
 
         for (AmusementFacilityVO amusementFacilityVO : facilityVOList) {
             PositionPoint targetPositionPoint = new PositionPoint(amusementFacilityVO.getLongitude(), amusementFacilityVO.getLatitude());
@@ -131,7 +134,7 @@ public class MapServiceImpl implements MapService {
         HashMap<String, Object> paramMap = new HashMap<>();
         paramMap.put("origin", sourceLongitude + "," + sourceLatitude);
         paramMap.put("destination", targetLongitude + "," + targetLatitude);
-        paramMap.put("key", "a78b0915a81134b501c379379e908f12");
+        paramMap.put("key", amapProperties.getKey());
 
         String result = HttpUtil.get("https://restapi.amap.com/v3/direction/walking", paramMap);
 

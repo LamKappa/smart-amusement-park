@@ -2,6 +2,7 @@ package com.chinasoft.backend.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.chinasoft.backend.model.entity.User;
+import com.chinasoft.backend.model.request.user.UserUpdateRequest;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -31,4 +32,9 @@ public interface UserService extends IService<User> {
      * 用户注销
      */
     Boolean userLogout(HttpServletRequest request);
+
+    /**
+     * 用户信息修改
+     */
+    User userUpdate(UserUpdateRequest userUpdateRequest, HttpServletRequest request);
 }

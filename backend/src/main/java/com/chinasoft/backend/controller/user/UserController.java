@@ -7,6 +7,7 @@ import com.chinasoft.backend.exception.BusinessException;
 import com.chinasoft.backend.model.entity.User;
 import com.chinasoft.backend.model.request.user.UserLoginRequest;
 import com.chinasoft.backend.model.request.user.UserRegisterRequest;
+import com.chinasoft.backend.model.request.user.UserUpdateRequest;
 import com.chinasoft.backend.service.UserService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -85,5 +86,20 @@ public class UserController {
         }
         Boolean result = userService.userLogout(request);
         return ResultUtils.success(result);
+    }
+
+    /**
+     * 用户信息修改
+     */
+    @PostMapping("/update")
+    public BaseResponse<User> userUpdate(@RequestBody UserUpdateRequest userUpdateRequest, HttpServletRequest request) {
+
+        if (userUpdateRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+
+        User user = userService.userUpdate(userUpdateRequest, request);
+
+        return ResultUtils.success(user);
     }
 }
