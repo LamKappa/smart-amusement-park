@@ -16,6 +16,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -37,129 +38,13 @@ public class VisitAndSubscribeServiceImpl implements VisitAndSubscribeService{
     @Autowired
     private BaseFacilityService baseFacilityService;
 
-    public List<Object> getVisitAndSubscribe(VisitAndSubscribeGetRequest visitAndSubscribeGetRequest) {
-        Long userId = visitAndSubscribeGetRequest.getUserId();
-
-        // 获取amusementFacilities, restaurantFacilities, baseFacilities
-        List<AmusementVandSVO> amusementVandSVOList = new ArrayList<>();
-        List<AmusementFacilityVO> amusementFacilities = amusementFacilityService.getAmusementFacility(new AmusementFilterRequest());
-        for(AmusementFacilityVO amusementFacility : amusementFacilities){
-            AmusementVandSVO amusementVandSVO = new AmusementVandSVO();
-            BeanUtil.copyProperties(amusementFacility, amusementVandSVO);
-            amusementVandSVOList.add(amusementVandSVO);
-        }
-
-        List<RestaurantVandSVO> restaurantVandSVOList = new ArrayList<>();
-        List<RestaurantFacilityVO> restaurantFacilities = restaurantFacilityService.getRestaurantFacility(new RestaurantFilterRequest());
-        for(RestaurantFacilityVO restaurantFacility : restaurantFacilities){
-            RestaurantVandSVO restaurantVandSVO = new RestaurantVandSVO();
-            BeanUtil.copyProperties(restaurantFacility, restaurantVandSVO);
-            restaurantVandSVOList.add(restaurantVandSVO);
-        }
-
-        List<BaseVandSVO> baseVandSVOList = new ArrayList<>();
-        List<BaseFacilityVO> baseFacilities = baseFacilityService.getBaseFacility(new BaseFilterRequest());
-        for(BaseFacilityVO baseFacility : baseFacilities){
-            BaseVandSVO baseVandSVO = new BaseVandSVO();
-            BeanUtil.copyProperties(baseFacility, baseVandSVO);
-            baseVandSVOList.add(baseVandSVO);
-        }
-
-        // 获取visitedFacilities
-        List<Visit> visits = visitMapper.selectList(Wrappers.<Visit>query().eq("user_id", userId));
-
-
-        // 更新设施列表的is_visited状态
-        for (Visit visit : visits) {
-            switch (visit.getFacilityType()) {
-                case 0: // Amusement Facility
-                    for (AmusementVandSVO amusementVandSVO : amusementVandSVOList) {
-                        if (amusementVandSVO.getId().equals(visit.getFacilityId())) {
-                            amusementVandSVO.setIsVisited(1);
-                            amusementVandSVO.setVisitId(visit.getId());
-                            break;
-                        }
-                    }
-                    break;
-                case 1: // Restaurant Facility
-                    for (RestaurantVandSVO restaurantVandSVO : restaurantVandSVOList) {
-                        if (restaurantVandSVO.getId().equals(visit.getFacilityId())) {
-                            restaurantVandSVO.setIsVisited(1);
-                            restaurantVandSVO.setVisitId(visit.getId());
-                            break;
-                        }
-                    }
-                    break;
-                case 2: // Base Facility
-                    for (BaseVandSVO baseVandSVO : baseVandSVOList) {
-                        if (baseVandSVO.getId().equals(visit.getFacilityId())) {
-                            baseVandSVO.setIsVisited(1);
-                            baseVandSVO.setVisitId(visit.getId());
-                            break;
-                        }
-                    }
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        // 获取subscribedFacilities
-        List<Subscribe> subscribes = subscribeMapper.selectList(Wrappers.<Subscribe>query().eq("user_id", userId));
-
-        // 更新设施列表的is_visited状态
-        for (Subscribe subscribe : subscribes) {
-            switch (subscribe.getFacilityType()) {
-                case 0: // Amusement Facility
-                    for (AmusementVandSVO amusementVandSVO : amusementVandSVOList) {
-                        if (amusementVandSVO.getId().equals(subscribe.getFacilityId())) {
-                            amusementVandSVO.setIsSubscribed(1);
-                            amusementVandSVO.setSubscribeId(subscribe.getId());
-                            break;
-                        }
-                    }
-                    break;
-                case 1: // Restaurant Facility
-                    for (RestaurantVandSVO restaurantVandSVO : restaurantVandSVOList) {
-                        if (restaurantVandSVO.getId().equals(subscribe.getFacilityId())) {
-                            restaurantVandSVO.setIsSubscribed(1);
-                            restaurantVandSVO.setSubscribeId(subscribe.getId());
-                            break;
-                        }
-                    }
-                    break;
-                case 2: // Base Facility
-                    for (BaseVandSVO baseVandSVO : baseVandSVOList) {
-                        if (baseVandSVO.getId().equals(subscribe.getFacilityId())) {
-                            baseVandSVO.setIsSubscribed(1);
-                            baseVandSVO.setSubscribeId(subscribe.getId());
-                            break;
-                        }
-                    }
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        // 构建VisitAndSubscribeVO对象并返回，这里假设VO对象包含上述设施列表
-        List<Object> data = new ArrayList<>();
-        data.addAll(amusementVandSVOList);
-        data.addAll(restaurantVandSVOList);
-        data.addAll(baseVandSVOList);
-
-        return data;
-
-    }
-
-
     @Override
-    public List<AmusementVandSVO> getAmusementVAndS(VisitAndSubscribeGetRequest visitAndSubscribeGetRequest) {
-        Long userId = visitAndSubscribeGetRequest.getUserId();
+    public List<AmusementVandSVO> getAmusementVAndS(AmusementFilterRequest amusementFilterRequest) {
+        Long userId = amusementFilterRequest.getUserId();
 
-        // 获取游乐设施基础信息
+        // 获取设施基础信息
         List<AmusementVandSVO> amusementVandSVOList = new ArrayList<>();
-        List<AmusementFacilityVO> amusementFacilities = amusementFacilityService.getAmusementFacility(new AmusementFilterRequest());
+        List<AmusementFacilityVO> amusementFacilities = amusementFacilityService.getAmusementFacility(amusementFilterRequest);
         for(AmusementFacilityVO amusementFacility : amusementFacilities){
             AmusementVandSVO amusementVandSVO = new AmusementVandSVO();
             BeanUtil.copyProperties(amusementFacility, amusementVandSVO);
@@ -186,7 +71,7 @@ public class VisitAndSubscribeServiceImpl implements VisitAndSubscribeService{
         // 获取订阅信息
         List<Subscribe> subscribes = subscribeMapper.selectList(Wrappers.<Subscribe>query().eq("user_id", userId));
 
-        // 更新设施列表的is_visited状态
+        // 更新设施列表的is_subscribed状态
         for (Subscribe subscribe : subscribes) {
             if (subscribe.getFacilityType() == 0) {
                 for (AmusementVandSVO amusementVandSVO : amusementVandSVOList) {
@@ -199,18 +84,29 @@ public class VisitAndSubscribeServiceImpl implements VisitAndSubscribeService{
             }
         }
 
+        // 将未打卡未订阅的部分由null统一为0
+        for (AmusementVandSVO amusementVandSVO : amusementVandSVOList) {
+            if (amusementVandSVO.getIsVisited() == null) {
+                amusementVandSVO.setIsVisited(0);
+            }
+            if (amusementVandSVO.getIsSubscribed() == null) {
+                amusementVandSVO.setIsSubscribed(0);
+            }
+        }
+
+
         // 返回结果
         return amusementVandSVOList;
 
     }
 
     @Override
-    public List<RestaurantVandSVO> getRestaurantVAndS(VisitAndSubscribeGetRequest visitAndSubscribeGetRequest) {
-        Long userId = visitAndSubscribeGetRequest.getUserId();
+    public List<RestaurantVandSVO> getRestaurantVAndS(RestaurantFilterRequest restaurantFilterRequest) {
+        Long userId = restaurantFilterRequest.getUserId();
 
-        // 获取游乐设施基础信息
+        // 获取设施基础信息
         List<RestaurantVandSVO> restaurantVandSVOList = new ArrayList<>();
-        List<RestaurantFacilityVO> restaurantFacilities = restaurantFacilityService.getRestaurantFacility(new RestaurantFilterRequest());
+        List<RestaurantFacilityVO> restaurantFacilities = restaurantFacilityService.getRestaurantFacility(restaurantFilterRequest);
         for(RestaurantFacilityVO restaurantFacility : restaurantFacilities){
             RestaurantVandSVO restaurantVandSVO = new RestaurantVandSVO();
             BeanUtil.copyProperties(restaurantFacility, restaurantVandSVO);
@@ -237,9 +133,9 @@ public class VisitAndSubscribeServiceImpl implements VisitAndSubscribeService{
         // 获取订阅信息
         List<Subscribe> subscribes = subscribeMapper.selectList(Wrappers.<Subscribe>query().eq("user_id", userId));
 
-        // 更新设施列表的is_visited状态
+        // 更新设施列表的is_subscribed状态
         for (Subscribe subscribe : subscribes) {
-            if (subscribe.getFacilityType() == 0) {
+            if (subscribe.getFacilityType() == 1) {
                 for (RestaurantVandSVO restaurantVandSVO : restaurantVandSVOList) {
                     if (restaurantVandSVO.getId().equals(subscribe.getFacilityId())) {
                         restaurantVandSVO.setIsSubscribed(1);
@@ -250,16 +146,26 @@ public class VisitAndSubscribeServiceImpl implements VisitAndSubscribeService{
             }
         }
 
+        // 将未打卡未订阅的部分由null统一为0
+        for (RestaurantVandSVO restaurantVandSVO : restaurantVandSVOList) {
+            if (restaurantVandSVO.getIsVisited() == null) {
+                restaurantVandSVO.setIsVisited(0);
+            }
+            if (restaurantVandSVO.getIsSubscribed() == null) {
+                restaurantVandSVO.setIsSubscribed(0);
+            }
+        }
+
         // 返回结果
         return restaurantVandSVOList;
     }
 
-    public List<BaseVandSVO> getBaseVAndS(VisitAndSubscribeGetRequest visitAndSubscribeGetRequest) {
-        Long userId = visitAndSubscribeGetRequest.getUserId();
+    public List<BaseVandSVO> getBaseVAndS(BaseFilterRequest baseFilterRequest) {
+        Long userId = baseFilterRequest.getUserId();
 
-        // 获取游乐设施基础信息
+        // 获取设施基础信息
         List<BaseVandSVO> baseVandSVOList = new ArrayList<>();
-        List<BaseFacilityVO> baseFacilities = baseFacilityService.getBaseFacility(new BaseFilterRequest());
+        List<BaseFacilityVO> baseFacilities = baseFacilityService.getBaseFacility(baseFilterRequest);
         for(BaseFacilityVO baseFacility : baseFacilities){
             BaseVandSVO baseVandSVO = new BaseVandSVO();
             BeanUtil.copyProperties(baseFacility, baseVandSVO);
@@ -286,9 +192,9 @@ public class VisitAndSubscribeServiceImpl implements VisitAndSubscribeService{
         // 获取订阅信息
         List<Subscribe> subscribes = subscribeMapper.selectList(Wrappers.<Subscribe>query().eq("user_id", userId));
 
-        // 更新设施列表的is_visited状态
+        // 更新设施列表的is_subscribed状态
         for (Subscribe subscribe : subscribes) {
-            if (subscribe.getFacilityType() == 0) {
+            if (subscribe.getFacilityType() == 2) {
                 for (BaseVandSVO baseVandSVO : baseVandSVOList) {
                     if (baseVandSVO.getId().equals(subscribe.getFacilityId())) {
                         baseVandSVO.setIsSubscribed(1);
@@ -299,8 +205,62 @@ public class VisitAndSubscribeServiceImpl implements VisitAndSubscribeService{
             }
         }
 
+        // 将未打卡未订阅的部分由null统一为0
+        for (BaseVandSVO baseVandSVO : baseVandSVOList) {
+            if (baseVandSVO.getIsVisited() == null) {
+                baseVandSVO.setIsVisited(0);
+            }
+            if (baseVandSVO.getIsSubscribed() == null) {
+                baseVandSVO.setIsSubscribed(0);
+            }
+        }
+
         // 返回结果
         return baseVandSVOList;
+    }
+
+    @Override
+    public List<Object> getAllVAndS(VisitAndSubscribeGetRequest visitAndSubscribeGetRequest) {
+        Long userId = visitAndSubscribeGetRequest.getUserId();
+
+        // 获取游乐设施基础信息
+        AmusementFilterRequest amusementFilterRequest = new AmusementFilterRequest();
+        amusementFilterRequest.setUserId(userId);
+        List<AmusementVandSVO> amusementVandSVOList = getAmusementVAndS(amusementFilterRequest);
+
+//        // 获取餐厅设施基础信息
+//        RestaurantFilterRequest restaurantFilterRequest = new RestaurantFilterRequest();
+//        restaurantFilterRequest.setUserId(userId);
+//        List<RestaurantVandSVO> restaurantVandSVOList = getRestaurantVAndS(visitAndSubscribeGetRequest);
+//
+//        // 获取基础设施基础信息
+//        BaseFilterRequest baseFilterRequest = new BaseFilterRequest();
+//        baseFilterRequest.setUserId(userId);
+//        List<BaseVandSVO> baseVandSVOList = getBaseVAndS(visitAndSubscribeGetRequest);
+
+        List<Object> data = new ArrayList<>();
+        data.addAll(amusementVandSVOList);
+//        data.addAll(restaurantVandSVOList);
+//        data.addAll(baseVandSVOList);
+
+        // 按拥挤度从低到高排序
+        List<Object> sortedData = data.stream()
+                .sorted(Comparator.comparingInt(o -> {
+                    if (o instanceof AmusementVandSVO) {
+                        return ((AmusementVandSVO) o).getExpectWaitTime();
+                    }
+//                    else if (o instanceof RestaurantVandSVO) {
+//                        return ((RestaurantVandSVO) o).getExpectWaitTime();
+//                    } else if (o instanceof BaseVandSVO) {
+//                        return ((BaseVandSVO) o).getExpectWaitTime();
+//                    }
+                    else {
+                        throw new IllegalArgumentException("Unknown type in the list: " + o.getClass().getName());
+                    }
+                }))
+                .collect(Collectors.toList());
+
+        return sortedData;
     }
 }
 

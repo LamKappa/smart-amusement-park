@@ -90,10 +90,6 @@ public class AmusementVandSVO {
      */
     private List<String> imageUrls;
 
-    /**
-     * 预计等待时间
-     */
-    private Integer expectWaitTime;
 
     /**
      * 是否打卡
@@ -114,5 +110,10 @@ public class AmusementVandSVO {
      * 订阅记录ID
      */
     private Long subscribeId;
+
+    /**
+     * 预计等待时间
+     */
+    private Integer expectWaitTime;
 
 }

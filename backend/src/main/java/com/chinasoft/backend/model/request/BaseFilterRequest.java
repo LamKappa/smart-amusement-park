@@ -4,6 +4,8 @@ import lombok.Data;
 
 @Data
 public class BaseFilterRequest {
-    private Integer id;
+    private Long id;
+
+    private Long userId;
     private String name;
 }

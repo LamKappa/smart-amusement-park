@@ -4,7 +4,6 @@ import com.chinasoft.backend.model.entity.Visit;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.chinasoft.backend.model.request.VisitAndSubscribeAddRequest;
 import com.chinasoft.backend.model.request.VisitAndSubscribeDeleteRequest;
-import com.chinasoft.backend.model.vo.VisitAndSubscribeVO;
 
 /**
 * @author 皎皎

@@ -12,14 +12,10 @@ import com.chinasoft.backend.model.request.VisitAndSubscribeGetRequest;
 import com.chinasoft.backend.model.vo.AmusementVandSVO;
 import com.chinasoft.backend.model.vo.BaseVandSVO;
 import com.chinasoft.backend.model.vo.RestaurantVandSVO;
-import com.chinasoft.backend.model.vo.VisitAndSubscribeVO;
-import com.chinasoft.backend.service.SearchService;
 import com.chinasoft.backend.service.SubscribeService;
 import com.chinasoft.backend.service.VisitAndSubscribeService;
 import com.chinasoft.backend.service.VisitService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.repository.query.Param;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -102,49 +98,65 @@ public class VisitAndSubscribeController {
         return ResultUtils.success(data);
     }
 
+//    /**
+//     * 传入用户id，展示游乐设施所有信息+打卡信息+订阅信息。
+//     */
+//    @PostMapping("/getVisitAndSubscribe/amusement")
+//    public BaseResponse<List<AmusementVandSVO>> getAmusementVandS(@RequestBody VisitAndSubscribeGetRequest visitAndSubscribeGetRequest) {
+//        if (visitAndSubscribeGetRequest == null) {
+//            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+//        }
+//
+//        // 查询数据库
+//        List<AmusementVandSVO> data = visitAndSubscribeService.getAmusementVAndS(visitAndSubscribeGetRequest);
+//
+//        // 返回响应
+//        return ResultUtils.success(data);
+//    }
+//
+//    /**
+//     * 传入用户id，展示餐厅设施所有信息+打卡信息+订阅信息。
+//     */
+//    @PostMapping("/getVisitAndSubscribe/restaurant")
+//    public BaseResponse<List<RestaurantVandSVO>> getRestaurantVandS(@RequestBody VisitAndSubscribeGetRequest visitAndSubscribeGetRequest) {
+//        if (visitAndSubscribeGetRequest == null) {
+//            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+//        }
+//
+//        // 查询数据库
+//        List<RestaurantVandSVO> data = visitAndSubscribeService.getRestaurantVAndS(visitAndSubscribeGetRequest);
+//
+//        // 返回响应
+//        return ResultUtils.success(data);
+//    }
+//
+//    /**
+//     * 传入用户id，展示基础设施所有信息+打卡信息+订阅信息。
+//     */
+//    @PostMapping("/getVisitAndSubscribe/base")
+//    public BaseResponse<List<BaseVandSVO>> getBaseVandS(@RequestBody VisitAndSubscribeGetRequest visitAndSubscribeGetRequest) {
+//        if (visitAndSubscribeGetRequest == null) {
+//            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+//        }
+//
+//        // 查询数据库
+//        List<BaseVandSVO> data = visitAndSubscribeService.getBaseVAndS(visitAndSubscribeGetRequest);
+//
+//        // 返回响应
+//        return ResultUtils.success(data);
+//    }
+
     /**
-     * 传入用户id，展示游乐设施所有信息+打卡信息+订阅信息。
+     * 传入用户id，展示所有设施的信息+打卡信息+订阅信息（按拥挤度从低到高排序）。
      */
-    @PostMapping("/getVisitAndSubscribe/amusement")
-    public BaseResponse<List<AmusementVandSVO>> getAmusementVandS(@RequestBody VisitAndSubscribeGetRequest visitAndSubscribeGetRequest) {
+    @PostMapping("/getAllVisitAndSubscribe")
+    public BaseResponse<List<Object>> getAllVandS(@RequestBody VisitAndSubscribeGetRequest visitAndSubscribeGetRequest) {
         if (visitAndSubscribeGetRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
 
         // 查询数据库
-        List<AmusementVandSVO> data = visitAndSubscribeService.getAmusementVAndS(visitAndSubscribeGetRequest);
-
-        // 返回响应
-        return ResultUtils.success(data);
-    }
-
-    /**
-     * 传入用户id，展示餐厅设施所有信息+打卡信息+订阅信息。
-     */
-    @PostMapping("/getVisitAndSubscribe/restaurant")
-    public BaseResponse<List<RestaurantVandSVO>> getRestaurantVandS(@RequestBody VisitAndSubscribeGetRequest visitAndSubscribeGetRequest) {
-        if (visitAndSubscribeGetRequest == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-        }
-
-        // 查询数据库
-        List<RestaurantVandSVO> data = visitAndSubscribeService.getRestaurantVAndS(visitAndSubscribeGetRequest);
-
-        // 返回响应
-        return ResultUtils.success(data);
-    }
-
-    /**
-     * 传入用户id，展示基础设施所有信息+打卡信息+订阅信息。
-     */
-    @PostMapping("/getVisitAndSubscribe/base")
-    public BaseResponse<List<BaseVandSVO>> getBaseVandS(@RequestBody VisitAndSubscribeGetRequest visitAndSubscribeGetRequest) {
-        if (visitAndSubscribeGetRequest == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-        }
-
-        // 查询数据库
-        List<BaseVandSVO> data = visitAndSubscribeService.getBaseVAndS(visitAndSubscribeGetRequest);
+        List<Object> data = visitAndSubscribeService.getAllVAndS(visitAndSubscribeGetRequest);
 
         // 返回响应
         return ResultUtils.success(data);

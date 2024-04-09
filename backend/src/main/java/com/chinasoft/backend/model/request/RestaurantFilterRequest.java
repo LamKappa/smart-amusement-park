@@ -4,7 +4,9 @@ import lombok.Data;
 
 @Data
 public class RestaurantFilterRequest {
-    private Integer id;
+    private Long id;
+
+    private Long userId;
     private String name;
     private String type;
 }

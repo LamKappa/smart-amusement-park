@@ -6,6 +6,7 @@ import lombok.Data;
 public class AmusementFilterRequest {
     private Long id;
 
+    private Long userId;
     private String name;
     private String type;
     private Integer height;
