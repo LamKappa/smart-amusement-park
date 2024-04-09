@@ -109,7 +109,7 @@ public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityM
             List<CrowdingLevel> crowdingLevelList = crowdingLevelMapper.selectList(crowdingLevelQuery);
             if (!CollectionUtils.isEmpty(crowdingLevelList)) {
                 // 预计等待时间应该是排队时间 + 一次游玩时间
-                facilityVO.setExpectWaitTime(crowdingLevelList.get(0).getExpectWaitTime() + facilityVO.getExpectTime());
+                facilityVO.setExpectWaitTime(crowdingLevelList.get(0).getExpectWaitTime());
             } else {
                 // 默认值
                 facilityVO.setExpectWaitTime(facilityVO.getExpectTime());

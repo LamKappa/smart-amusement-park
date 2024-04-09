@@ -6,15 +6,13 @@ import com.chinasoft.backend.common.ResultUtils;
 import com.chinasoft.backend.exception.BusinessException;
 import com.chinasoft.backend.model.request.EENavigationRequest;
 import com.chinasoft.backend.model.request.NavigationRequest;
-import com.chinasoft.backend.model.vo.PositionPoint;
+import com.chinasoft.backend.model.vo.NavVO;
 import com.chinasoft.backend.service.MapService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/map")
@@ -32,9 +30,9 @@ public class MapController {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
 
-        List<PositionPoint> positionPointList = mapService.sinFacilityNav(eeNavigationRequest);
+        NavVO navVO = mapService.sinFacilityNav(eeNavigationRequest);
 
-        return ResultUtils.success(positionPointList);
+        return ResultUtils.success(navVO);
     }
 
     /**
@@ -46,9 +44,9 @@ public class MapController {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
 
-        List<PositionPoint> positionPointList = mapService.mulFacilityNav(navigationRequest);
+        NavVO navVO = mapService.mulFacilityNav(navigationRequest);
 
-        return ResultUtils.success(positionPointList);
+        return ResultUtils.success(navVO);
     }
 }
 

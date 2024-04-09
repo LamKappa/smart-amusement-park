@@ -1,5 +1,6 @@
 package com.chinasoft.backend.service.impl;
 
+import com.chinasoft.backend.constant.FacilityTypeConstant;
 import com.chinasoft.backend.model.entity.AmusementFacility;
 import com.chinasoft.backend.model.entity.CrowdingLevel;
 import com.chinasoft.backend.model.entity.IoTData;
@@ -20,11 +21,28 @@ import java.util.Map;
 public class MqttServiceImpl implements MqttService {
 
     /**
-     * 暂存从IoT接收的数据
+     * 暂存从IoT接收的游乐设施数据
      */
-    private Map<Integer, List<IoTData>> map = new HashMap<>();
+    private Map<Integer, List<IoTData>> amusementFacilityDataMap = new HashMap<>();
 
+    /**
+     * 暂存从IoT接收的餐厅数据
+     */
+    private Map<Integer, List<IoTData>> restaurantFacilityDataMap = new HashMap<>();
+
+    /**
+     * 暂存从IoT接收的基础设施数据
+     */
+    private Map<Integer, List<IoTData>> baseFacilityDataMap = new HashMap<>();
+
+    /**
+     * 每个硬件设备的检测范围
+     */
     private static final Integer PER_DEVICE_DETECTION_LENGTH = 1;
+
+    /**
+     * 平均每个人的宽度
+     */
     private static final Double PER_PERSON_LENGTH = 0.5;
 
     @Autowired
@@ -45,11 +63,17 @@ public class MqttServiceImpl implements MqttService {
         Integer facilityType = ioTData.getFacilityType();
         Integer detection = ioTData.getDetection();
 
-        if (!map.containsKey(facilityId)) {
-            map.put(facilityId, new ArrayList<>());
+        if (facilityType == FacilityTypeConstant.AMUSEMENT_TYPE) {
+            if (!amusementFacilityDataMap.containsKey(facilityId)) {
+                amusementFacilityDataMap.put(facilityId, new ArrayList<>());
+            }
+            List<IoTData> ioTDataList = amusementFacilityDataMap.get(facilityId);
+            ioTDataList.add(ioTData);
+        } else if (facilityType == FacilityTypeConstant.RESTAURANT_TYPE) {
+
+        } else if (facilityType == FacilityTypeConstant.BASE_TYPE) {
+            
         }
-        List<IoTData> ioTDataList = map.get(facilityId);
-        ioTDataList.add(ioTData);
 
     }
 
@@ -63,9 +87,25 @@ public class MqttServiceImpl implements MqttService {
         // Integer facilityType = ioTData.getFacilityType();
         // Integer detection = ioTData.getDetection();
 
-
         // 获取每一个设施五分钟的数据，并计算预计等待时间和存储到数据库
         List<CrowdingLevel> crowdingLevelList = new ArrayList<>();
+
+        crowdingLevelList = getCrowdingLevelList(amusementFacilityDataMap);
+
+        // 批量插入减少数据库压力
+        crowdingLevelService.saveBatch(crowdingLevelList);
+
+        // 清空map中暂存的数据
+        amusementFacilityDataMap = new HashMap<>();
+    }
+
+    /**
+     * 根据不同的设施获取预期等待时间对象的列表
+     */
+    private List<CrowdingLevel> getCrowdingLevelList(Map<Integer, List<IoTData>> map) {
+
+        List<CrowdingLevel> crowdingLevelList = new ArrayList<>();
+
         for (Integer facilityId : map.keySet()) {
             List<IoTData> dataList = map.get(facilityId);
             // 获取每一个device的detectionList
@@ -107,22 +147,17 @@ public class MqttServiceImpl implements MqttService {
             Integer perUserCount = amusementFacility.getPerUserCount();
             Integer expectTime = amusementFacility.getExpectTime();
 
-            Integer expectWaitTime = peopleCount / perUserCount * expectTime;
-            if (expectWaitTime == 0) {
-                expectWaitTime = expectTime;
-            }
+            // 预期等待时间 = 预期排队时间 + 预计一次游玩时间
+            Integer expectWaitTime = peopleCount / perUserCount * expectTime + expectTime;
             // 将预计等待时间插入数据库
             CrowdingLevel crowdingLevel = new CrowdingLevel();
             crowdingLevel.setFacilityId(Long.valueOf(facilityId));
-            crowdingLevel.setFacilityType(0);
+            crowdingLevel.setFacilityType(FacilityTypeConstant.AMUSEMENT_TYPE);
             crowdingLevel.setExpectWaitTime(expectWaitTime);
             crowdingLevelList.add(crowdingLevel);
         }
-        // 批量插入减少数据库压力
-        crowdingLevelService.saveBatch(crowdingLevelList);
-
-        // 清空map中暂存的数据
-        map = new HashMap<>();
+        return crowdingLevelList;
     }
+
 
 }

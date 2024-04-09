@@ -62,6 +62,11 @@ public class RestaurantFacility implements Serializable {
     private Integer status;
 
     /**
+     * 每个人的预期用餐时间
+     */
+    private Integer expectTime;
+
+    /**
      * 添加时间
      */
     private Date createTime;
@@ -70,6 +75,7 @@ public class RestaurantFacility implements Serializable {
      * 修改时间
      */
     private Date updateTime;
+
 
     /**
      * 逻辑删除标志（0-未删除，1-已删除）

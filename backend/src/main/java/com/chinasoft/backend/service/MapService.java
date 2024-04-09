@@ -2,15 +2,16 @@ package com.chinasoft.backend.service;
 
 import com.chinasoft.backend.model.request.EENavigationRequest;
 import com.chinasoft.backend.model.request.NavigationRequest;
-import com.chinasoft.backend.model.vo.PositionPoint;
-
-import java.util.List;
+import com.chinasoft.backend.model.vo.NavVO;
 
 public interface MapService {
     /**
      * 多个设施进行最优路径导航
      */
-    List<PositionPoint> mulFacilityNav(NavigationRequest navigationRequest);
+    NavVO mulFacilityNav(NavigationRequest navigationRequest);
 
-    List<PositionPoint> sinFacilityNav(EENavigationRequest eeNavigationRequest);
+    /**
+     * 单个设施进行导航
+     */
+    NavVO sinFacilityNav(EENavigationRequest eeNavigationRequest);
 }
