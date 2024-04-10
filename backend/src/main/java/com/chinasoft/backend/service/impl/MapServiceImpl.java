@@ -3,24 +3,22 @@ package com.chinasoft.backend.service.impl;
 import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.chinasoft.backend.config.AmapProperties;
 import com.chinasoft.backend.constant.FacilityTypeConstant;
 import com.chinasoft.backend.mapper.AmusementFacilityMapper;
 import com.chinasoft.backend.mapper.BaseFacilityMapper;
 import com.chinasoft.backend.mapper.CrowdingLevelMapper;
 import com.chinasoft.backend.mapper.RestaurantFacilityMapper;
+import com.chinasoft.backend.model.entity.AmusementFacility;
 import com.chinasoft.backend.model.entity.BaseFacility;
+import com.chinasoft.backend.model.entity.FacilityPositionAndExpectWaitTime;
 import com.chinasoft.backend.model.entity.RestaurantFacility;
-import com.chinasoft.backend.model.request.AmusementFilterRequest;
 import com.chinasoft.backend.model.request.EENavigationRequest;
 import com.chinasoft.backend.model.request.FacilityIdType;
 import com.chinasoft.backend.model.request.NavigationRequest;
-import com.chinasoft.backend.model.vo.AmusementFacilityVO;
 import com.chinasoft.backend.model.vo.NavVO;
 import com.chinasoft.backend.model.vo.PositionPoint;
-import com.chinasoft.backend.service.AmusementFacilityService;
-import com.chinasoft.backend.service.MapService;
+import com.chinasoft.backend.service.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -38,10 +36,19 @@ public class MapServiceImpl implements MapService {
     private CrowdingLevelMapper crowdingLevelMapper;
 
     @Autowired
+    private CrowdingLevelService crowdingLevelService;
+
+    @Autowired
     private AmusementFacilityMapper amusementFacilityMapper;
 
     @Autowired
     private AmusementFacilityService amusementFacilityService;
+
+    @Autowired
+    private RestaurantFacilityService restaurantFacilityService;
+
+    @Autowired
+    private BaseFacilityService baseFacilityService;
 
     @Autowired
     private RestaurantFacilityMapper restaurantFacilityMapper;
@@ -66,31 +73,45 @@ public class MapServiceImpl implements MapService {
     public NavVO mulFacilityNav(NavigationRequest navigationRequest) {
         String userLongitude = navigationRequest.getUserLongitude();
         String userLatitude = navigationRequest.getUserLatitude();
-        List<FacilityIdType> facilityIdTypeList = navigationRequest.getFacilities();
 
-        // 获得所有设施id
-        List<Long> amuseFacilityIdList = new ArrayList<>();
-        for (FacilityIdType facilityIdType : facilityIdTypeList) {
-            if (facilityIdType.getFacilityType() == FacilityTypeConstant.AMUSEMENT_TYPE) {
-                amuseFacilityIdList.add(facilityIdType.getFacilityId());
-            }
-        }
+        // 所有设施的id和type列表
+        List<FacilityIdType> facilityIdTypeList = navigationRequest.getFacilities();
 
         // 总的预计等待时间
         Integer totalExpectWaitTime = 0;
 
-        // 根据设施id查询所有设施的经纬度和预期等待时间
-        List<AmusementFacilityVO> facilityVOList = new ArrayList<>();
-        for (Long facilityId : amuseFacilityIdList) {
-            AmusementFilterRequest amusementFilterRequest = new AmusementFilterRequest();
-            amusementFilterRequest.setId(facilityId);
-            List<AmusementFacilityVO> amusementFacility = amusementFacilityService.getAmusementFacility(amusementFilterRequest);
-            facilityVOList.add(amusementFacility.get(0));
-            totalExpectWaitTime += amusementFacility.get(0).getExpectWaitTime();
+        // 需要所有导航的设施的经纬度和预期等待时间
+        List<FacilityPositionAndExpectWaitTime> facilityInfoList = new ArrayList<>();
+
+        // 根据设施id和设施type查询所有设施的经纬度和预期等待时间
+        for (FacilityIdType facilityIdType : facilityIdTypeList) {
+            Integer facilityType = facilityIdType.getFacilityType();
+            Long facilityId = facilityIdType.getFacilityId();
+            // 获取预计等待时间
+            Integer expectWaitTime = crowdingLevelService.getExpectWaitTimeByIdType(facilityIdType);
+            totalExpectWaitTime += expectWaitTime;
+            FacilityPositionAndExpectWaitTime facilityInfo = new FacilityPositionAndExpectWaitTime();
+            facilityInfo.setExpectWaitTime(expectWaitTime);
+            // 获取设施的经纬度信息
+            if (facilityType == FacilityTypeConstant.AMUSEMENT_TYPE) {
+                AmusementFacility facility = amusementFacilityService.getById(facilityId);
+                facilityInfo.setLongitude(facility.getLongitude());
+                facilityInfo.setLatitude(facility.getLatitude());
+            } else if (facilityType == FacilityTypeConstant.RESTAURANT_TYPE) {
+                RestaurantFacility facility = restaurantFacilityService.getById(facilityId);
+                facilityInfo.setLongitude(facility.getLongitude());
+                facilityInfo.setLatitude(facility.getLatitude());
+            } else if (facilityType == FacilityTypeConstant.BASE_TYPE) {
+                BaseFacility facility = baseFacilityService.getById(facilityId);
+                facilityInfo.setLongitude(facility.getLongitude());
+                facilityInfo.setLatitude(facility.getLatitude());
+            }
+            facilityInfoList.add(facilityInfo);
         }
 
+
         // 通过预计等待时间进行从小到大排序
-        Collections.sort(facilityVOList, (a, b) -> {
+        Collections.sort(facilityInfoList, (a, b) -> {
             return a.getExpectWaitTime() - b.getExpectWaitTime();
         });
 
@@ -103,8 +124,8 @@ public class MapServiceImpl implements MapService {
         Integer totalExpectWalkTime = 0;
 
         // 调用高德API
-        for (AmusementFacilityVO amusementFacilityVO : facilityVOList) {
-            PositionPoint targetPositionPoint = new PositionPoint(amusementFacilityVO.getLongitude(), amusementFacilityVO.getLatitude());
+        for (FacilityPositionAndExpectWaitTime facilityInfo : facilityInfoList) {
+            PositionPoint targetPositionPoint = new PositionPoint(facilityInfo.getLongitude(), facilityInfo.getLatitude());
             resPositionPointList.addAll(getTwoPointNav(currPositionPoint, targetPositionPoint));
             Integer expectWalkTime = getTwoPointExpectWalkTime(currPositionPoint, targetPositionPoint);
             totalExpectWalkTime += expectWalkTime;
@@ -131,6 +152,8 @@ public class MapServiceImpl implements MapService {
         Long facilityId = eeNavigationRequest.getFacilityId();
         Integer facilityType = eeNavigationRequest.getFacilityType();
 
+        FacilityIdType facilityIdType = new FacilityIdType(facilityId, facilityType);
+
 
         // 获取设施位置
         String facilityLongitude = null;
@@ -141,22 +164,19 @@ public class MapServiceImpl implements MapService {
         // 预期走路时间
         Integer expectWalkTime = 0;
 
+        expectWaitTime = crowdingLevelService.getExpectWaitTimeByIdType(facilityIdType);
+
         if (facilityType == 0) {
-            // AmusementFacility facility = amusementFacilityMapper.selectOne(Wrappers.<AmusementFacility>query().eq("id", facilityId));
-            // 复用Service方法，根据id获取预期等待时间以及设施的经纬度
-            AmusementFilterRequest amusementFilterRequest = new AmusementFilterRequest();
-            amusementFilterRequest.setId(facilityId);
-            List<AmusementFacilityVO> amusementFacility = amusementFacilityService.getAmusementFacility(amusementFilterRequest);
-            AmusementFacilityVO facility = amusementFacility.get(0);
-            expectWaitTime = facility.getExpectWaitTime();
+            // 获取设施的经纬度
+            AmusementFacility facility = amusementFacilityService.getById(facilityId);
             facilityLongitude = facility.getLongitude();
             facilityLatitude = facility.getLatitude();
         } else if (facilityType == 1) {
-            RestaurantFacility facility = restaurantFacilityMapper.selectOne(Wrappers.<RestaurantFacility>query().eq("id", facilityId));
+            RestaurantFacility facility = restaurantFacilityService.getById(facilityId);
             facilityLongitude = facility.getLongitude();
             facilityLatitude = facility.getLatitude();
         } else if (facilityType == 2) {
-            BaseFacility facility = baseFacilityMapper.selectOne(Wrappers.<BaseFacility>query().eq("id", facilityId));
+            BaseFacility facility = baseFacilityService.getById(facilityId);
             facilityLongitude = facility.getLongitude();
             facilityLatitude = facility.getLatitude();
         }
@@ -252,4 +272,6 @@ public class MapServiceImpl implements MapService {
 
         return expectWalkTime;
     }
+
+
 }

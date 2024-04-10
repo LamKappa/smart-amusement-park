@@ -30,12 +30,12 @@ public class AmusementFacility implements Serializable {
     private String introduction;
 
     /**
-     * 纬度
+     * 经度
      */
     private String longitude;
 
     /**
-     * 经度
+     * 维度
      */
     private String latitude;
 

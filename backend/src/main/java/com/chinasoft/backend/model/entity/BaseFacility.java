@@ -47,6 +47,16 @@ public class BaseFacility implements Serializable {
     private Time closeTime;
 
     /**
+     * 每个人的预期用餐时间
+     */
+    private Integer expectTime;
+
+    /**
+     * 最大容纳人数
+     */
+    private Integer maxCapacity;
+
+    /**
      * 状态（0-正常，1-异常）
      */
     private Integer status;

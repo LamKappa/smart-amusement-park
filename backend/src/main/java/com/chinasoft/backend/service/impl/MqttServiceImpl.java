@@ -1,20 +1,14 @@
 package com.chinasoft.backend.service.impl;
 
 import com.chinasoft.backend.constant.FacilityTypeConstant;
-import com.chinasoft.backend.model.entity.AmusementFacility;
-import com.chinasoft.backend.model.entity.CrowdingLevel;
-import com.chinasoft.backend.model.entity.IoTData;
-import com.chinasoft.backend.service.AmusementFacilityService;
-import com.chinasoft.backend.service.CrowdingLevelService;
-import com.chinasoft.backend.service.MqttService;
+import com.chinasoft.backend.model.entity.*;
+import com.chinasoft.backend.service.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -38,15 +32,21 @@ public class MqttServiceImpl implements MqttService {
     /**
      * 每个硬件设备的检测范围
      */
-    private static final Integer PER_DEVICE_DETECTION_LENGTH = 1;
+    private static final Integer PER_DEVICE_DETECTION_LENGTH = 2;
 
     /**
      * 平均每个人的宽度
      */
-    private static final Double PER_PERSON_LENGTH = 0.5;
+    private static final Double PER_PERSON_LENGTH = 0.25;
 
     @Autowired
     AmusementFacilityService amusementFacilityService;
+
+    @Autowired
+    RestaurantFacilityService restaurantFacilityService;
+
+    @Autowired
+    BaseFacilityService baseFacilityService;
 
     @Autowired
     CrowdingLevelService crowdingLevelService;
@@ -70,9 +70,17 @@ public class MqttServiceImpl implements MqttService {
             List<IoTData> ioTDataList = amusementFacilityDataMap.get(facilityId);
             ioTDataList.add(ioTData);
         } else if (facilityType == FacilityTypeConstant.RESTAURANT_TYPE) {
-
+            if (!restaurantFacilityDataMap.containsKey(facilityId)) {
+                restaurantFacilityDataMap.put(facilityId, new ArrayList<>());
+            }
+            List<IoTData> ioTDataList = restaurantFacilityDataMap.get(facilityId);
+            ioTDataList.add(ioTData);
         } else if (facilityType == FacilityTypeConstant.BASE_TYPE) {
-            
+            if (!baseFacilityDataMap.containsKey(facilityId)) {
+                baseFacilityDataMap.put(facilityId, new ArrayList<>());
+            }
+            List<IoTData> ioTDataList = baseFacilityDataMap.get(facilityId);
+            ioTDataList.add(ioTData);
         }
 
     }
@@ -89,26 +97,39 @@ public class MqttServiceImpl implements MqttService {
 
         // 获取每一个设施五分钟的数据，并计算预计等待时间和存储到数据库
         List<CrowdingLevel> crowdingLevelList = new ArrayList<>();
+        // 根据不同的设施获取预期等待时间对象的列表
 
-        crowdingLevelList = getCrowdingLevelList(amusementFacilityDataMap);
+        // Map<Integer, List<IoTData>>
+        if (!CollectionUtils.isEmpty(amusementFacilityDataMap.keySet())) {
+            crowdingLevelList.addAll(getCrowdingLevelList(amusementFacilityDataMap, FacilityTypeConstant.AMUSEMENT_TYPE));
+        }
 
-        // 批量插入减少数据库压力
-        crowdingLevelService.saveBatch(crowdingLevelList);
+        if (!CollectionUtils.isEmpty(restaurantFacilityDataMap.keySet())) {
+            crowdingLevelList.addAll(getCrowdingLevelList(restaurantFacilityDataMap, FacilityTypeConstant.RESTAURANT_TYPE));
+        }
+        if (!CollectionUtils.isEmpty(baseFacilityDataMap.keySet())) {
+            crowdingLevelList.addAll(getCrowdingLevelList(baseFacilityDataMap, FacilityTypeConstant.BASE_TYPE));
+        }
 
         // 清空map中暂存的数据
         amusementFacilityDataMap = new HashMap<>();
+        restaurantFacilityDataMap = new HashMap<>();
+        baseFacilityDataMap = new HashMap<>();
+
+        // 批量插入减少数据库压力
+        crowdingLevelService.saveBatch(crowdingLevelList);
     }
 
     /**
      * 根据不同的设施获取预期等待时间对象的列表
      */
-    private List<CrowdingLevel> getCrowdingLevelList(Map<Integer, List<IoTData>> map) {
+    private List<CrowdingLevel> getCrowdingLevelList(Map<Integer, List<IoTData>> map, Integer facilityType) {
 
         List<CrowdingLevel> crowdingLevelList = new ArrayList<>();
 
         for (Integer facilityId : map.keySet()) {
             List<IoTData> dataList = map.get(facilityId);
-            // 获取每一个device的detectionList
+            // 获取每一个device的detectionList  <deviceId, detectionList>
             Map<Integer, List<Integer>> deviceDetectionMap = new HashMap<>();
 
             for (IoTData data : dataList) {
@@ -117,7 +138,8 @@ public class MqttServiceImpl implements MqttService {
                 deviceDetectionMap.put(data.getDeviceId(), detections);
             }
 
-            // 处理成最后<deviceId, detection>
+            // 根据这段时间内0多还是1多，来判断这段时间内是有人还是没人
+            // 最后处理成一个设备对应一个detection <deviceId, detection>
             Map<Integer, Integer> handledDeviceDetectionMap = new HashMap<>();
             for (Integer deviceId : deviceDetectionMap.keySet()) {
                 int[] count = new int[2];
@@ -126,6 +148,7 @@ public class MqttServiceImpl implements MqttService {
                 for (Integer detection : detections) {
                     count[detection]++;
                 }
+                // 0的信号是1的信号的两倍，才会认为该时间段是有人的
                 if (count[0] > count[1] * 2) {
                     handledDeviceDetectionMap.put(deviceId, 0);
                 } else {
@@ -141,18 +164,48 @@ public class MqttServiceImpl implements MqttService {
                     queueLength += PER_DEVICE_DETECTION_LENGTH;
                 }
             }
+            // 排队人数统计
             int peopleCount = (int) (queueLength / PER_PERSON_LENGTH);
 
-            AmusementFacility amusementFacility = amusementFacilityService.getById(facilityId);
-            Integer perUserCount = amusementFacility.getPerUserCount();
-            Integer expectTime = amusementFacility.getExpectTime();
+            Integer expectTime = 0;
+            Integer expectWaitTime = 0;
 
-            // 预期等待时间 = 预期排队时间 + 预计一次游玩时间
-            Integer expectWaitTime = peopleCount / perUserCount * expectTime + expectTime;
+            // 根据不同的设施类型来查询每个设施的一次预期使用时间
+            if (Objects.equals(facilityType, FacilityTypeConstant.AMUSEMENT_TYPE)) {
+                AmusementFacility amusementFacility = amusementFacilityService.getById(facilityId);
+                Integer perUserCount = amusementFacility.getPerUserCount();
+                expectTime = amusementFacility.getExpectTime();
+                // 预期等待时间 = 预期排队时间 + 预计一次游玩时间
+                expectWaitTime = expectTime;
+                expectWaitTime += peopleCount / perUserCount * expectTime;
+            } else if (Objects.equals(facilityType, FacilityTypeConstant.RESTAURANT_TYPE)) {
+                if (peopleCount == 0) {
+                    expectWaitTime = 0;
+                } else {
+                    RestaurantFacility restaurantFacility = restaurantFacilityService.getById(facilityId);
+                    expectTime = restaurantFacility.getExpectTime();
+                    Integer maxCapacity = restaurantFacility.getMaxCapacity();
+                    // 伽马分布
+                    // 每个人预计用餐时间10分钟，餐厅最大容纳20个人用餐，现在有5个人在排队，求第六个人预计等待时间
+                    // 每分钟每个人出来的概率是1/10，那么每分钟预计出来两个人 20 * (1 / 10) = 2个人，那么第六个人要等 6 / 2 = 3分钟
+                    // peopleCount / (maxCapacity * (1 / expectTime) )
+                    expectWaitTime = (int) (peopleCount / (maxCapacity * 1.0 / expectTime));
+                }
+            } else if (facilityType == FacilityTypeConstant.BASE_TYPE) {
+                BaseFacility baseFacility = baseFacilityService.getById(facilityId);
+                expectTime = baseFacility.getExpectTime();
+                Integer maxCapacity = baseFacility.getMaxCapacity();
+                // 伽马分布
+                // 每个人预计用餐时间10分钟，餐厅最大容纳20个人用餐，现在有5个人在排队，求第六个人预计等待时间
+                // 每分钟每个人出来的概率是1/10，那么每分钟预计出来两个人 20 * (1 / 10) = 2个人，那么第六个人要等 6 / 2 = 3分钟
+                // peopleCount / (maxCapacity * (1 / expectTime) )
+                expectWaitTime = (int) (peopleCount / (maxCapacity * 1.0 / expectTime));
+            }
+
             // 将预计等待时间插入数据库
             CrowdingLevel crowdingLevel = new CrowdingLevel();
             crowdingLevel.setFacilityId(Long.valueOf(facilityId));
-            crowdingLevel.setFacilityType(FacilityTypeConstant.AMUSEMENT_TYPE);
+            crowdingLevel.setFacilityType(facilityType);
             crowdingLevel.setExpectWaitTime(expectWaitTime);
             crowdingLevelList.add(crowdingLevel);
         }

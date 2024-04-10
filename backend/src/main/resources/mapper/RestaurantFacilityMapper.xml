@@ -15,6 +15,7 @@
         <result property="closeTime" column="close_time" jdbcType="TIME"/>
         <result property="status" column="status" jdbcType="INTEGER"/>
         <result property="expectTime" column="expect_time" jdbcType="INTEGER"/>
+        <result property="maxCapacity" column="max_capacity" jdbcType="INTEGER"/>
         <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
         <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
         <result property="isDeleted" column="is_deleted" jdbcType="INTEGER"/>
@@ -24,7 +25,7 @@
         id,name,introduction,
         longitude,latitude,type,
         start_time,close_time,
-        expect_time,
+        expect_time, max_capacity
         status,create_time,update_time,
         is_deleted
     </sql>

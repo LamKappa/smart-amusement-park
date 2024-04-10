@@ -32,6 +32,9 @@ class BackendApplicationTests {
     @Autowired
     RedisTemplate redisTemplate;
 
+    @Autowired
+    CrowdingLevelService crowdingLevelService;
+
     @Test
     void contextLoads() {
 
@@ -87,5 +90,16 @@ class BackendApplicationTests {
         // ListOperations valueOperations = redisTemplate.opsForHash();
         // valueOperations
         // System.out.println(valueOperations.get("hello"));
+    }
+
+    @Test
+    void testMySQLTime() {
+        CrowdingLevel crowdingLevel = new CrowdingLevel();
+        crowdingLevel.setFacilityId(2L);
+        crowdingLevel.setFacilityType(0);
+        crowdingLevel.setExpectWaitTime(20);
+
+        crowdingLevelService.save(crowdingLevel);
+        
     }
 }
