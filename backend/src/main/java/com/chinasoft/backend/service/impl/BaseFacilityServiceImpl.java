@@ -8,8 +8,10 @@ import com.chinasoft.backend.mapper.FacilityImageMapper;
 import com.chinasoft.backend.model.entity.BaseFacility;
 import com.chinasoft.backend.model.entity.FacilityImage;
 import com.chinasoft.backend.model.request.BaseFilterRequest;
+import com.chinasoft.backend.model.request.FacilityIdType;
 import com.chinasoft.backend.model.vo.BaseFacilityVO;
 import com.chinasoft.backend.service.BaseFacilityService;
+import com.chinasoft.backend.service.CrowdingLevelService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,9 @@ public class BaseFacilityServiceImpl extends ServiceImpl<BaseFacilityMapper, Bas
 
     @Autowired
     FacilityImageMapper facilityImageMapper;
+
+    @Autowired
+    CrowdingLevelService crowdingLevelService;
 
     @Override
     public List<BaseFacilityVO> getBaseFacility(BaseFilterRequest baseFilterRequest) {
@@ -74,6 +79,10 @@ public class BaseFacilityServiceImpl extends ServiceImpl<BaseFacilityMapper, Bas
 
             // 将imageUrls放入VO对象
             facilityVO.setImageUrls(imageUrls);
+
+            // 查询预计等待时间
+            Integer expectWaitTime = crowdingLevelService.getExpectWaitTimeByIdType(new FacilityIdType(facility.getId(), FacilityTypeConstant.BASE_TYPE));
+            facilityVO.setExpectWaitTime(expectWaitTime);
 
             // 将VO对象加入列表
             facilityVOList.add(facilityVO);

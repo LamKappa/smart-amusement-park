@@ -7,8 +7,10 @@ import com.chinasoft.backend.mapper.FacilityImageMapper;
 import com.chinasoft.backend.mapper.RestaurantFacilityMapper;
 import com.chinasoft.backend.model.entity.FacilityImage;
 import com.chinasoft.backend.model.entity.RestaurantFacility;
+import com.chinasoft.backend.model.request.FacilityIdType;
 import com.chinasoft.backend.model.request.RestaurantFilterRequest;
 import com.chinasoft.backend.model.vo.RestaurantFacilityVO;
+import com.chinasoft.backend.service.CrowdingLevelService;
 import com.chinasoft.backend.service.RestaurantFacilityService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +31,9 @@ public class RestaurantFacilityServiceImpl extends ServiceImpl<RestaurantFacilit
 
     @Autowired
     FacilityImageMapper facilityImageMapper;
+
+    @Autowired
+    CrowdingLevelService crowdingLevelService;
 
     @Override
     public List<RestaurantFacilityVO> getRestaurantFacility(RestaurantFilterRequest restaurantFilterRequest) {
@@ -79,6 +84,10 @@ public class RestaurantFacilityServiceImpl extends ServiceImpl<RestaurantFacilit
 
             // 将imageUrls放入VO对象
             facilityVO.setImageUrls(imageUrls);
+
+            // 查询预计等待时间
+            Integer expectWaitTime = crowdingLevelService.getExpectWaitTimeByIdType(new FacilityIdType(facility.getId(), FacilityTypeConstant.RESTAURANT_TYPE));
+            facilityVO.setExpectWaitTime(expectWaitTime);
 
             // 将VO对象加入列表
             facilityVOList.add(facilityVO);

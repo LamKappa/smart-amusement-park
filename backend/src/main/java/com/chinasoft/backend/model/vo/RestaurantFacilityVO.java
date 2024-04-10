@@ -69,4 +69,9 @@ public class RestaurantFacilityVO {
      * 是否订阅
      */
     private Integer isSubscribed;
+
+    /**
+     * 预计等待时间
+     */
+    private Integer expectWaitTime;
 }

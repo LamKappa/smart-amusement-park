@@ -2,18 +2,26 @@ package com.chinasoft.backend.model.vo;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.chinasoft.backend.constant.FacilityTypeConstant;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
 import java.util.Date;
 import java.util.List;
 
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class BaseVandSVO {
     /**
      * 设施ID
      */
     @TableId(type = IdType.AUTO)
     private Long id;
+
+    /**
+     * 设施类型
+     */
+    private Integer facilityType = FacilityTypeConstant.BASE_TYPE;
 
     /**
      * 设施名称
@@ -69,4 +77,9 @@ public class BaseVandSVO {
      * 订阅记录ID
      */
     private Long subscribeId;
+
+    /**
+     * 预计等待时间
+     */
+    private Integer expectWaitTime;
 }
