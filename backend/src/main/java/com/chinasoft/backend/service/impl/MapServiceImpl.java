@@ -3,23 +3,16 @@ package com.chinasoft.backend.service.impl;
 import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.chinasoft.backend.config.AmapProperties;
 import com.chinasoft.backend.constant.FacilityTypeConstant;
 import com.chinasoft.backend.mapper.AmusementFacilityMapper;
 import com.chinasoft.backend.mapper.BaseFacilityMapper;
 import com.chinasoft.backend.mapper.CrowdingLevelMapper;
 import com.chinasoft.backend.mapper.RestaurantFacilityMapper;
-import com.chinasoft.backend.model.entity.AmusementFacility;
-import com.chinasoft.backend.model.entity.BaseFacility;
-import com.chinasoft.backend.model.entity.FacilityPositionAndExpectWaitTime;
-import com.chinasoft.backend.model.entity.RestaurantFacility;
-import com.chinasoft.backend.model.entity.Walk;
-import com.chinasoft.backend.model.request.AmusementFilterRequest;
+import com.chinasoft.backend.model.entity.*;
 import com.chinasoft.backend.model.request.EENavigationRequest;
 import com.chinasoft.backend.model.request.FacilityIdType;
 import com.chinasoft.backend.model.request.NavigationRequest;
-import com.chinasoft.backend.model.vo.AmusementFacilityVO;
 import com.chinasoft.backend.model.vo.NavVO;
 import com.chinasoft.backend.model.vo.PositionPoint;
 import com.chinasoft.backend.service.*;
@@ -27,9 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -155,7 +146,8 @@ public class MapServiceImpl implements MapService {
         navVO.setPaths(resPositionPointList);
         navVO.setExpectWalkTime(totalExpectWalkTime);
         navVO.setExpectWalkDistance(totalExpectWalkDistance);
-        navVO.setExpectArriveTime(formattedTotalExpectArriveTime);
+        // 多个设施导航不需要预计到达时间
+        // navVO.setExpectArriveTime(formattedTotalExpectArriveTime);
         navVO.setTotalWaitTime(totalExpectWaitTime);
 
         return navVO;
@@ -294,7 +286,7 @@ public class MapServiceImpl implements MapService {
 
         for (Map map : results) {
             Integer duration = Integer.parseInt((String) map.get("duration"));
-            Integer distance  = Integer.parseInt((String) map.get("distance"));
+            Integer distance = Integer.parseInt((String) map.get("distance"));
             expectWalkTime += duration / 60;
             expectWalkDistance += distance;
         }

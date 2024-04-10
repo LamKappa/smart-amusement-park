@@ -19,9 +19,6 @@ public class RecommController {
 
     /**
      * 根据名称 简介 类型 查询各种设施
-     *
-     * @param routeId
-     * @return
      */
     @GetMapping("/recommendation")
     public BaseResponse<RouteVO> getRecommendation(@Param("id") Integer routeId) {
