@@ -9,6 +9,9 @@ import com.chinasoft.backend.model.vo.RouteVO;
  */
 public interface RecommService {
 
+    /**
+     * 根据名称 简介 类型 查询各种设施
+     */
     RouteVO getRecommendation(Integer routeId);
 
 }

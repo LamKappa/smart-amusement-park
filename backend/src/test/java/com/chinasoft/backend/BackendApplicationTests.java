@@ -7,9 +7,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.RedisTemplate;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @SpringBootTest
 class BackendApplicationTests {
@@ -34,6 +37,9 @@ class BackendApplicationTests {
 
     @Autowired
     CrowdingLevelService crowdingLevelService;
+
+    @Autowired
+    RouteService routeService;
 
     @Test
     void contextLoads() {
@@ -100,6 +106,29 @@ class BackendApplicationTests {
         crowdingLevel.setExpectWaitTime(20);
 
         crowdingLevelService.save(crowdingLevel);
-        
+
+    }
+
+
+    @Test
+    public void testTimeStream() {
+        List<CrowdingLevel> list = crowdingLevelService.list();
+
+        for (int i = 23; i >= 0; i--) {
+            // 使用Stream流和时间表达式来优雅地进行根据时间分组
+            Map<String, List<CrowdingLevel>> groupMap = list.stream().collect(Collectors.groupingBy(item -> new SimpleDateFormat("yyyy-MM-dd HH").format(item.getCreateTime())));
+            List<CrowdingLevel> crowdingLevelList = new ArrayList<>();
+            for (String s : groupMap.keySet()) {
+                if (Integer.parseInt(s.substring(s.length() - 1, s.length())) == i) {
+                    crowdingLevelList.addAll(groupMap.get(s));
+                }
+            }
+            System.out.println(crowdingLevelList);
+        }
+    }
+
+    @Test
+    public void testRoute() {
+        System.out.println(routeService.list());
     }
 }

@@ -7,6 +7,7 @@ import com.chinasoft.backend.mapper.RecommRouteMapper;
 import com.chinasoft.backend.mapper.RouteMapper;
 import com.chinasoft.backend.model.entity.*;
 import com.chinasoft.backend.model.vo.RouteVO;
+import com.chinasoft.backend.service.MapService;
 import com.chinasoft.backend.service.RecommService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -34,6 +35,9 @@ public class RecommServiceImpl implements RecommService {
 
     @Autowired
     RecommRouteMapper recommRouteMapper;
+
+    @Autowired
+    MapService mapService;
 
     @Override
     public RouteVO getRecommendation(Integer routeId) {
@@ -77,6 +81,7 @@ public class RecommServiceImpl implements RecommService {
         return routeVO;
     }
 
+    
 }
 
 
