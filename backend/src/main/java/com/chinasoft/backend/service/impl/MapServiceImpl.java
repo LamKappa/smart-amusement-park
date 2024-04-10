@@ -12,6 +12,7 @@ import com.chinasoft.backend.mapper.CrowdingLevelMapper;
 import com.chinasoft.backend.mapper.RestaurantFacilityMapper;
 import com.chinasoft.backend.model.entity.BaseFacility;
 import com.chinasoft.backend.model.entity.RestaurantFacility;
+import com.chinasoft.backend.model.entity.Walk;
 import com.chinasoft.backend.model.request.AmusementFilterRequest;
 import com.chinasoft.backend.model.request.EENavigationRequest;
 import com.chinasoft.backend.model.request.FacilityIdType;
@@ -25,6 +26,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
@@ -101,20 +106,32 @@ public class MapServiceImpl implements MapService {
 
         // 总的预期走路时间
         Integer totalExpectWalkTime = 0;
+        // 总的预期走路路程
+        Integer totalExpectWalkDistance = 0;
+
 
         // 调用高德API
         for (AmusementFacilityVO amusementFacilityVO : facilityVOList) {
             PositionPoint targetPositionPoint = new PositionPoint(amusementFacilityVO.getLongitude(), amusementFacilityVO.getLatitude());
             resPositionPointList.addAll(getTwoPointNav(currPositionPoint, targetPositionPoint));
-            Integer expectWalkTime = getTwoPointExpectWalkTime(currPositionPoint, targetPositionPoint);
-            totalExpectWalkTime += expectWalkTime;
+            Walk walkInfo = getTwoPointExpectWalkInfo(currPositionPoint, targetPositionPoint);
+            totalExpectWalkTime += walkInfo.getExpectWalkTime();
+            totalExpectWalkDistance += walkInfo.getExpectWalkDistance();
             currPositionPoint = targetPositionPoint;
         }
+
+        // 预计到达时间
+        LocalDateTime currentTime = LocalDateTime.now();
+        LocalDateTime totalExpectArriveTime = currentTime.plusMinutes(totalExpectWalkTime);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
+        String formattedTotalExpectArriveTime = totalExpectArriveTime.toLocalTime().format(formatter);
 
         // 将数据封装称NavVO
         NavVO navVO = new NavVO();
         navVO.setPaths(resPositionPointList);
         navVO.setExpectWalkTime(totalExpectWalkTime);
+        navVO.setExpectWalkDistance(totalExpectWalkDistance);
+        navVO.setExpectArriveTime(formattedTotalExpectArriveTime);
         navVO.setTotalWaitTime(totalExpectWaitTime);
 
         return navVO;
@@ -138,8 +155,6 @@ public class MapServiceImpl implements MapService {
 
         // 预期等待时间
         Integer expectWaitTime = 0;
-        // 预期走路时间
-        Integer expectWalkTime = 0;
 
         if (facilityType == 0) {
             // AmusementFacility facility = amusementFacilityMapper.selectOne(Wrappers.<AmusementFacility>query().eq("id", facilityId));
@@ -166,14 +181,21 @@ public class MapServiceImpl implements MapService {
         PositionPoint targetPositionPoint = new PositionPoint(facilityLongitude, facilityLatitude);
         List<PositionPoint> resList = getTwoPointNav(sourcePositionPoint, targetPositionPoint);
 
-        // 获取预计走路时间
-        expectWalkTime = getTwoPointExpectWalkTime(sourcePositionPoint, targetPositionPoint);
+        // 获取预计行走信息
+        Walk walkInfo = getTwoPointExpectWalkInfo(sourcePositionPoint, targetPositionPoint);
+
+        LocalDateTime expectArriveTime = walkInfo.getExpectArriveTime();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
+        String formattedExpectArriveTime = expectArriveTime.toLocalTime().format(formatter);
 
         // 将数据封装称NavVO
         NavVO navVO = new NavVO();
         navVO.setTotalWaitTime(expectWaitTime);
+        navVO.setExpectWalkTime(walkInfo.getExpectWalkTime());
+        navVO.setExpectWalkDistance(walkInfo.getExpectWalkDistance());
+        navVO.setExpectArriveTime(formattedExpectArriveTime);
         navVO.setPaths(resList);
-        navVO.setExpectWalkTime(expectWalkTime);
+
 
         return navVO;
     }
@@ -224,9 +246,9 @@ public class MapServiceImpl implements MapService {
 
 
     /**
-     * 获得两个点之间的预期走路时间
+     * 获得两个点之间的预期行走信息
      */
-    private Integer getTwoPointExpectWalkTime(PositionPoint sourcePoint, PositionPoint targetPoint) {
+    private Walk getTwoPointExpectWalkInfo(PositionPoint sourcePoint, PositionPoint targetPoint) {
         // 调用高德地图api
         String sourceLongitude = sourcePoint.getLongitude();
         String sourceLatitude = sourcePoint.getLatitude();
@@ -239,6 +261,8 @@ public class MapServiceImpl implements MapService {
         paramMap.put("type", 3);
 
         Integer expectWalkTime = 0;
+        Integer expectWalkDistance = 0;
+        LocalDateTime currentTime = LocalDateTime.now();
 
         String result = HttpUtil.get(DISTANCE_REQUEST_URL, paramMap);
 
@@ -247,9 +271,18 @@ public class MapServiceImpl implements MapService {
 
         for (Map map : results) {
             Integer duration = Integer.parseInt((String) map.get("duration"));
+            Integer distance  = Integer.parseInt((String) map.get("distance"));
             expectWalkTime += duration / 60;
+            expectWalkDistance += distance;
         }
 
-        return expectWalkTime;
+        LocalDateTime expectArriveTime = currentTime.plusMinutes(expectWalkTime);
+
+        Walk walk = new Walk();
+        walk.setExpectWalkTime(expectWalkTime);
+        walk.setExpectWalkDistance(expectWalkDistance);
+        walk.setExpectArriveTime(expectArriveTime);
+
+        return walk;
     }
 }
