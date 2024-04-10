@@ -229,20 +229,20 @@ public class VisitAndSubscribeServiceImpl implements VisitAndSubscribeService{
         amusementFilterRequest.setUserId(userId);
         List<AmusementVandSVO> amusementVandSVOList = getAmusementVAndS(amusementFilterRequest);
 
-//        // 获取餐厅设施基础信息
-//        RestaurantFilterRequest restaurantFilterRequest = new RestaurantFilterRequest();
-//        restaurantFilterRequest.setUserId(userId);
-//        List<RestaurantVandSVO> restaurantVandSVOList = getRestaurantVAndS(visitAndSubscribeGetRequest);
-//
-//        // 获取基础设施基础信息
-//        BaseFilterRequest baseFilterRequest = new BaseFilterRequest();
-//        baseFilterRequest.setUserId(userId);
-//        List<BaseVandSVO> baseVandSVOList = getBaseVAndS(visitAndSubscribeGetRequest);
+        // 获取餐厅设施基础信息
+        RestaurantFilterRequest restaurantFilterRequest = new RestaurantFilterRequest();
+        restaurantFilterRequest.setUserId(userId);
+        List<RestaurantVandSVO> restaurantVandSVOList = getRestaurantVAndS(restaurantFilterRequest);
+
+        // 获取基础设施基础信息
+        BaseFilterRequest baseFilterRequest = new BaseFilterRequest();
+        baseFilterRequest.setUserId(userId);
+        List<BaseVandSVO> baseVandSVOList = getBaseVAndS(baseFilterRequest);
 
         List<Object> data = new ArrayList<>();
         data.addAll(amusementVandSVOList);
-//        data.addAll(restaurantVandSVOList);
-//        data.addAll(baseVandSVOList);
+        data.addAll(restaurantVandSVOList);
+        data.addAll(baseVandSVOList);
 
         // 按拥挤度从低到高排序
         List<Object> sortedData = data.stream()
@@ -250,11 +250,11 @@ public class VisitAndSubscribeServiceImpl implements VisitAndSubscribeService{
                     if (o instanceof AmusementVandSVO) {
                         return ((AmusementVandSVO) o).getExpectWaitTime();
                     }
-//                    else if (o instanceof RestaurantVandSVO) {
-//                        return ((RestaurantVandSVO) o).getExpectWaitTime();
-//                    } else if (o instanceof BaseVandSVO) {
-//                        return ((BaseVandSVO) o).getExpectWaitTime();
-//                    }
+                    else if (o instanceof RestaurantVandSVO) {
+                        return ((RestaurantVandSVO) o).getExpectWaitTime();
+                    } else if (o instanceof BaseVandSVO) {
+                        return ((BaseVandSVO) o).getExpectWaitTime();
+                    }
                     else {
                         throw new IllegalArgumentException("Unknown type in the list: " + o.getClass().getName());
                     }

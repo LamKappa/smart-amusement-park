@@ -2,18 +2,26 @@ package com.chinasoft.backend.model.vo;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.chinasoft.backend.constant.FacilityTypeConstant;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
 import java.util.Date;
 import java.util.List;
 
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class AmusementVandSVO {
     /**
-     *
+     * 设施id
      */
     @TableId(type = IdType.AUTO)
     private Long id;
+
+    /**
+     * 设施类型
+     */
+    private Integer facilityType = FacilityTypeConstant.AMUSEMENT_TYPE;
 
     /**
      * 名称

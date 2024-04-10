@@ -6,8 +6,11 @@ import com.chinasoft.backend.mapper.FacilityImageMapper;
 import com.chinasoft.backend.mapper.RecommRouteMapper;
 import com.chinasoft.backend.mapper.RouteMapper;
 import com.chinasoft.backend.model.entity.*;
+import com.chinasoft.backend.model.request.AmusementFilterRequest;
+import com.chinasoft.backend.model.vo.AmusementFacilityVO;
 import com.chinasoft.backend.model.vo.RouteVO;
 import com.chinasoft.backend.service.MapService;
+import com.chinasoft.backend.service.AmusementFacilityService;
 import com.chinasoft.backend.service.RecommService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,7 +28,7 @@ import java.util.List;
 public class RecommServiceImpl implements RecommService {
 
     @Autowired
-    private AmusementFacilityMapper amusementFacilityMapper;
+    private AmusementFacilityService amusementFacilityService;
 
     @Autowired
     FacilityImageMapper facilityImageMapper;
@@ -49,26 +52,33 @@ public class RecommServiceImpl implements RecommService {
                 .eq("route_id", routeId)
                 .orderByDesc("priority"));
 
-        List<Swiper> swiperList = new ArrayList<>();
+        List<AmusementFacilityVO> facilityVOList = new ArrayList<>();
         for (RecommRoute recommRoute : recommRoutes) {
             // 根据facility_id查询设施信息
-            AmusementFacility facility = amusementFacilityMapper.selectById(recommRoute.getFacilityId());
+//            AmusementFacility facility = amusementFacilityMapper.selectById(recommRoute.getFacilityId());
+            AmusementFilterRequest amusementFilterRequest = new AmusementFilterRequest();
 
-            // 填入数据
-            Swiper swiper = new Swiper();
-            swiper.setName(facility.getName());
-            swiper.setStartTime(facility.getStartTime());
-            swiper.setCloseTime(facility.getCloseTime());
+            List<AmusementFacilityVO> facilities = amusementFacilityService.getAmusementFacility(amusementFilterRequest);
+            AmusementFacilityVO facility = facilities.get(0);
+
+            facilityVOList.add(facility);
+
+
+//            // 填入数据
+//            Swiper swiper = new Swiper();
+//            swiper.setName(facility.getName());
+//            swiper.setStartTime(facility.getStartTime());
+//            swiper.setCloseTime(facility.getCloseTime());
 
             // 随机选择一张设施图片
-            Integer facilityType = 0;
-            List<FacilityImage> images = facilityImageMapper.selectList(Wrappers.<FacilityImage>query().eq("facility_type", facilityType)
-                    .eq("facility_id", recommRoute.getFacilityId()));
-
-            Collections.shuffle(images);
-            swiper.setImageUrl(images.get(0).getImageUrl());
-
-            swiperList.add(swiper);
+//            Integer facilityType = 0;
+//            List<FacilityImage> images = facilityImageMapper.selectList(Wrappers.<FacilityImage>query().eq("facility_type", facilityType)
+//                    .eq("facility_id", recommRoute.getFacilityId()));
+//
+//            Collections.shuffle(images);
+//            swiper.setImageUrl(images.get(0).getImageUrl());
+//
+//            swiperList.add(swiper);
         }
 
         // 填入数据
@@ -76,12 +86,12 @@ public class RecommServiceImpl implements RecommService {
         routeVO.setId(route.getId());
         routeVO.setName(route.getName());
         routeVO.setImgurl(route.getImgUrl());
-        routeVO.setSwiperList(swiperList);
+        routeVO.setFacilityVOList(facilityVOList);
 
         return routeVO;
     }
 
-    
+
 }
 
 
