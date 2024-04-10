@@ -1,11 +1,13 @@
 package com.chinasoft.backend.model.vo;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
+// 进行Json转换时候，不转换为null的字段
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class NavVO {
     /**
      * 总的等待时间
