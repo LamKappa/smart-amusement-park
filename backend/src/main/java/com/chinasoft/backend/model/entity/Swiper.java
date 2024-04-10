@@ -1,11 +1,13 @@
 package com.chinasoft.backend.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
 import java.io.Serializable;
 import java.util.Date;
 
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Swiper implements Serializable {
     /**
      * 名称
