@@ -5,17 +5,34 @@ import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.chinasoft.backend.common.ErrorCode;
+import com.chinasoft.backend.constant.FacilityTypeConstant;
 import com.chinasoft.backend.exception.BusinessException;
-import com.chinasoft.backend.model.entity.Visit;
+import com.chinasoft.backend.mapper.*;
+import com.chinasoft.backend.model.entity.*;
 import com.chinasoft.backend.model.request.VisitAndSubscribeAddRequest;
 import com.chinasoft.backend.model.request.VisitAndSubscribeDeleteRequest;
+import com.chinasoft.backend.model.vo.AmusementVandSVO;
 import com.chinasoft.backend.service.VisitService;
-import com.chinasoft.backend.mapper.VisitMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class VisitServiceImpl extends ServiceImpl<VisitMapper, Visit>
     implements VisitService{
+
+    @Autowired
+    private UserMapper userMapper;
+
+    @Autowired
+    private AmusementFacilityMapper amusementFacilityMapper;
+
+    @Autowired
+    private RestaurantFacilityMapper restaurantFacilityMapper;
+
+    @Autowired
+    private BaseFacilityMapper baseFacilityMapper;
+
+
 
     @Override
     public Visit addVisit(VisitAndSubscribeAddRequest visitAndSubscribeAddRequest) {
@@ -34,7 +51,36 @@ public class VisitServiceImpl extends ServiceImpl<VisitMapper, Visit>
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "打卡重复");
         }
 
-        // 不存在则正常插入
+        // 检查用户是否存在
+        QueryWrapper<User> queryWrapper2 = Wrappers.<User>query().eq("id", userId);
+        User existingUser = userMapper.selectOne(queryWrapper2);
+        if (existingUser == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在");
+        }
+
+        // 检查设施是否存在
+        if(facilityType == FacilityTypeConstant.AMUSEMENT_TYPE){
+            QueryWrapper<AmusementFacility> queryWrapper3 = Wrappers.<AmusementFacility>query().eq("id", facilityId);
+            AmusementFacility existingAmusement = amusementFacilityMapper.selectOne(queryWrapper3);
+            if (existingAmusement == null) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "设施不存在");
+            }
+        }else if(facilityType == FacilityTypeConstant.RESTAURANT_TYPE){
+            QueryWrapper<RestaurantFacility> queryWrapper3 = Wrappers.<RestaurantFacility>query().eq("id", facilityId);
+            RestaurantFacility existingRestaurant = restaurantFacilityMapper.selectOne(queryWrapper3);
+            if (existingRestaurant == null) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "设施不存在");
+            }
+        }else if(facilityType == FacilityTypeConstant.BASE_TYPE){
+            QueryWrapper<BaseFacility> queryWrapper3 = Wrappers.<BaseFacility>query().eq("id", facilityId);
+            BaseFacility existingBase = baseFacilityMapper.selectOne(queryWrapper3);
+            if (existingBase == null) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "设施不存在");
+            }
+        }
+
+
+        // 不无异常则正常插入
         Visit visit = new Visit();
         visit.setUserId(userId);
         visit.setFacilityId(facilityId);

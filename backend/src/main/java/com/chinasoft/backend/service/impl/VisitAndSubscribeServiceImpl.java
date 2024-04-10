@@ -2,6 +2,7 @@ package com.chinasoft.backend.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.chinasoft.backend.constant.FacilityTypeConstant;
 import com.chinasoft.backend.mapper.*;
 import com.chinasoft.backend.model.entity.Subscribe;
 import com.chinasoft.backend.model.entity.Visit;
@@ -57,7 +58,7 @@ public class VisitAndSubscribeServiceImpl implements VisitAndSubscribeService{
 
         // 更新设施列表的is_visited状态
         for (Visit visit : visits) {
-            if (visit.getFacilityType() == 0) {
+            if (visit.getFacilityType() == FacilityTypeConstant.AMUSEMENT_TYPE) {
                 for (AmusementVandSVO amusementVandSVO : amusementVandSVOList) {
                     if (amusementVandSVO.getId().equals(visit.getFacilityId())) {
                         amusementVandSVO.setIsVisited(1);
@@ -73,7 +74,7 @@ public class VisitAndSubscribeServiceImpl implements VisitAndSubscribeService{
 
         // 更新设施列表的is_subscribed状态
         for (Subscribe subscribe : subscribes) {
-            if (subscribe.getFacilityType() == 0) {
+            if (subscribe.getFacilityType() == FacilityTypeConstant.AMUSEMENT_TYPE) {
                 for (AmusementVandSVO amusementVandSVO : amusementVandSVOList) {
                     if (amusementVandSVO.getId().equals(subscribe.getFacilityId())) {
                         amusementVandSVO.setIsSubscribed(1);
@@ -119,7 +120,7 @@ public class VisitAndSubscribeServiceImpl implements VisitAndSubscribeService{
 
         // 更新设施列表的is_visited状态
         for (Visit visit : visits) {
-            if (visit.getFacilityType() == 1) {
+            if (visit.getFacilityType() == FacilityTypeConstant.RESTAURANT_TYPE) {
                 for (RestaurantVandSVO restaurantVandSVO : restaurantVandSVOList) {
                     if (restaurantVandSVO.getId().equals(visit.getFacilityId())) {
                         restaurantVandSVO.setIsVisited(1);
@@ -135,7 +136,7 @@ public class VisitAndSubscribeServiceImpl implements VisitAndSubscribeService{
 
         // 更新设施列表的is_subscribed状态
         for (Subscribe subscribe : subscribes) {
-            if (subscribe.getFacilityType() == 1) {
+            if (subscribe.getFacilityType() == FacilityTypeConstant.RESTAURANT_TYPE) {
                 for (RestaurantVandSVO restaurantVandSVO : restaurantVandSVOList) {
                     if (restaurantVandSVO.getId().equals(subscribe.getFacilityId())) {
                         restaurantVandSVO.setIsSubscribed(1);
@@ -178,7 +179,7 @@ public class VisitAndSubscribeServiceImpl implements VisitAndSubscribeService{
 
         // 更新设施列表的is_visited状态
         for (Visit visit : visits) {
-            if (visit.getFacilityType() == 2) {
+            if (visit.getFacilityType() == FacilityTypeConstant.BASE_TYPE) {
                 for (BaseVandSVO baseVandSVO : baseVandSVOList) {
                     if (baseVandSVO.getId().equals(visit.getFacilityId())) {
                         baseVandSVO.setIsVisited(1);
@@ -194,7 +195,7 @@ public class VisitAndSubscribeServiceImpl implements VisitAndSubscribeService{
 
         // 更新设施列表的is_subscribed状态
         for (Subscribe subscribe : subscribes) {
-            if (subscribe.getFacilityType() == 2) {
+            if (subscribe.getFacilityType() == FacilityTypeConstant.BASE_TYPE) {
                 for (BaseVandSVO baseVandSVO : baseVandSVOList) {
                     if (baseVandSVO.getId().equals(subscribe.getFacilityId())) {
                         baseVandSVO.setIsSubscribed(1);
