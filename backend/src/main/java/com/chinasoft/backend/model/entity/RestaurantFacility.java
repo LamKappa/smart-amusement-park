@@ -67,6 +67,11 @@ public class RestaurantFacility implements Serializable {
     private Integer expectTime;
 
     /**
+     * 最大容纳人数
+     */
+    private Integer maxCapacity;
+
+    /**
      * 添加时间
      */
     private Date createTime;

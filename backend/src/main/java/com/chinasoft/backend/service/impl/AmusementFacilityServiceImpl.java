@@ -7,16 +7,15 @@ import com.chinasoft.backend.mapper.AmusementFacilityMapper;
 import com.chinasoft.backend.mapper.CrowdingLevelMapper;
 import com.chinasoft.backend.mapper.FacilityImageMapper;
 import com.chinasoft.backend.model.entity.AmusementFacility;
-import com.chinasoft.backend.model.entity.CrowdingLevel;
 import com.chinasoft.backend.model.entity.FacilityImage;
 import com.chinasoft.backend.model.request.AmusementFilterRequest;
+import com.chinasoft.backend.model.request.FacilityIdType;
 import com.chinasoft.backend.model.vo.AmusementFacilityVO;
 import com.chinasoft.backend.service.AmusementFacilityService;
 import com.chinasoft.backend.service.CrowdingLevelService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,6 +39,7 @@ public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityM
 
     @Autowired
     CrowdingLevelMapper crowdingLevelMapper;
+
 
     @Override
     public List<AmusementFacilityVO> getAmusementFacility(AmusementFilterRequest amusementFilterRequest) {
@@ -102,14 +102,9 @@ public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityM
             facilityVO.setImageUrls(imageUrls);
 
             // 查询预计等待时间
-            QueryWrapper<CrowdingLevel> crowdingLevelQuery = new QueryWrapper<CrowdingLevel>();
-            crowdingLevelQuery.eq("facility_id", facility.getId());
-            crowdingLevelQuery.eq("facility_type", FacilityTypeConstant.AMUSEMENT_TYPE);
-            crowdingLevelQuery.orderByDesc("create_time");
-            List<CrowdingLevel> crowdingLevelList = crowdingLevelMapper.selectList(crowdingLevelQuery);
-            if (!CollectionUtils.isEmpty(crowdingLevelList)) {
-                // 预计等待时间应该是排队时间 + 一次游玩时间
-                facilityVO.setExpectWaitTime(crowdingLevelList.get(0).getExpectWaitTime());
+            Integer expectWaitTime = crowdingLevelService.getExpectWaitTimeByIdType(new FacilityIdType(facility.getId(), FacilityTypeConstant.AMUSEMENT_TYPE));
+            if (expectWaitTime != 0) {
+                facilityVO.setExpectWaitTime(expectWaitTime);
             } else {
                 // 默认值
                 facilityVO.setExpectWaitTime(facilityVO.getExpectTime());
