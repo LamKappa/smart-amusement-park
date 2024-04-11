@@ -5,6 +5,9 @@ server:
 #      cookie:
 #        domain:
 spring:
+  # 设置时区
+  jackson:
+    time-zone: GMT+8
   profiles:
     active: dev
   main:
@@ -24,7 +27,6 @@ spring:
       minIdle: 5
       maxActive: 20
       maxWait: 600000
-
   # session 失效时间（分钟）
   mvc:
     pathmatch:

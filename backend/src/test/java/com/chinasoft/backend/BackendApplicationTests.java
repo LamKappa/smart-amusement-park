@@ -208,4 +208,10 @@ class BackendApplicationTests {
 
         }
     }
+
+    @Test
+    public void testVisit() {
+        List<Visit> list = visitService.list();
+        System.out.println(list);
+    }
 }

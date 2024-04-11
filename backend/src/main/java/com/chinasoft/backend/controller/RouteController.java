@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-public class RecommController {
+public class RouteController {
 
     @Autowired
     RecommService recommService;

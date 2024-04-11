@@ -9,17 +9,16 @@ import com.chinasoft.backend.model.entity.Visit;
 import com.chinasoft.backend.model.request.VisitAndSubscribeAddRequest;
 import com.chinasoft.backend.model.request.VisitAndSubscribeDeleteRequest;
 import com.chinasoft.backend.model.request.VisitAndSubscribeGetRequest;
-import com.chinasoft.backend.model.vo.AmusementVandSVO;
-import com.chinasoft.backend.model.vo.BaseVandSVO;
-import com.chinasoft.backend.model.vo.RestaurantVandSVO;
 import com.chinasoft.backend.service.SubscribeService;
 import com.chinasoft.backend.service.VisitAndSubscribeService;
 import com.chinasoft.backend.service.VisitService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Date;
 import java.util.List;
 
 @RestController
@@ -162,4 +161,13 @@ public class VisitAndSubscribeController {
         return ResultUtils.success(data);
     }
 
+    @GetMapping("/getVisitAll")
+    public BaseResponse getAll() {
+        List<Visit> list = visitService.list();
+        Visit visit = list.get(list.size() - 1);
+        Date createTime = visit.getCreateTime();
+        System.out.println("createTime = " + createTime);
+
+        return ResultUtils.success(createTime);
+    }
 }
