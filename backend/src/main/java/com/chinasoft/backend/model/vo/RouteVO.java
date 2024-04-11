@@ -29,5 +29,5 @@ public class RouteVO {
     /**
      * 途径设施信息列表
      */
-    private List<AmusementFacilityVO> facilityVOList;
+    private List<AmusementFacilityVO> swiperList;
 }

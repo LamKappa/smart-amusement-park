@@ -176,16 +176,16 @@ public class MapServiceImpl implements MapService {
 
         expectWaitTime = crowdingLevelService.getExpectWaitTimeByIdType(facilityIdType);
 
-        if (facilityType == 0) {
+        if (facilityType == FacilityTypeConstant.AMUSEMENT_TYPE) {
             // 获取设施的经纬度
             AmusementFacility facility = amusementFacilityService.getById(facilityId);
             facilityLongitude = facility.getLongitude();
             facilityLatitude = facility.getLatitude();
-        } else if (facilityType == 1) {
+        } else if (facilityType == FacilityTypeConstant.RESTAURANT_TYPE) {
             RestaurantFacility facility = restaurantFacilityService.getById(facilityId);
             facilityLongitude = facility.getLongitude();
             facilityLatitude = facility.getLatitude();
-        } else if (facilityType == 2) {
+        } else if (facilityType == FacilityTypeConstant.BASE_TYPE) {
             BaseFacility facility = baseFacilityService.getById(facilityId);
             facilityLongitude = facility.getLongitude();
             facilityLatitude = facility.getLatitude();

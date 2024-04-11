@@ -52,16 +52,17 @@ public class RecommServiceImpl implements RecommService {
                 .eq("route_id", routeId)
                 .orderByDesc("priority"));
 
-        List<AmusementFacilityVO> facilityVOList = new ArrayList<>();
+        List<AmusementFacilityVO> swiperList = new ArrayList<>();
         for (RecommRoute recommRoute : recommRoutes) {
             // 根据facility_id查询设施信息
 //            AmusementFacility facility = amusementFacilityMapper.selectById(recommRoute.getFacilityId());
             AmusementFilterRequest amusementFilterRequest = new AmusementFilterRequest();
+            amusementFilterRequest.setId(recommRoute.getFacilityId());
 
             List<AmusementFacilityVO> facilities = amusementFacilityService.getAmusementFacility(amusementFilterRequest);
             AmusementFacilityVO facility = facilities.get(0);
 
-            facilityVOList.add(facility);
+            swiperList.add(facility);
 
 
 //            // 填入数据
@@ -86,7 +87,7 @@ public class RecommServiceImpl implements RecommService {
         routeVO.setId(route.getId());
         routeVO.setName(route.getName());
         routeVO.setImgurl(route.getImgUrl());
-        routeVO.setFacilityVOList(facilityVOList);
+        routeVO.setSwiperList(swiperList);
 
         return routeVO;
     }

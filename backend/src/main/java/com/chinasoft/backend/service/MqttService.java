@@ -7,4 +7,6 @@ public interface MqttService {
     void saveIoTData(IoTData ioTData);
 
     void handleIoTData();
+
+
 }
