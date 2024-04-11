@@ -8,7 +8,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class FacilityIdType {
+    
     private Long facilityId;
+
     private Integer facilityType;
 
 }

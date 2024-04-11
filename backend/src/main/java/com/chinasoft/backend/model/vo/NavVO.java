@@ -1,5 +1,6 @@
 package com.chinasoft.backend.model.vo;
 
+import com.chinasoft.backend.model.entity.Facility;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
@@ -28,6 +29,11 @@ public class NavVO {
      * 预计到达时间
      */
     private String expectArriveTime;
+
+    /**
+     * 设施列表
+     */
+    private List<Facility> facilities;
 
     /**
      * 路径点坐标列表
