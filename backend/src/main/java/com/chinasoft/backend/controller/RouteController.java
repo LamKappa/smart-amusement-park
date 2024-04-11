@@ -55,4 +55,30 @@ public class RouteController {
 
         return ResultUtils.success(b);
     }
+
+    /**
+     * 返回由打卡最多的四个设施组成的游玩路线
+     * @return
+     */
+    @GetMapping("/recommendation/sortByVisit")
+    public BaseResponse<RouteVO> sortByVisit (){
+        // 查询数据库
+        RouteVO data = recommService.sortByVisit();
+
+        // 返回响应
+        return ResultUtils.success(data);
+    }
+
+    /**
+     * 返回由订阅最多的四个设施组成的游玩路线
+     * @return
+     */
+    @GetMapping("/recommendation/sortBySubscribe")
+    public BaseResponse<RouteVO> sortBySubscribe (){
+        // 查询数据库
+        RouteVO data = recommService.sortBySubscribe();
+
+        // 返回响应
+        return ResultUtils.success(data);
+    }
 }

@@ -1,10 +1,7 @@
 package com.chinasoft.backend.service.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.chinasoft.backend.mapper.AmusementFacilityMapper;
-import com.chinasoft.backend.mapper.FacilityImageMapper;
-import com.chinasoft.backend.mapper.RecommRouteMapper;
-import com.chinasoft.backend.mapper.RouteMapper;
+import com.chinasoft.backend.mapper.*;
 import com.chinasoft.backend.model.entity.*;
 import com.chinasoft.backend.model.request.AmusementFilterRequest;
 import com.chinasoft.backend.model.vo.AmusementFacilityVO;
@@ -15,9 +12,7 @@ import com.chinasoft.backend.service.RecommService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author 皎皎
@@ -32,6 +27,12 @@ public class RecommServiceImpl implements RecommService {
 
     @Autowired
     FacilityImageMapper facilityImageMapper;
+
+    @Autowired
+    VisitMapper visitMapper;
+
+    @Autowired
+    SubscribeMapper subscribeMapper;
 
     @Autowired
     RouteMapper routeMapper;
@@ -86,7 +87,81 @@ public class RecommServiceImpl implements RecommService {
         RouteVO routeVO = new RouteVO();
         routeVO.setId(route.getId());
         routeVO.setName(route.getName());
-        routeVO.setImgurl(route.getImgUrl());
+        routeVO.setImgUrl(route.getImgUrl());
+        routeVO.setSwiperList(swiperList);
+
+        return routeVO;
+    }
+
+    @Override
+    public RouteVO sortByVisit() {
+        // 使用自定义的SQL查询前4个设施
+        List<Map> topFourFacilities = visitMapper.getTopFourFacilitiesByVisitCount();
+
+        List<AmusementFacilityVO> swiperList = new ArrayList<>();
+
+        for(Map facility : topFourFacilities){
+            Set keys = facility.keySet(); // 获取当前Map中的所有键，此处键数为1
+            Long facilityId = null;
+            for (Object key : keys) {
+                facilityId = (Long) facility.get(key);
+            }
+
+            // 获取设施信息
+            AmusementFilterRequest amusementFilterRequest = new AmusementFilterRequest();
+            amusementFilterRequest.setId(facilityId);
+
+            List<AmusementFacilityVO> facilities = amusementFacilityService.getAmusementFacility(amusementFilterRequest);
+            AmusementFacilityVO amusementFacilityVO = facilities.get(0);
+
+            swiperList.add(amusementFacilityVO);
+        }
+
+        // 选取第一个设施的第一个图片作为封面
+        String imgUrl = swiperList.get(0).getImageUrls().get(0);
+
+        // 填入数据
+        RouteVO routeVO = new RouteVO();
+        routeVO.setId(null);
+        routeVO.setName("热门打卡路线");
+        routeVO.setImgUrl(imgUrl);
+        routeVO.setSwiperList(swiperList);
+
+        return routeVO;
+    }
+
+    @Override
+    public RouteVO sortBySubscribe() {
+        // 使用自定义的SQL查询前4个设施
+        List<Map> topFourFacilities = subscribeMapper.getTopFourFacilitiesBySubscribeCount();
+
+        List<AmusementFacilityVO> swiperList = new ArrayList<>();
+
+        for(Map facility : topFourFacilities){
+            Set keys = facility.keySet(); // 获取当前Map中的所有键，此处键数为1
+            Long facilityId = null;
+            for (Object key : keys) {
+                facilityId = (Long) facility.get(key);
+            }
+
+            // 获取设施信息
+            AmusementFilterRequest amusementFilterRequest = new AmusementFilterRequest();
+            amusementFilterRequest.setId(facilityId);
+
+            List<AmusementFacilityVO> facilities = amusementFacilityService.getAmusementFacility(amusementFilterRequest);
+            AmusementFacilityVO amusementFacilityVO = facilities.get(0);
+
+            swiperList.add(amusementFacilityVO);
+        }
+
+        // 选取第一个设施的第一个图片作为封面
+        String imgUrl = swiperList.get(0).getImageUrls().get(0);
+
+        // 填入数据
+        RouteVO routeVO = new RouteVO();
+        routeVO.setId(null);
+        routeVO.setName("人气订阅路线");
+        routeVO.setImgUrl(imgUrl);
         routeVO.setSwiperList(swiperList);
 
         return routeVO;

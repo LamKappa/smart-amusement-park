@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.chinasoft.backend.model.entity.Visit;
 import org.apache.ibatis.annotations.MapKey;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Select;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -18,6 +20,14 @@ public interface VisitMapper extends BaseMapper<Visit> {
 
     @MapKey("facilityId")
     Map<Long, Map<String, Long>> visitCount();
+
+    @Select("SELECT facility_id, COUNT(*) as visitCount " +
+            "FROM visit " +
+            "WHERE facility_type = 0 " +
+            "GROUP BY facility_id " +
+            "ORDER BY visitCount DESC " +
+            "LIMIT 4")
+    List<Map> getTopFourFacilitiesByVisitCount();
 }
 
 

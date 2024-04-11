@@ -14,4 +14,7 @@ public interface RecommService {
      */
     RouteVO getRecommendation(Integer routeId);
 
+    RouteVO sortByVisit();
+
+    RouteVO sortBySubscribe();
 }

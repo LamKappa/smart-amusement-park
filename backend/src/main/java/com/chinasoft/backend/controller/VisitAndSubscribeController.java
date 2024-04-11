@@ -161,13 +161,4 @@ public class VisitAndSubscribeController {
         return ResultUtils.success(data);
     }
 
-    @GetMapping("/getVisitAll")
-    public BaseResponse getAll() {
-        List<Visit> list = visitService.list();
-        Visit visit = list.get(list.size() - 1);
-        Date createTime = visit.getCreateTime();
-        System.out.println("createTime = " + createTime);
-
-        return ResultUtils.success(createTime);
-    }
 }

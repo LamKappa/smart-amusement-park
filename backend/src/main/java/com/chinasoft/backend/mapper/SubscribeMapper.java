@@ -3,6 +3,10 @@ package com.chinasoft.backend.mapper;
 import com.chinasoft.backend.model.entity.Subscribe;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Select;
+
+import java.util.List;
+import java.util.Map;
 
 /**
 * @author 皎皎
@@ -13,6 +17,13 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface SubscribeMapper extends BaseMapper<Subscribe> {
 
+    @Select("SELECT facility_id, COUNT(*) as subscribeCount " +
+            "FROM subscribe " +
+            "WHERE facility_type = 0 " +
+            "GROUP BY facility_id " +
+            "ORDER BY subscribeCount DESC " +
+            "LIMIT 4")
+    List<Map> getTopFourFacilitiesBySubscribeCount();
 }
 
 

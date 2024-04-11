@@ -98,17 +98,17 @@ public class MapServiceImpl implements MapService {
                 AmusementFacility facility = amusementFacilityService.getById(facilityId);
                 facilityInfo.setLongitude(facility.getLongitude());
                 facilityInfo.setLatitude(facility.getLatitude());
-                facilityInfo.setName(facilityInfo.getName());
+                facilityInfo.setName(facility.getName());
             } else if (facilityType == FacilityTypeConstant.RESTAURANT_TYPE) {
                 RestaurantFacility facility = restaurantFacilityService.getById(facilityId);
                 facilityInfo.setLongitude(facility.getLongitude());
                 facilityInfo.setLatitude(facility.getLatitude());
-                facilityInfo.setName(facilityInfo.getName());
+                facilityInfo.setName(facility.getName());
             } else if (facilityType == FacilityTypeConstant.BASE_TYPE) {
                 BaseFacility facility = baseFacilityService.getById(facilityId);
                 facilityInfo.setLongitude(facility.getLongitude());
                 facilityInfo.setLatitude(facility.getLatitude());
-                facilityInfo.setName(facilityInfo.getName());
+                facilityInfo.setName(facility.getName());
             }
             facilityInfoList.add(facilityInfo);
         }
