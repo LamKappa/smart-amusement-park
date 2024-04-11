@@ -1,6 +1,7 @@
 package com.chinasoft.backend.model.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -11,6 +12,7 @@ import java.util.Date;
  */
 @TableName(value = "user")
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class User implements Serializable {
     /**
      * 用户ID

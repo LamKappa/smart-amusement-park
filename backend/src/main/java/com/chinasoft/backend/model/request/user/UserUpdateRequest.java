@@ -5,6 +5,8 @@ import lombok.Data;
 @Data
 public class UserUpdateRequest {
 
+    private Long id;
+
     /**
      * 手机号
      */

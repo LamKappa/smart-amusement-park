@@ -1,6 +1,7 @@
 package com.chinasoft.backend.model.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -13,6 +14,7 @@ import java.util.Date;
  */
 @TableName(value = "route")
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Route implements Serializable {
     /**
      *

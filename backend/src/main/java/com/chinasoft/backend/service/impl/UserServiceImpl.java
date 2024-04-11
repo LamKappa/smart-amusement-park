@@ -165,6 +165,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      */
     @Override
     public User userUpdate(UserUpdateRequest userUpdateRequest, HttpServletRequest request) {
+        Long id = userUpdateRequest.getId();
         String phone = userUpdateRequest.getPhone();
         String username = userUpdateRequest.getUsername();
         String password = userUpdateRequest.getPassword();
@@ -181,7 +182,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
 
         // 获取当前登录的用户
-        User currUser = getLoginUser(request);
+        // User currUser = getLoginUser(request);
+
+        // 先把session功能去掉
+        User currUser = this.getById(id);
+
+        currUser.setId(id);
 
         // 设置要修改的信息
         if (StringUtils.isNotBlank(phone)) {
