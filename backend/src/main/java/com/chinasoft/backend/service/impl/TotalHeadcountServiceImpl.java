@@ -14,6 +14,10 @@ import org.springframework.stereotype.Service;
 @Service
 public class TotalHeadcountServiceImpl extends ServiceImpl<TotalHeadcountMapper, TotalHeadcount>
     implements TotalHeadcountService{
+    @Override
+    public Integer getTotalCount() {
+        return null;
+    }
 
 //    private volatile int totalCount = 0; // 使用volatile确保多线程环境下的可见性
 //
