@@ -1,6 +1,9 @@
 package com.chinasoft.backend.service;
 
+import com.chinasoft.backend.model.entity.FacilityHeadCount;
 import com.chinasoft.backend.model.entity.IoTData;
+
+import java.util.List;
 
 public interface MqttService {
 
@@ -14,5 +17,5 @@ public interface MqttService {
 
     Integer getTotalCount();
 
-    Integer getFacilityCount(Integer facilityId);
+    List<FacilityHeadCount> getFacilityCount();
 }

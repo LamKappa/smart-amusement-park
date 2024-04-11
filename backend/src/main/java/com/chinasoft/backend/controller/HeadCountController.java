@@ -4,6 +4,7 @@ import com.chinasoft.backend.common.BaseResponse;
 import com.chinasoft.backend.common.ErrorCode;
 import com.chinasoft.backend.common.ResultUtils;
 import com.chinasoft.backend.exception.BusinessException;
+import com.chinasoft.backend.model.entity.FacilityHeadCount;
 import com.chinasoft.backend.service.MqttService;
 import com.chinasoft.backend.service.SearchService;
 import com.chinasoft.backend.service.TotalHeadcountService;
@@ -43,10 +44,10 @@ public class HeadCountController {
      * @return
      */
     @GetMapping("/headCount/facility")
-    public BaseResponse<Integer> getFacilityCount(@Param("facilityId") Integer facilityId) {
+    public BaseResponse<List<FacilityHeadCount>> getFacilityCount(@Param("facilityId") Integer facilityId) {
 
         // 查询数据库
-        Integer data = mqttService.getFacilityCount(facilityId);
+        List<FacilityHeadCount> data = mqttService.getFacilityCount();
 
         // 返回响应
         return ResultUtils.success(data);

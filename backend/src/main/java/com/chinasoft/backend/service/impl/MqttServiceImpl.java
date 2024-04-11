@@ -1,6 +1,7 @@
 package com.chinasoft.backend.service.impl;
 
 import com.chinasoft.backend.constant.FacilityTypeConstant;
+import com.chinasoft.backend.mapper.AmusementFacilityMapper;
 import com.chinasoft.backend.mapper.TotalHeadcountMapper;
 import com.chinasoft.backend.model.entity.*;
 import com.chinasoft.backend.service.*;
@@ -64,6 +65,9 @@ public class MqttServiceImpl implements MqttService {
 
     @Autowired
     TotalHeadcountMapper totalHeadcountMapper;
+
+    @Autowired
+    AmusementFacilityMapper amusementFacilityMapper;
 
     /**
      * 暂存IoT的数据
@@ -263,14 +267,14 @@ public class MqttServiceImpl implements MqttService {
      * 存储各个设施的游玩人数
      */
     public void handleFacilityHead(){
-//        TotalHeadcount totalHeadcount = new TotalHeadcount();
-//        totalHeadcount.setCount(totalCount);
-//        totalHeadcountMapper.insert(totalHeadcount);
-//        if(totalHeadcount.getId() > 0){
-//            totalCount = 0;
-//        }else{
-//            log.info("定时任务2执行失败：{}，统计值为：{}", new Date(), totalCount);
-//        }
+        TotalHeadcount totalHeadcount = new TotalHeadcount();
+        totalHeadcount.setCount(totalCount);
+        totalHeadcountMapper.insert(totalHeadcount);
+        if(totalHeadcount.getId() > 0){
+            totalCount = 0;
+        }else{
+            log.info("定时任务2执行失败：{}，统计值为：{}", new Date(), totalCount);
+        }
     }
 
     /**
@@ -285,8 +289,23 @@ public class MqttServiceImpl implements MqttService {
      * 返回总游玩人数
      */
     @Override
-    public Integer getFacilityCount(Integer facilityId) {
-        return amusementFacilityHeadCountMap.get(facilityId);
+    public  List<FacilityHeadCount> getFacilityCount() {
+        List<FacilityHeadCount> facilityHeadCountList = new ArrayList<>();
+        for (Map.Entry<Integer, Integer> entry : amusementFacilityHeadCountMap.entrySet()) {
+            Integer facilityId = entry.getKey();
+            int headCount = entry.getValue();
+
+            AmusementFacility amusementFacility = amusementFacilityMapper.selectById(facilityId);
+
+            FacilityHeadCount facilityHeadCount = new FacilityHeadCount();
+            facilityHeadCount.setFacilityId(facilityId);
+            facilityHeadCount.setHeadCount(headCount);
+            facilityHeadCount.setFacilityName(amusementFacility.getName());
+
+            facilityHeadCountList.add(facilityHeadCount);
+        }
+
+        return facilityHeadCountList;
     }
 
 
