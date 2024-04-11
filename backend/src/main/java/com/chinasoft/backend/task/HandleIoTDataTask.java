@@ -25,13 +25,13 @@ public class HandleIoTDataTask {
 
     }
 
-    @Scheduled(cron = "0 34 14 * * ?")
+    @Scheduled(cron = "0 59 23 * * ?")
     public void handleTotalHeadTask(){
         log.info("定时任务2开始执行：{}", new Date());
         mqttService.handleTotalHeadCount();
     }
 
-    @Scheduled(cron = "0 34 14 * * ?")
+    @Scheduled(cron = "0 59 23 * * ?")
     public void handleFacilityHeadTask(){
         log.info("定时任务3开始执行：{}", new Date());
         mqttService.handleFacilityHeadCount();
