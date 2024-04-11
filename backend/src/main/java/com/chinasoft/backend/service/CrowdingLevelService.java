@@ -3,6 +3,9 @@ package com.chinasoft.backend.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.chinasoft.backend.model.entity.CrowdingLevel;
 import com.chinasoft.backend.model.request.FacilityIdType;
+import com.chinasoft.backend.model.vo.CrowingTimeCountVO;
+
+import java.util.List;
 
 /**
  * @author 86178
@@ -12,4 +15,6 @@ import com.chinasoft.backend.model.request.FacilityIdType;
 public interface CrowdingLevelService extends IService<CrowdingLevel> {
 
     Integer getExpectWaitTimeByIdType(FacilityIdType facilityIdType);
+
+    List<CrowingTimeCountVO> crowingTimeCount();
 }

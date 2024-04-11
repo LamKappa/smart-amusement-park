@@ -4,8 +4,10 @@ import com.chinasoft.backend.common.BaseResponse;
 import com.chinasoft.backend.common.ResultUtils;
 import com.chinasoft.backend.model.entity.Route;
 import com.chinasoft.backend.model.vo.FacilityHeadCountVO;
+import com.chinasoft.backend.model.vo.CrowingTimeCountVO;
 import com.chinasoft.backend.model.vo.FacilityVisitCountVO;
 import com.chinasoft.backend.service.MqttService;
+import com.chinasoft.backend.service.CrowdingLevelService;
 import com.chinasoft.backend.service.RouteService;
 import com.chinasoft.backend.service.VisitService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +30,9 @@ public class StatisticsController {
 
     @Autowired
     MqttService mqttService;
+
+    @Autowired
+    CrowdingLevelService crowdingLevelService;
 
     /**
      * 统计推荐路线使用次数
@@ -53,6 +58,17 @@ public class StatisticsController {
     public BaseResponse<List<FacilityVisitCountVO>> visitCount() {
         List<FacilityVisitCountVO> list = visitService.visitCount();
 
+
+        return ResultUtils.success(list);
+    }
+
+    /**
+     * 以小时为单位统计当日的拥挤度（预期等待时间）
+     */
+    @GetMapping("/crowingTimeCount")
+    public BaseResponse<List<CrowingTimeCountVO>> crowingTimeCount() {
+
+        List<CrowingTimeCountVO> list = crowdingLevelService.crowingTimeCount();
 
         return ResultUtils.success(list);
     }
