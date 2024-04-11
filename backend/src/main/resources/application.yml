@@ -1,5 +1,9 @@
 server:
   port: 8888
+#  servlet:
+#    session:
+#      cookie:
+#        domain:
 spring:
   profiles:
     active: dev

@@ -1,5 +1,6 @@
 package com.chinasoft.backend;
 
+import com.chinasoft.backend.mapper.VisitMapper;
 import com.chinasoft.backend.model.entity.*;
 import com.chinasoft.backend.service.*;
 import org.junit.jupiter.api.Test;
@@ -130,5 +131,20 @@ class BackendApplicationTests {
     @Test
     public void testRoute() {
         System.out.println(routeService.list());
+    }
+
+    @Autowired
+    VisitService visitService;
+
+    @Autowired
+    VisitMapper visitMapper;
+
+    @Test
+    public void testVisitCount() {
+        // QueryWrapper queryWrapper = new QueryWrapper();
+        // queryWrapper.groupBy("facility_id");
+        // long count = visitService.count(queryWrapper);
+        Map<Long, Map<String, Long>> integerIntegerMap = visitMapper.visitCount();
+        System.out.println(integerIntegerMap);
     }
 }

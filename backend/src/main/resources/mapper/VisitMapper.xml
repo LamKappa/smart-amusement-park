@@ -5,13 +5,13 @@
 <mapper namespace="com.chinasoft.backend.mapper.VisitMapper">
 
     <resultMap id="BaseResultMap" type="com.chinasoft.backend.model.entity.Visit">
-            <id property="id" column="id" jdbcType="BIGINT"/>
-            <result property="userId" column="user_id" jdbcType="BIGINT"/>
-            <result property="facilityId" column="facility_id" jdbcType="BIGINT"/>
-            <result property="facilityType" column="facility_type" jdbcType="INTEGER"/>
-            <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
-            <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
-            <result property="isDeleted" column="is_deleted" jdbcType="INTEGER"/>
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="userId" column="user_id" jdbcType="BIGINT"/>
+        <result property="facilityId" column="facility_id" jdbcType="BIGINT"/>
+        <result property="facilityType" column="facility_type" jdbcType="INTEGER"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+        <result property="isDeleted" column="is_deleted" jdbcType="INTEGER"/>
     </resultMap>
 
     <sql id="Base_Column_List">
@@ -19,4 +19,13 @@
         facility_type,create_time,update_time,
         is_deleted
     </sql>
+
+    <select id="visitCount" resultType="java.util.Map">
+        select facility_id as facilityId, count(*) as visitCount
+        from visit
+        group by (facility_id)
+
+    </select>
+
+
 </mapper>

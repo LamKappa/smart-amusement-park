@@ -79,8 +79,9 @@ public class MapServiceImpl implements MapService {
         // 总的预计等待时间
         Integer totalExpectWaitTime = 0;
 
-        // 需要所有导航的设施的经纬度和预期等待时间
-        List<FacilityPositionAndExpectWaitTime> facilityInfoList = new ArrayList<>();
+        // 需要所有导航的设施的id和姓名，以及经纬度和预期等待时间
+        List<Facility> facilityInfoList = new ArrayList<>();
+
 
         // 根据设施id和设施type查询所有设施的经纬度和预期等待时间
         for (FacilityIdType facilityIdType : facilityIdTypeList) {
@@ -89,21 +90,25 @@ public class MapServiceImpl implements MapService {
             // 获取预计等待时间
             Integer expectWaitTime = crowdingLevelService.getExpectWaitTimeByIdType(facilityIdType);
             totalExpectWaitTime += expectWaitTime;
-            FacilityPositionAndExpectWaitTime facilityInfo = new FacilityPositionAndExpectWaitTime();
+            Facility facilityInfo = new Facility();
+            facilityInfo.setId(facilityId);
             facilityInfo.setExpectWaitTime(expectWaitTime);
             // 获取设施的经纬度信息
             if (facilityType == FacilityTypeConstant.AMUSEMENT_TYPE) {
                 AmusementFacility facility = amusementFacilityService.getById(facilityId);
                 facilityInfo.setLongitude(facility.getLongitude());
                 facilityInfo.setLatitude(facility.getLatitude());
+                facilityInfo.setName(facilityInfo.getName());
             } else if (facilityType == FacilityTypeConstant.RESTAURANT_TYPE) {
                 RestaurantFacility facility = restaurantFacilityService.getById(facilityId);
                 facilityInfo.setLongitude(facility.getLongitude());
                 facilityInfo.setLatitude(facility.getLatitude());
+                facilityInfo.setName(facilityInfo.getName());
             } else if (facilityType == FacilityTypeConstant.BASE_TYPE) {
                 BaseFacility facility = baseFacilityService.getById(facilityId);
                 facilityInfo.setLongitude(facility.getLongitude());
                 facilityInfo.setLatitude(facility.getLatitude());
+                facilityInfo.setName(facilityInfo.getName());
             }
             facilityInfoList.add(facilityInfo);
         }
@@ -126,7 +131,7 @@ public class MapServiceImpl implements MapService {
 
 
         // 调用高德API
-        for (FacilityPositionAndExpectWaitTime facilityInfo : facilityInfoList) {
+        for (Facility facilityInfo : facilityInfoList) {
             PositionPoint targetPositionPoint = new PositionPoint(facilityInfo.getLongitude(), facilityInfo.getLatitude());
             resPositionPointList.addAll(getTwoPointNav(currPositionPoint, targetPositionPoint));
             Walk walkInfo = getTwoPointExpectWalkInfo(currPositionPoint, targetPositionPoint);
@@ -149,6 +154,7 @@ public class MapServiceImpl implements MapService {
         // 多个设施导航不需要预计到达时间
         // navVO.setExpectArriveTime(formattedTotalExpectArriveTime);
         navVO.setTotalWaitTime(totalExpectWaitTime);
+        navVO.setFacilities(facilityInfoList);
 
         return navVO;
     }

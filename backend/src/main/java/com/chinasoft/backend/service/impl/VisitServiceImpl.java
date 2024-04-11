@@ -11,14 +11,19 @@ import com.chinasoft.backend.mapper.*;
 import com.chinasoft.backend.model.entity.*;
 import com.chinasoft.backend.model.request.VisitAndSubscribeAddRequest;
 import com.chinasoft.backend.model.request.VisitAndSubscribeDeleteRequest;
-import com.chinasoft.backend.model.vo.AmusementVandSVO;
+import com.chinasoft.backend.model.vo.FacilityVisitCountVO;
+import com.chinasoft.backend.service.AmusementFacilityService;
 import com.chinasoft.backend.service.VisitService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 @Service
 public class VisitServiceImpl extends ServiceImpl<VisitMapper, Visit>
-    implements VisitService{
+        implements VisitService {
 
     @Autowired
     private UserMapper userMapper;
@@ -32,6 +37,11 @@ public class VisitServiceImpl extends ServiceImpl<VisitMapper, Visit>
     @Autowired
     private BaseFacilityMapper baseFacilityMapper;
 
+    @Autowired
+    private VisitMapper visitMapper;
+
+    @Autowired
+    private AmusementFacilityService amusementFacilityService;
 
 
     @Override
@@ -59,19 +69,19 @@ public class VisitServiceImpl extends ServiceImpl<VisitMapper, Visit>
         }
 
         // 检查设施是否存在
-        if(facilityType == FacilityTypeConstant.AMUSEMENT_TYPE){
+        if (facilityType == FacilityTypeConstant.AMUSEMENT_TYPE) {
             QueryWrapper<AmusementFacility> queryWrapper3 = Wrappers.<AmusementFacility>query().eq("id", facilityId);
             AmusementFacility existingAmusement = amusementFacilityMapper.selectOne(queryWrapper3);
             if (existingAmusement == null) {
                 throw new BusinessException(ErrorCode.PARAMS_ERROR, "设施不存在");
             }
-        }else if(facilityType == FacilityTypeConstant.RESTAURANT_TYPE){
+        } else if (facilityType == FacilityTypeConstant.RESTAURANT_TYPE) {
             QueryWrapper<RestaurantFacility> queryWrapper3 = Wrappers.<RestaurantFacility>query().eq("id", facilityId);
             RestaurantFacility existingRestaurant = restaurantFacilityMapper.selectOne(queryWrapper3);
             if (existingRestaurant == null) {
                 throw new BusinessException(ErrorCode.PARAMS_ERROR, "设施不存在");
             }
-        }else if(facilityType == FacilityTypeConstant.BASE_TYPE){
+        } else if (facilityType == FacilityTypeConstant.BASE_TYPE) {
             QueryWrapper<BaseFacility> queryWrapper3 = Wrappers.<BaseFacility>query().eq("id", facilityId);
             BaseFacility existingBase = baseFacilityMapper.selectOne(queryWrapper3);
             if (existingBase == null) {
@@ -105,6 +115,26 @@ public class VisitServiceImpl extends ServiceImpl<VisitMapper, Visit>
         // 判断是否更新成功
         return result > 0;
 
+    }
+
+    /**
+     * 统计每个设施的打卡次数
+     */
+    @Override
+    public List<FacilityVisitCountVO> visitCount() {
+        // <facilityId, <str, visitCount>>
+        // {1={facilityId=1, visitCount=12}, 2={facilityId=2, visitCount=5}, 3={facilityId=3, visitCount=4}, 4={facilityId=4, visitCount=5}, 5={facilityId=5, visitCount=5}}
+        Map<Long, Map<String, Long>> map = visitMapper.visitCount();
+        List<FacilityVisitCountVO> list = new ArrayList<>();
+        for (Long facilityId : map.keySet()) {
+            AmusementFacility facility = amusementFacilityService.getById(facilityId);
+            FacilityVisitCountVO facilityVisitCountVO = new FacilityVisitCountVO();
+            facilityVisitCountVO.setFacilityName(facility.getName());
+            facilityVisitCountVO.setVisitCount(map.get(facilityId).get("visitCount"));
+            list.add(facilityVisitCountVO);
+        }
+
+        return list;
     }
 }
 

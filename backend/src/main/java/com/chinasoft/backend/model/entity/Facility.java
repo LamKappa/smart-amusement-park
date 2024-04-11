@@ -1,13 +1,24 @@
 package com.chinasoft.backend.model.entity;
 
-import lombok.AllArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class FacilityPositionAndExpectWaitTime {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class Facility {
+
+    private Long id;
+
+    /**
+     * 设施类型
+     */
+    private Integer facilityType;
+
+    /**
+     * 名称
+     */
+    private String name;
+
     /**
      * 经度
      */
