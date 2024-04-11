@@ -4,6 +4,7 @@ import com.chinasoft.backend.common.BaseResponse;
 import com.chinasoft.backend.common.ErrorCode;
 import com.chinasoft.backend.common.ResultUtils;
 import com.chinasoft.backend.exception.BusinessException;
+import com.chinasoft.backend.service.MqttService;
 import com.chinasoft.backend.service.SearchService;
 import com.chinasoft.backend.service.TotalHeadcountService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,10 +18,10 @@ import java.util.List;
 public class HeadCountController {
 
     @Autowired
-    TotalHeadcountService totalHeadcountService;
+    MqttService mqttService;
 
     /**
-     * 统计今日游玩总人数
+     * 返回当前的今日游玩总人数
      *
      * @param
      * @return
@@ -29,7 +30,23 @@ public class HeadCountController {
     public BaseResponse<Integer> getTotalCount() {
 
         // 查询数据库
-        Integer data = totalHeadcountService.getTotalCount();
+        Integer data = mqttService.getTotalCount();
+
+        // 返回响应
+        return ResultUtils.success(data);
+    }
+
+    /**
+     * 按设施id返回当前的今日游玩总人数
+     *
+     * @param
+     * @return
+     */
+    @GetMapping("/headCount/facility")
+    public BaseResponse<Integer> getFacilityCount(@Param("facilityId") Integer facilityId) {
+
+        // 查询数据库
+        Integer data = mqttService.getFacilityCount(facilityId);
 
         // 返回响应
         return ResultUtils.success(data);

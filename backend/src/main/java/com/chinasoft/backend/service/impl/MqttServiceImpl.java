@@ -1,6 +1,7 @@
 package com.chinasoft.backend.service.impl;
 
 import com.chinasoft.backend.constant.FacilityTypeConstant;
+import com.chinasoft.backend.mapper.TotalHeadcountMapper;
 import com.chinasoft.backend.model.entity.*;
 import com.chinasoft.backend.service.*;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +40,16 @@ public class MqttServiceImpl implements MqttService {
      */
     private static final Double PER_PERSON_LENGTH = 0.25;
 
+    /**
+     * 暂存游乐设施的总人数
+     */
+    private Integer totalCount = 0;
+
+    /**
+     * 暂存各个设施的总人数
+     */
+    private Map<Integer, Integer> amusementFacilityHeadCountMap = new HashMap<Integer, Integer>();
+
     @Autowired
     AmusementFacilityService amusementFacilityService;
 
@@ -50,6 +61,9 @@ public class MqttServiceImpl implements MqttService {
 
     @Autowired
     CrowdingLevelService crowdingLevelService;
+
+    @Autowired
+    TotalHeadcountMapper totalHeadcountMapper;
 
     /**
      * 暂存IoT的数据
@@ -66,9 +80,17 @@ public class MqttServiceImpl implements MqttService {
         if (facilityType == FacilityTypeConstant.AMUSEMENT_TYPE) {
             if (!amusementFacilityDataMap.containsKey(facilityId)) {
                 amusementFacilityDataMap.put(facilityId, new ArrayList<>());
+                amusementFacilityHeadCountMap.put(facilityId, 0);
             }
             List<IoTData> ioTDataList = amusementFacilityDataMap.get(facilityId);
             ioTDataList.add(ioTData);
+
+            // 更新facilityId在amusementFacilityHeadCountMap中的计数
+            if(ioTData.getDeviceId() == 0 && ioTData.getDetection() == 1){
+                int currentCount = amusementFacilityHeadCountMap.get(facilityId);
+                amusementFacilityHeadCountMap.put(facilityId, currentCount + 1);
+            }
+
         } else if (facilityType == FacilityTypeConstant.RESTAURANT_TYPE) {
             if (!restaurantFacilityDataMap.containsKey(facilityId)) {
                 restaurantFacilityDataMap.put(facilityId, new ArrayList<>());
@@ -210,6 +232,61 @@ public class MqttServiceImpl implements MqttService {
             crowdingLevelList.add(crowdingLevel);
         }
         return crowdingLevelList;
+    }
+
+    /**
+     * 统计总游玩人数
+     */
+
+    public void addTotalCount(IoTData ioTData) {
+        if(ioTData.getDetection() == 1 && ioTData.getFacilityType() == FacilityTypeConstant.GATE_TYPE){
+            totalCount++;
+        }
+    }
+
+
+    /**
+     * 存储总游玩人数
+     */
+    public void handleTotalHead(){
+        TotalHeadcount totalHeadcount = new TotalHeadcount();
+        totalHeadcount.setCount(totalCount);
+        totalHeadcountMapper.insert(totalHeadcount);
+        if(totalHeadcount.getId() > 0){
+            totalCount = 0;
+        }else{
+            log.info("定时任务2执行失败：{}，统计值为：{}", new Date(), totalCount);
+        }
+    }
+
+    /**
+     * 存储各个设施的游玩人数
+     */
+    public void handleFacilityHead(){
+//        TotalHeadcount totalHeadcount = new TotalHeadcount();
+//        totalHeadcount.setCount(totalCount);
+//        totalHeadcountMapper.insert(totalHeadcount);
+//        if(totalHeadcount.getId() > 0){
+//            totalCount = 0;
+//        }else{
+//            log.info("定时任务2执行失败：{}，统计值为：{}", new Date(), totalCount);
+//        }
+    }
+
+    /**
+     * 返回总游玩人数
+     */
+    @Override
+    public Integer getTotalCount() {
+        return totalCount;
+    }
+
+    /**
+     * 返回总游玩人数
+     */
+    @Override
+    public Integer getFacilityCount(Integer facilityId) {
+        return amusementFacilityHeadCountMap.get(facilityId);
     }
 
 

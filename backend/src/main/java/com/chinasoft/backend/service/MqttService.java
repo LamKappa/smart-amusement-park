@@ -8,5 +8,11 @@ public interface MqttService {
 
     void handleIoTData();
 
+    void addTotalCount(IoTData ioTData);
 
+    void handleTotalHead();
+
+    Integer getTotalCount();
+
+    Integer getFacilityCount(Integer facilityId);
 }

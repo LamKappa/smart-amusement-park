@@ -61,6 +61,7 @@ public class MqttAcceptCallback implements MqttCallbackExtended {
         IoTData ioTData = JSONUtil.toBean(s, IoTData.class);
         // System.out.println(ioTData);
         mqttService.saveIoTData(ioTData);
+        mqttService.addTotalCount(ioTData);
 
 
     }
