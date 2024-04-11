@@ -3,6 +3,7 @@ package com.chinasoft.backend.model.vo;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.chinasoft.backend.constant.FacilityTypeConstant;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
@@ -92,5 +93,17 @@ public class RestaurantVandSVO {
      * 预计等待时间
      */
     private Integer expectWaitTime;
+
+    /**
+     * 打卡时间
+     */
+    @JsonFormat(pattern = "yyyy/MM/dd HH:mm:ss")
+    private Date visitTime;
+
+    /**
+     * 订阅时间
+     */
+    @JsonFormat(pattern = "yyyy/MM/dd HH:mm:ss")
+    private Date subscribeTime;
 
 }

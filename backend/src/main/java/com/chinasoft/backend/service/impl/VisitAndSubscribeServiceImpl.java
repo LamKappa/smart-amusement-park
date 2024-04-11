@@ -63,6 +63,7 @@ public class VisitAndSubscribeServiceImpl implements VisitAndSubscribeService{
                     if (amusementVandSVO.getId().equals(visit.getFacilityId())) {
                         amusementVandSVO.setIsVisited(1);
                         amusementVandSVO.setVisitId(visit.getId());
+                        amusementVandSVO.setVisitTime(visit.getCreateTime());
                         break;
                     }
                 }
@@ -79,6 +80,7 @@ public class VisitAndSubscribeServiceImpl implements VisitAndSubscribeService{
                     if (amusementVandSVO.getId().equals(subscribe.getFacilityId())) {
                         amusementVandSVO.setIsSubscribed(1);
                         amusementVandSVO.setSubscribeId(subscribe.getId());
+                        amusementVandSVO.setSubscribeTime(subscribe.getCreateTime());
                         break;
                     }
                 }
@@ -125,6 +127,7 @@ public class VisitAndSubscribeServiceImpl implements VisitAndSubscribeService{
                     if (restaurantVandSVO.getId().equals(visit.getFacilityId())) {
                         restaurantVandSVO.setIsVisited(1);
                         restaurantVandSVO.setVisitId(visit.getId());
+                        restaurantVandSVO.setVisitTime(visit.getCreateTime());
                         break;
                     }
                 }
@@ -141,6 +144,7 @@ public class VisitAndSubscribeServiceImpl implements VisitAndSubscribeService{
                     if (restaurantVandSVO.getId().equals(subscribe.getFacilityId())) {
                         restaurantVandSVO.setIsSubscribed(1);
                         restaurantVandSVO.setSubscribeId(subscribe.getId());
+                        restaurantVandSVO.setSubscribeTime(subscribe.getCreateTime());
                         break;
                     }
                 }
@@ -184,6 +188,7 @@ public class VisitAndSubscribeServiceImpl implements VisitAndSubscribeService{
                     if (baseVandSVO.getId().equals(visit.getFacilityId())) {
                         baseVandSVO.setIsVisited(1);
                         baseVandSVO.setVisitId(visit.getId());
+                        baseVandSVO.setVisitTime(visit.getCreateTime());
                         break;
                     }
                 }
@@ -200,6 +205,7 @@ public class VisitAndSubscribeServiceImpl implements VisitAndSubscribeService{
                     if (baseVandSVO.getId().equals(subscribe.getFacilityId())) {
                         baseVandSVO.setIsSubscribed(1);
                         baseVandSVO.setSubscribeId(subscribe.getId());
+                        baseVandSVO.setSubscribeTime(subscribe.getCreateTime());
                         break;
                     }
                 }
