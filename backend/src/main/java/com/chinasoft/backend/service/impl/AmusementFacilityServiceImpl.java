@@ -2,23 +2,33 @@ package com.chinasoft.backend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.chinasoft.backend.common.ErrorCode;
+import com.chinasoft.backend.constant.AmusementFacilityTypeEnum;
+import com.chinasoft.backend.constant.CrowdTypeEnum;
 import com.chinasoft.backend.constant.FacilityTypeConstant;
+import com.chinasoft.backend.exception.BusinessException;
 import com.chinasoft.backend.mapper.AmusementFacilityMapper;
 import com.chinasoft.backend.mapper.CrowdingLevelMapper;
 import com.chinasoft.backend.mapper.FacilityImageMapper;
 import com.chinasoft.backend.model.entity.AmusementFacility;
 import com.chinasoft.backend.model.entity.FacilityImage;
+import com.chinasoft.backend.model.request.AmusementFacilityAddRequest;
 import com.chinasoft.backend.model.request.AmusementFilterRequest;
 import com.chinasoft.backend.model.request.FacilityIdType;
 import com.chinasoft.backend.model.vo.AmusementFacilityVO;
 import com.chinasoft.backend.service.AmusementFacilityService;
 import com.chinasoft.backend.service.CrowdingLevelService;
+import com.chinasoft.backend.service.FacilityImageService;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.sql.Time;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -39,6 +49,12 @@ public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityM
 
     @Autowired
     CrowdingLevelMapper crowdingLevelMapper;
+
+    @Autowired
+    FacilityImageService facilityImageService;
+
+    private static final String LONGITUDE_REG_EXPRESS = "^(([1-9]\\d?)|(1[0-7]\\d))(\\.\\d{1,6})|180|0(\\.\\d{1,6})?$";
+    private static final String LATITUDE_REG_EXPRESS = "^(([1-8]\\d?)|([1-8]\\d))(\\.\\d{1,6})|90|0(\\.\\d{1,6})?$";
 
 
     @Override
@@ -114,6 +130,108 @@ public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityM
         }
 
         return facilityVOList;
+    }
+
+    /**
+     * 增加
+     */
+    @Override
+    public long add(AmusementFacilityAddRequest amusementFacilityAddRequest) {
+
+        // 添加默认值
+        if (amusementFacilityAddRequest.getHeightLow() == null) {
+            amusementFacilityAddRequest.setHeightLow(0);
+        }
+        if (amusementFacilityAddRequest.getHeightUp() == null) {
+            amusementFacilityAddRequest.setHeightUp(300);
+        }
+
+        // 校验
+        validParams(amusementFacilityAddRequest, true);
+
+        AmusementFacility amusementFacility = new AmusementFacility();
+        BeanUtils.copyProperties(amusementFacilityAddRequest, amusementFacility);
+
+        amusementFacility.setStatus(0);
+        boolean result = this.save(amusementFacility);
+        if (!result) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "添加失败");
+        }
+        long newFacilityId = amusementFacility.getId();
+
+        List<String> imageUrlList = amusementFacilityAddRequest.getImageUrlList();
+        for (String url : imageUrlList) {
+            FacilityImage image = new FacilityImage();
+            image.setFacilityId(newFacilityId);
+            image.setImageUrl(url);
+            image.setFacilityType(FacilityTypeConstant.AMUSEMENT_TYPE);
+            facilityImageService.save(image);
+        }
+
+        return newFacilityId;
+    }
+
+
+    /**
+     * 参数校验
+     */
+    @Override
+    public void validParams(AmusementFacilityAddRequest amusementFacility, boolean add) {
+
+        String name = amusementFacility.getName();
+        String introduction = amusementFacility.getIntroduction();
+        String longitude = amusementFacility.getLongitude();
+        String latitude = amusementFacility.getLatitude();
+        Integer perUserCount = amusementFacility.getPerUserCount();
+        Integer expectTime = amusementFacility.getExpectTime();
+        String type = amusementFacility.getType();
+        String crowdType = amusementFacility.getCrowdType();
+        Time startTime = amusementFacility.getStartTime();
+        Time closeTime = amusementFacility.getCloseTime();
+        String instruction = amusementFacility.getInstruction();
+        Integer heightLow = amusementFacility.getHeightLow();
+        Integer heightUp = amusementFacility.getHeightUp();
+        List<String> imageUrlList = amusementFacility.getImageUrlList();
+
+        if (amusementFacility == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+
+        // 创建时，所有参数必须非空
+        if (add) {
+            if (StringUtils.isAnyBlank(name, introduction, longitude, latitude, type, crowdType, instruction) ||
+                    ObjectUtils.anyNull(perUserCount, expectTime, perUserCount, heightLow, heightUp, imageUrlList, startTime, closeTime)) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+            }
+        }
+
+        // 经度校验
+        if (!Pattern.matches(LONGITUDE_REG_EXPRESS, longitude) || !Pattern.matches(LATITUDE_REG_EXPRESS, latitude)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "经纬度格式错误");
+        }
+
+        // 一次游玩人数和预计游玩时间校验
+        if (perUserCount <= 0 || perUserCount > 100) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "一次游玩人数错误");
+        }
+        if (expectTime <= 0 || expectTime > 100) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "预计游玩时间错误");
+        }
+
+        // type校验
+        if (!AmusementFacilityTypeEnum.existValidate(type)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "设施类型填写错误");
+        }
+
+        // crowingType校验
+        if (!CrowdTypeEnum.existValidate(crowdType)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "适合人群填写错误");
+        }
+
+        // 身高校验
+        if (heightLow < 0 || heightUp > 300 || heightLow >= heightUp) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "要求身高填写错误");
+        }
     }
 
 }
