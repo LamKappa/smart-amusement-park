@@ -47,7 +47,7 @@ public class BaseFacility implements Serializable {
     private Time closeTime;
 
     /**
-     * 每个人的预期用餐时间
+     * 每个人的预期时间
      */
     private Integer expectTime;
 
