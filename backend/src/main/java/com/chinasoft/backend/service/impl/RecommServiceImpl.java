@@ -19,6 +19,8 @@ import com.chinasoft.backend.service.RecommService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -76,7 +78,7 @@ public class RecommServiceImpl implements RecommService {
         for(Route route : routes){
             List<RecommRoute> recommRoutes = recommRouteMapper.selectList(Wrappers.<RecommRoute>query()
                     .eq("route_id", route.getId())
-                    .orderByDesc("priority"));
+                    .orderByAsc("priority"));
             List<AmusementFacilityVO> swiperList = new ArrayList<>();
             for (RecommRoute recommRoute : recommRoutes) {
                 // 根据facility_id查询设施信息
@@ -214,18 +216,59 @@ public class RecommServiceImpl implements RecommService {
         String imgUrl = addRouteRequest.getImgUrl();
         List<Integer> facilityIdList = addRouteRequest.getFacilityIdList();
 
-        // 校验参数有效性
+        // 校验路线名称有效性
         if (name.length() > MAX_ROUTE_NAME_LENGTH || name.length() < MIN_ROUTE_NAME_LENGTH) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "路线名称长度不在允许范围内");
         }
-        if (!isValidUrl(imgUrl)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "路线图片URL格式不正确");
+
+        // 判断url格式是否合法
+        if (!(imgUrl.matches("^(http|https)://.*$"))) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "URL格式不正确");
+        }
+
+        // 发起HTTP请求检查url是否可访问
+        try {
+            URL obj = new URL(imgUrl);
+            HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+            con.setRequestMethod("GET");
+            int responseCode = con.getResponseCode();
+            if (responseCode != HttpURLConnection.HTTP_OK) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "URL不可访问");
+            }
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "URL不可访问");
         }
 
         // 校验途径设施列表中的设施是否存在  
         for (Integer facilityId : facilityIdList) {
             if (amusementFacilityMapper.selectById(facilityId) == null) {
                 throw new BusinessException(ErrorCode.PARAMS_ERROR, "添加设施不存在");
+            }
+        }
+
+        // 校验插入数据是否重复
+        List<RouteVO> allRouteVOList = getRecommendation(new RecommendationRequest());
+
+        for(RouteVO existingRouteVO : allRouteVOList){
+            String existingName = existingRouteVO.getName();
+            String existingImgUrl = existingRouteVO.getImgUrl();
+            List<AmusementFacilityVO> existingSwiperList = existingRouteVO.getSwiperList();
+            List<Integer> existingFacilityIdList = new ArrayList<>();
+
+            for(AmusementFacilityVO amusementFacilityVO : existingSwiperList){
+                existingFacilityIdList.add(Math.toIntExact(amusementFacilityVO.getId()));
+            }
+
+            if(name.equals(existingName)){
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "名称重复");
+            }
+
+            if(imgUrl.equals(existingImgUrl)){
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "图片重复");
+            }
+
+            if(facilityIdList.equals(existingFacilityIdList)){
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "途径设施重复");
             }
         }
 
@@ -247,17 +290,11 @@ public class RecommServiceImpl implements RecommService {
         RecommendationRequest recommendationRequest = new RecommendationRequest();
         recommendationRequest.setId(routeId);
 
-        return getRecommendation(recommendationRequest);
-    }
+        List<RouteVO> routeVOList = getRecommendation(recommendationRequest);
 
-    private boolean isValidUrl(String imgUrl) {
-        String regex = "^(http|https)://([a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}$";
-        Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher(imgUrl);
-        boolean isValid = matcher.matches();
-        return isValid;
-    }
+        return routeVOList;
 
+    }
 
 }
 
