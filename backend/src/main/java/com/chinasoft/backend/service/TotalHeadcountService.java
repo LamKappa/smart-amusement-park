@@ -2,6 +2,10 @@ package com.chinasoft.backend.service;
 
 import com.chinasoft.backend.model.entity.TotalHeadcount;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.chinasoft.backend.model.vo.TotalHeadCountVO;
+
+import java.util.List;
+import java.util.Map;
 
 /**
 * @author 皎皎
@@ -9,6 +13,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
 * @createDate 2024-04-10 17:56:36
 */
 public interface TotalHeadcountService extends IService<TotalHeadcount> {
-
-    Integer getTotalCount();
+    List<TotalHeadCountVO> getTotalCountArrangeByDate();
 }

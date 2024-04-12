@@ -1,6 +1,10 @@
 package com.chinasoft.backend.service;
 
+import com.chinasoft.backend.model.request.AddRouteRequest;
+import com.chinasoft.backend.model.request.RecommendationRequest;
 import com.chinasoft.backend.model.vo.RouteVO;
+
+import java.util.List;
 
 /**
  * @author 皎皎
@@ -12,7 +16,7 @@ public interface RecommService {
     /**
      * 根据名称 简介 类型 查询各种设施
      */
-    RouteVO getRecommendation(Integer routeId);
+    List<RouteVO> getRecommendation(RecommendationRequest recommendationRequest);
 
     RouteVO sortByVisit();
 
@@ -20,4 +24,6 @@ public interface RecommService {
 
     
     RouteVO sortCrowingLevel();
+
+    List<RouteVO> addRoute(AddRouteRequest addRouteRequest);
 }

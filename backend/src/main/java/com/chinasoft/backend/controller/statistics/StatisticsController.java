@@ -6,10 +6,8 @@ import com.chinasoft.backend.model.entity.Route;
 import com.chinasoft.backend.model.vo.FacilityHeadCountVO;
 import com.chinasoft.backend.model.vo.CrowingTimeCountVO;
 import com.chinasoft.backend.model.vo.FacilityVisitCountVO;
-import com.chinasoft.backend.service.MqttService;
-import com.chinasoft.backend.service.CrowdingLevelService;
-import com.chinasoft.backend.service.RouteService;
-import com.chinasoft.backend.service.VisitService;
+import com.chinasoft.backend.model.vo.TotalHeadCountVO;
+import com.chinasoft.backend.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.query.Param;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/statistics")
@@ -33,6 +32,9 @@ public class StatisticsController {
 
     @Autowired
     CrowdingLevelService crowdingLevelService;
+
+    @Autowired
+    TotalHeadcountService totalHeadcountService;
 
     /**
      * 统计推荐路线使用次数
@@ -91,6 +93,22 @@ public class StatisticsController {
     }
 
     /**
+     * 按日期返回日期当天的游玩总人数
+     *
+     * @param
+     * @return
+     */
+    @GetMapping("/headCount/totalArrangeByDate")
+    public BaseResponse<List<TotalHeadCountVO>> getTotalCountArrangeByDate() {
+
+        // 查询数据库
+        List<TotalHeadCountVO> data = totalHeadcountService.getTotalCountArrangeByDate();
+
+        // 返回响应
+        return ResultUtils.success(data);
+    }
+
+    /**
      * 按设施id返回当前的今日游玩总人数
      *
      * @param
@@ -105,5 +123,7 @@ public class StatisticsController {
         // 返回响应
         return ResultUtils.success(data);
     }
+
+
 
 }

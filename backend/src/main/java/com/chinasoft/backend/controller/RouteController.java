@@ -5,13 +5,20 @@ import com.chinasoft.backend.common.ErrorCode;
 import com.chinasoft.backend.common.ResultUtils;
 import com.chinasoft.backend.exception.BusinessException;
 import com.chinasoft.backend.model.entity.Route;
+import com.chinasoft.backend.model.request.AddRouteRequest;
+import com.chinasoft.backend.model.request.AmusementFilterRequest;
+import com.chinasoft.backend.model.request.RecommendationRequest;
 import com.chinasoft.backend.model.vo.RouteVO;
 import com.chinasoft.backend.service.RecommService;
 import com.chinasoft.backend.service.RouteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.query.Param;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 public class RouteController {
@@ -25,14 +32,15 @@ public class RouteController {
     /**
      * 根据名称 简介 类型 查询各种设施
      */
-    @GetMapping("/recommendation")
-    public BaseResponse<RouteVO> getRecommendation(@Param("id") Integer routeId) {
-        if (routeId == null) {
+    @PostMapping("/recommendation")
+    public BaseResponse<List<RouteVO>> getRecommendation(@RequestBody RecommendationRequest recommendationRequest) {
+        if (recommendationRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
 
+
         // 查询数据库
-        RouteVO data = recommService.getRecommendation(routeId);
+        List<RouteVO> data = recommService.getRecommendation(recommendationRequest);
 
         // 返回响应
         return ResultUtils.success(data);
@@ -91,6 +99,22 @@ public class RouteController {
     public BaseResponse<RouteVO> sortCrowingLevel() {
         // 查询数据库
         RouteVO data = recommService.sortCrowingLevel();
+
+        // 返回响应
+        return ResultUtils.success(data);
+    }
+
+    /**
+     * 添加新路线
+     */
+    @PostMapping("/recommendation/addRoute")
+    public BaseResponse<List<RouteVO>> addRoute(@RequestBody AddRouteRequest addRouteRequest){
+        if (addRouteRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+
+        // 查询数据库
+        List<RouteVO> data = recommService.addRoute(addRouteRequest);
 
         // 返回响应
         return ResultUtils.success(data);
