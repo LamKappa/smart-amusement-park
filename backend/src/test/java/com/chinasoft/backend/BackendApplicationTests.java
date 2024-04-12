@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.chinasoft.backend.mapper.CrowdingLevelMapper;
 import com.chinasoft.backend.mapper.VisitMapper;
 import com.chinasoft.backend.model.entity.*;
+import com.chinasoft.backend.model.request.AmusementFilterRequest;
+import com.chinasoft.backend.model.vo.AmusementFacilityVO;
 import com.chinasoft.backend.model.vo.CrowingTimeCountVO;
 import com.chinasoft.backend.service.*;
 import org.junit.jupiter.api.Test;
@@ -211,7 +213,14 @@ class BackendApplicationTests {
 
     @Test
     public void testVisit() {
-        List<Visit> list = visitService.list();
-        System.out.println(list);
+        // List<Visit> list = visitService.list();
+        // System.out.println(list);
+
+        AmusementFilterRequest amusementFilterRequest = new AmusementFilterRequest();
+        List<AmusementFacilityVO> allFacilities = amusementFacilityService.getAmusementFacility(amusementFilterRequest);
+
+        System.out.println("allFacilities = " + allFacilities);
     }
+    
+
 }

@@ -17,4 +17,7 @@ public interface RecommService {
     RouteVO sortByVisit();
 
     RouteVO sortBySubscribe();
+
+    
+    RouteVO sortCrowingLevel();
 }
