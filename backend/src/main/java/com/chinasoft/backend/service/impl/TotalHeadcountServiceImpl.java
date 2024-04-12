@@ -33,7 +33,7 @@ public class TotalHeadcountServiceImpl extends ServiceImpl<TotalHeadcountMapper,
         // 创建QueryWrapper对象并设置查询条件
         QueryWrapper<TotalHeadcount> queryWrapper = Wrappers.<TotalHeadcount>query()
                 .orderByDesc("create_time") // 按create_time降序排序
-                .last("LIMIT 30"); // 限制返回的记录数为30条
+                .last("LIMIT 10"); // 限制返回的记录数为10条
 
         // 执行查询并获取结果列表，每条记录都是一个Map，key为字段名，value为字段值
         List<TotalHeadcount> totalHeadcountList = this.baseMapper.selectList(queryWrapper);

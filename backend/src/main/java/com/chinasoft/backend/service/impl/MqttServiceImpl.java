@@ -89,6 +89,8 @@ public class MqttServiceImpl implements MqttService {
         if (facilityType == FacilityTypeConstant.AMUSEMENT_TYPE) {
             if (!amusementFacilityDataMap.containsKey(facilityId)) {
                 amusementFacilityDataMap.put(facilityId, new ArrayList<>());
+            }
+            if (!amusementFacilityHeadCountMap.containsKey(facilityId)) {
                 amusementFacilityHeadCountMap.put(facilityId, 0);
             }
             List<IoTData> ioTDataList = amusementFacilityDataMap.get(facilityId);
@@ -112,6 +114,11 @@ public class MqttServiceImpl implements MqttService {
             }
             List<IoTData> ioTDataList = baseFacilityDataMap.get(facilityId);
             ioTDataList.add(ioTData);
+        }else if(facilityType == FacilityTypeConstant.GATE_TYPE){
+            // 统计总游玩人数
+            if(ioTData.getDetection() == 1){
+                totalCount++;
+            }
         }
 
     }
@@ -242,17 +249,6 @@ public class MqttServiceImpl implements MqttService {
         }
         return crowdingLevelList;
     }
-
-    /**
-     * 统计总游玩人数
-     */
-
-    public void addTotalCount(IoTData ioTData) {
-        if(ioTData.getDetection() == 1 && ioTData.getFacilityType() == FacilityTypeConstant.GATE_TYPE){
-            totalCount++;
-        }
-    }
-
 
     /**
      * 存储总游玩人数
