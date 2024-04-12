@@ -101,22 +101,6 @@ public class VisitServiceImpl extends ServiceImpl<VisitMapper, Visit>
         return this.baseMapper.selectOne(Wrappers.<Visit>query().eq("id", visit.getId()));
     }
 
-    @Override
-    public Boolean deleteVisit(VisitAndSubscribeDeleteRequest visitAndSubscribeDeleteRequest) {
-        Long id = visitAndSubscribeDeleteRequest.getId();
-
-        // 设置is_deleted字段为1
-        UpdateWrapper<Visit> updateWrapper = new UpdateWrapper<>();
-        updateWrapper.eq("id", id).set("is_deleted", 1);
-
-        // 执行更新操作
-        int result = this.baseMapper.update(null, updateWrapper);
-
-        // 判断是否更新成功
-        return result > 0;
-
-    }
-
     /**
      * 统计每个设施的打卡次数
      */

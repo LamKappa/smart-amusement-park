@@ -45,9 +45,6 @@ public class SwiperServiceImpl implements SwiperService {
 
             Swiper swiper = new Swiper();
 
-            // 预设设施类型为游乐设施
-            Integer facilityType = 0;
-
             QueryWrapper<FacilityImage> queryWrapper2 = new QueryWrapper<>();
 
             // 设置查询条件

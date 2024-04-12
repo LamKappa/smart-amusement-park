@@ -1,7 +1,9 @@
 package com.chinasoft.backend.service;
 
 import com.chinasoft.backend.model.request.AddRouteRequest;
+import com.chinasoft.backend.model.request.DeleteRouteRequest;
 import com.chinasoft.backend.model.request.RecommendationRequest;
+import com.chinasoft.backend.model.request.UpdateRouteRequest;
 import com.chinasoft.backend.model.vo.RouteVO;
 
 import java.util.List;
@@ -26,4 +28,8 @@ public interface RecommService {
     RouteVO sortCrowingLevel();
 
     List<RouteVO> addRoute(AddRouteRequest addRouteRequest);
+
+    Boolean deleteRoute(DeleteRouteRequest deleteRouteRequest);
+
+    List<RouteVO> updateRoute(UpdateRouteRequest updateRouteRequest);
 }

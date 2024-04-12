@@ -4,6 +4,7 @@ import com.chinasoft.backend.common.BaseResponse;
 import com.chinasoft.backend.common.ErrorCode;
 import com.chinasoft.backend.common.ResultUtils;
 import com.chinasoft.backend.exception.BusinessException;
+import com.chinasoft.backend.model.entity.Route;
 import com.chinasoft.backend.model.entity.Subscribe;
 import com.chinasoft.backend.model.entity.Visit;
 import com.chinasoft.backend.model.request.VisitAndSubscribeAddRequest;
@@ -55,14 +56,20 @@ public class VisitAndSubscribeController {
     @PostMapping("/visit/delete")
     public BaseResponse<Boolean> deleteVisit(@RequestBody VisitAndSubscribeDeleteRequest visitAndSubscribeDeleteRequest) {
         if (visitAndSubscribeDeleteRequest == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
         }
 
-        // 查询数据库
-        Boolean data = visitService.deleteVisit(visitAndSubscribeDeleteRequest);
+        boolean res = false;
+        Visit visit = visitService.getById(visitAndSubscribeDeleteRequest.getId());
 
-        // 返回响应
-        return ResultUtils.success(data);
+        // 校验待取消的打卡是否存在
+        if (visit == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "待取消的打卡不存在");
+        }
+
+        res = visitService.removeById(visitAndSubscribeDeleteRequest.getId());
+
+        return ResultUtils.success(res);
     }
 
     /**
@@ -87,14 +94,20 @@ public class VisitAndSubscribeController {
     @PostMapping("/subscribe/delete")
     public BaseResponse<Boolean> deleteSubscribe(@RequestBody VisitAndSubscribeDeleteRequest visitAndSubscribeDeleteRequest) {
         if (visitAndSubscribeDeleteRequest == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
         }
 
-        // 查询数据库
-        Boolean data = subscribeService.deleteSubscribe(visitAndSubscribeDeleteRequest);
+        boolean res = false;
+        Subscribe subscribe = subscribeService.getById(visitAndSubscribeDeleteRequest.getId());
 
-        // 返回响应
-        return ResultUtils.success(data);
+        // 校验待取消的订阅是否存在
+        if (subscribe == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "待取消的订阅不存在");
+        }
+
+        res = subscribeService.removeById(visitAndSubscribeDeleteRequest.getId());
+
+        return ResultUtils.success(res);
     }
 
 //    /**

@@ -91,21 +91,6 @@ public class SubscribeServiceImpl extends ServiceImpl<SubscribeMapper, Subscribe
 
         return this.baseMapper.selectOne(Wrappers.<Subscribe>query().eq("id", subscribe.getId()));
     }
-
-    @Override
-    public Boolean deleteSubscribe(VisitAndSubscribeDeleteRequest visitAndSubscribeDeleteRequest) {
-        Long id = visitAndSubscribeDeleteRequest.getId();
-
-        // 设置is_deleted字段为1
-        UpdateWrapper<Subscribe> updateWrapper = new UpdateWrapper<>();
-        updateWrapper.eq("id", id).set("is_deleted", 1);
-
-        // 执行更新操作
-        int result = this.baseMapper.update(null, updateWrapper);
-
-        // 判断是否更新成功
-        return result > 0;
-    }
 }
 
 

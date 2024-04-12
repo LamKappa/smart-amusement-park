@@ -1,5 +1,6 @@
 package com.chinasoft.backend.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.chinasoft.backend.common.ErrorCode;
@@ -8,14 +9,14 @@ import com.chinasoft.backend.mapper.*;
 import com.chinasoft.backend.model.entity.AmusementFacility;
 import com.chinasoft.backend.model.entity.RecommRoute;
 import com.chinasoft.backend.model.entity.Route;
-import com.chinasoft.backend.model.request.AddRouteRequest;
-import com.chinasoft.backend.model.request.AmusementFilterRequest;
-import com.chinasoft.backend.model.request.RecommendationRequest;
+import com.chinasoft.backend.model.entity.Subscribe;
+import com.chinasoft.backend.model.request.*;
 import com.chinasoft.backend.model.vo.AmusementFacilityVO;
 import com.chinasoft.backend.model.vo.RouteVO;
 import com.chinasoft.backend.service.AmusementFacilityService;
 import com.chinasoft.backend.service.MapService;
 import com.chinasoft.backend.service.RecommService;
+import com.chinasoft.backend.service.RouteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -58,6 +59,9 @@ public class RecommServiceImpl implements RecommService {
 
     @Autowired
     MapService mapService;
+
+    @Autowired
+    RouteService routeService;
 
     @Override
     public List<RouteVO> getRecommendation(RecommendationRequest recommendationRequest) {
@@ -294,6 +298,45 @@ public class RecommServiceImpl implements RecommService {
 
         return routeVOList;
 
+    }
+
+    @Override
+    public Boolean deleteRoute(DeleteRouteRequest deleteRouteRequest) {
+        Long routeId = deleteRouteRequest.getId();
+
+        Route route = routeService.getById(routeId);
+
+        // 校验待删除的路线是否存在
+        if (route == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "待删除的路线不存在");
+        }
+
+        QueryWrapper<RecommRoute> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("route_id", routeId);
+
+        int deletedCount = recommRouteMapper.delete(queryWrapper);
+
+        Boolean res = routeService.removeById(routeId);
+
+        if(deletedCount > 0 && res){
+            return true;
+        }else{
+            return false;
+        }
+
+    }
+
+    @Override
+    public List<RouteVO> updateRoute(UpdateRouteRequest updateRouteRequest) {
+        // 删除原来的路线
+        DeleteRouteRequest deleteRouteRequest = new DeleteRouteRequest();
+        deleteRouteRequest.setId( updateRouteRequest.getId());
+        deleteRoute(deleteRouteRequest);
+
+        // 增加现在的路线
+        AddRouteRequest addRouteRequest = new AddRouteRequest();
+        BeanUtil.copyProperties(updateRouteRequest,addRouteRequest);
+        return addRoute(addRouteRequest);
     }
 
 }

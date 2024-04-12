@@ -14,5 +14,4 @@ public interface SubscribeService extends IService<Subscribe> {
 
     Subscribe addSubscribe(VisitAndSubscribeAddRequest visitAndSubscribeRequest);
 
-    Boolean deleteSubscribe(VisitAndSubscribeDeleteRequest visitAndSubscribeDeleteRequest);
 }

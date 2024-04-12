@@ -17,8 +17,5 @@ public interface VisitService extends IService<Visit> {
 
     Visit addVisit(VisitAndSubscribeAddRequest visitAndSubscribeAddRequest);
 
-    Boolean deleteVisit(VisitAndSubscribeDeleteRequest visitAndSubscribeDeleteRequest);
-
-    
     List<FacilityVisitCountVO> visitCount();
 }
