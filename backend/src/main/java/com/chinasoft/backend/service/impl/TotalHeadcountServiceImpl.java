@@ -1,10 +1,20 @@
 package com.chinasoft.backend.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.chinasoft.backend.model.entity.IoTData;
 import com.chinasoft.backend.model.entity.TotalHeadcount;
+import com.chinasoft.backend.model.vo.TotalHeadCountVO;
 import com.chinasoft.backend.service.TotalHeadcountService;
 import com.chinasoft.backend.mapper.TotalHeadcountMapper;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
 * @author 皎皎
@@ -14,41 +24,31 @@ import org.springframework.stereotype.Service;
 @Service
 public class TotalHeadcountServiceImpl extends ServiceImpl<TotalHeadcountMapper, TotalHeadcount>
     implements TotalHeadcountService{
+
     @Override
-    public Integer getTotalCount() {
-        return null;
+    public List<TotalHeadCountVO> getTotalCountArrangeByDate() {
+
+        List<TotalHeadCountVO> totalHeadCountVOList = new ArrayList<>();
+
+        // 创建QueryWrapper对象并设置查询条件
+        QueryWrapper<TotalHeadcount> queryWrapper = Wrappers.<TotalHeadcount>query()
+                .orderByDesc("create_time") // 按create_time降序排序
+                .last("LIMIT 30"); // 限制返回的记录数为30条
+
+        // 执行查询并获取结果列表，每条记录都是一个Map，key为字段名，value为字段值
+        List<TotalHeadcount> totalHeadcountList = this.baseMapper.selectList(queryWrapper);
+
+        for(TotalHeadcount totalHeadcount : totalHeadcountList){
+            TotalHeadCountVO totalHeadCountVO = new TotalHeadCountVO();
+            BeanUtil.copyProperties(totalHeadcount, totalHeadCountVO);
+            totalHeadCountVOList.add(totalHeadCountVO);
+        }
+
+
+        return totalHeadCountVOList;
     }
 
-//    private volatile int totalCount = 0; // 使用volatile确保多线程环境下的可见性
-//
-//    @Autowired
-//    private MqttClientService mqttClientService; // 假设你有一个MQTT客户端服务类来处理消息
-//
-//
-//    // 每当MQTT接收到消息时，调用此方法
-//    public void onMqttMessageReceived() {
-//        totalCount++;
-//    }
-//
-//    // 获取当前总数
-//    public Integer getTotalCount() {
-//        return totalCount;
-//    }
-//
-//    // 定时任务，每天23:59执行
-//    @Scheduled(cron = "0 59 23 * * ?") // 每天23:59:00执行
-//    public void updateDatabaseWithTotalCount() {
-//        totalHeadcountRepository.save(new TotalHeadcountEntity(totalCount)); // 假设你有一个对应的实体类
-//        // 重置totalCount，如果你希望每天从0开始计数
-//        totalCount = 0;
-//    }
-//
-//    @Override
-//    public Integer getTotalCount() {
-//        return null;
-//    }
 }
-
 
 
 
