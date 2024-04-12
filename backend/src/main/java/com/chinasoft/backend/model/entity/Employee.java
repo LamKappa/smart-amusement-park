@@ -1,11 +1,11 @@
 package com.chinasoft.backend.model.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
+
 import java.io.Serializable;
 import java.util.Date;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
 /**
@@ -14,6 +14,7 @@ import lombok.Data;
  */
 @TableName(value ="employee")
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Employee implements Serializable {
     /**
      * 用户id
@@ -32,14 +33,29 @@ public class Employee implements Serializable {
     private String password;
 
     /**
-     * 手机号
+     * 姓名
      */
-    private String phone;
+    private String name;
 
     /**
      * 用户头像
      */
     private String avatarUrl;
+
+    /**
+     * 性别
+     */
+    private String gender;
+
+    /**
+     * 年龄
+     */
+    private Integer age;
+
+    /**
+     * 手机号
+     */
+    private String phone;
 
     /**
      * 角色（0-普通员工，1-管理员）
@@ -59,6 +75,7 @@ public class Employee implements Serializable {
     /**
      * 逻辑删除
      */
+    @TableLogic
     private Integer isDeleted;
 
     @TableField(exist = false)

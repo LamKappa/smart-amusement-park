@@ -16,6 +16,8 @@ import com.chinasoft.backend.service.AmusementFacilityService;
 import com.chinasoft.backend.service.MapService;
 import com.chinasoft.backend.service.RecommService;
 import com.chinasoft.backend.service.RouteService;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -217,6 +219,10 @@ public class RecommServiceImpl implements RecommService {
         String imgUrl = addRouteRequest.getImgUrl();
         List<Integer> facilityIdList = addRouteRequest.getFacilityIdList();
 
+        if (ObjectUtils.anyNull(name, imgUrl, facilityIdList)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+        }
+
         // 校验路线名称有效性
         if (name.length() > MAX_ROUTE_NAME_LENGTH || name.length() < MIN_ROUTE_NAME_LENGTH) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "路线名称长度不在允许范围内");
@@ -304,6 +310,10 @@ public class RecommServiceImpl implements RecommService {
     public Boolean deleteRoute(DeleteRouteRequest deleteRouteRequest) {
         Long routeId = deleteRouteRequest.getId();
 
+        if (routeId == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+        }
+
         Route route = routeService.getById(routeId);
 
         // 校验待删除的路线是否存在
@@ -328,17 +338,23 @@ public class RecommServiceImpl implements RecommService {
 
     @Override
     public List<RouteVO> updateRoute(UpdateRouteRequest updateRouteRequest) {
+
         Long routeId = updateRouteRequest.getId();
+        String name =  updateRouteRequest.getName();
+        String imgUrl =  updateRouteRequest.getImgUrl();
+        List<Integer> facilityIdList =  updateRouteRequest.getFacilityIdList();
+
+
+        if (ObjectUtils.anyNull(routeId, name, imgUrl, facilityIdList)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+        }
+
         Route originalRoute = routeService.getById(routeId);
 
         // 校验待更新的路线是否存在
         if (originalRoute == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "待更新的路线不存在");
         }
-
-        String name =  updateRouteRequest.getName();
-        String imgUrl =  updateRouteRequest.getImgUrl();
-        List<Integer> facilityIdList =  updateRouteRequest.getFacilityIdList();
 
         // 校验路线名称有效性
         if (name.length() > MAX_ROUTE_NAME_LENGTH || name.length() < MIN_ROUTE_NAME_LENGTH) {

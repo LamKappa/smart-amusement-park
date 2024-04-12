@@ -12,6 +12,7 @@ import com.chinasoft.backend.model.entity.*;
 import com.chinasoft.backend.model.request.VisitAndSubscribeAddRequest;
 import com.chinasoft.backend.model.request.VisitAndSubscribeDeleteRequest;
 import com.chinasoft.backend.service.SubscribeService;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -41,6 +42,10 @@ public class SubscribeServiceImpl extends ServiceImpl<SubscribeMapper, Subscribe
         Long userId = Long.valueOf(visitAndSubscribeAddRequest.getUserId());
         Long facilityId = Long.valueOf(visitAndSubscribeAddRequest.getFacility().getFacilityId());
         Integer facilityType = visitAndSubscribeAddRequest.getFacility().getFacilityType();
+
+        if (ObjectUtils.anyNull(userId, facilityId, facilityType)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+        }
 
         // 检查是否已存在相同数据的记录
         QueryWrapper<Subscribe> queryWrapper = Wrappers.<Subscribe>query()

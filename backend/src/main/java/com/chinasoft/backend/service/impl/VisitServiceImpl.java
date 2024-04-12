@@ -14,6 +14,7 @@ import com.chinasoft.backend.model.request.VisitAndSubscribeDeleteRequest;
 import com.chinasoft.backend.model.vo.FacilityVisitCountVO;
 import com.chinasoft.backend.service.AmusementFacilityService;
 import com.chinasoft.backend.service.VisitService;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -49,6 +50,10 @@ public class VisitServiceImpl extends ServiceImpl<VisitMapper, Visit>
         Long userId = Long.valueOf(visitAndSubscribeAddRequest.getUserId());
         Long facilityId = Long.valueOf(visitAndSubscribeAddRequest.getFacility().getFacilityId());
         Integer facilityType = visitAndSubscribeAddRequest.getFacility().getFacilityType();
+
+        if (ObjectUtils.anyNull(userId, facilityId, facilityType)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+        }
 
         // 检查是否已存在相同数据的记录
         QueryWrapper<Visit> queryWrapper = Wrappers.<Visit>query()

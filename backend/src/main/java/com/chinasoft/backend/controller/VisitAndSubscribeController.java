@@ -13,6 +13,7 @@ import com.chinasoft.backend.model.request.VisitAndSubscribeGetRequest;
 import com.chinasoft.backend.service.SubscribeService;
 import com.chinasoft.backend.service.VisitAndSubscribeService;
 import com.chinasoft.backend.service.VisitService;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -55,7 +56,8 @@ public class VisitAndSubscribeController {
      */
     @PostMapping("/visit/delete")
     public BaseResponse<Boolean> deleteVisit(@RequestBody VisitAndSubscribeDeleteRequest visitAndSubscribeDeleteRequest) {
-        if (visitAndSubscribeDeleteRequest == null) {
+
+        if (ObjectUtils.anyNull(visitAndSubscribeDeleteRequest, visitAndSubscribeDeleteRequest.getId())) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
         }
 
@@ -93,7 +95,8 @@ public class VisitAndSubscribeController {
      */
     @PostMapping("/subscribe/delete")
     public BaseResponse<Boolean> deleteSubscribe(@RequestBody VisitAndSubscribeDeleteRequest visitAndSubscribeDeleteRequest) {
-        if (visitAndSubscribeDeleteRequest == null) {
+
+        if (ObjectUtils.anyNull(visitAndSubscribeDeleteRequest, visitAndSubscribeDeleteRequest.getId())) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
         }
 

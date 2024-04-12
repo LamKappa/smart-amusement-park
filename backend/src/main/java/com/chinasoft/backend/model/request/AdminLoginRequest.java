@@ -7,9 +7,9 @@ public class AdminLoginRequest {
     private static final long serialVersionUID = 3191241716373120793L;
 
     /**
-     * 手机号
+     * 账号（此处为工号）
      */
-    private String phone;
+    private String username;
 
     /**
      * 密码
