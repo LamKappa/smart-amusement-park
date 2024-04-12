@@ -221,6 +221,10 @@ class BackendApplicationTests {
 
         System.out.println("allFacilities = " + allFacilities);
     }
-    
 
+    @Test
+    public void testAmusementServiceGetById() {
+        AmusementFacility facility = amusementFacilityService.getById(13);
+        System.out.println("facility = " + facility);
+    }
 }

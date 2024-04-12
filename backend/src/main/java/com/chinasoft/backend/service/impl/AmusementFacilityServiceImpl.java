@@ -1,5 +1,6 @@
 package com.chinasoft.backend.service.impl;
 
+import cn.hutool.core.collection.CollectionUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.chinasoft.backend.common.ErrorCode;
@@ -13,6 +14,7 @@ import com.chinasoft.backend.mapper.FacilityImageMapper;
 import com.chinasoft.backend.model.entity.AmusementFacility;
 import com.chinasoft.backend.model.entity.FacilityImage;
 import com.chinasoft.backend.model.request.AmusementFacilityAddRequest;
+import com.chinasoft.backend.model.request.AmusementFacilityUpdateRequest;
 import com.chinasoft.backend.model.request.AmusementFilterRequest;
 import com.chinasoft.backend.model.request.FacilityIdType;
 import com.chinasoft.backend.model.vo.AmusementFacilityVO;
@@ -146,13 +148,17 @@ public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityM
             amusementFacilityAddRequest.setHeightUp(300);
         }
 
-        // 校验
-        validParams(amusementFacilityAddRequest, true);
 
         AmusementFacility amusementFacility = new AmusementFacility();
         BeanUtils.copyProperties(amusementFacilityAddRequest, amusementFacility);
 
-        amusementFacility.setStatus(0);
+
+        // 校验
+        validParams(amusementFacility, true);
+
+        if (amusementFacility.getStatus() == null) {
+            amusementFacility.setStatus(0);
+        }
         boolean result = this.save(amusementFacility);
         if (!result) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "添加失败");
@@ -160,12 +166,16 @@ public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityM
         long newFacilityId = amusementFacility.getId();
 
         List<String> imageUrlList = amusementFacilityAddRequest.getImageUrlList();
-        for (String url : imageUrlList) {
-            FacilityImage image = new FacilityImage();
-            image.setFacilityId(newFacilityId);
-            image.setImageUrl(url);
-            image.setFacilityType(FacilityTypeConstant.AMUSEMENT_TYPE);
-            facilityImageService.save(image);
+        if (CollectionUtil.isNotEmpty(imageUrlList)) {
+            List<FacilityImage> imageList = new ArrayList<>();
+            for (String url : imageUrlList) {
+                FacilityImage image = new FacilityImage();
+                image.setFacilityId(newFacilityId);
+                image.setImageUrl(url);
+                image.setFacilityType(FacilityTypeConstant.AMUSEMENT_TYPE);
+                imageList.add(image);
+            }
+            facilityImageService.saveBatch(imageList);
         }
 
         return newFacilityId;
@@ -173,10 +183,55 @@ public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityM
 
 
     /**
+     * 修改
+     */
+    @Override
+    public Boolean update(AmusementFacilityUpdateRequest amusementFacilityUpdateRequest) {
+
+        AmusementFacility amusementFacility = new AmusementFacility();
+        BeanUtils.copyProperties(amusementFacilityUpdateRequest, amusementFacility);
+        
+        // 判断是否存在
+        Long facilityId = amusementFacility.getId();
+        AmusementFacility oldFacility = this.getById(facilityId);
+        if (oldFacility == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "修改设施不存在");
+        }
+
+        // 校验
+        validParams(amusementFacility, false);
+        // 更新
+        boolean result = this.updateById(amusementFacility);
+
+        // 更新图片
+        List<String> imageUrlList = amusementFacilityUpdateRequest.getImageUrlList();
+        if (CollectionUtil.isNotEmpty(imageUrlList)) {
+            // 先批量删除
+            QueryWrapper<FacilityImage> deleteWrapper = new QueryWrapper<>();
+            deleteWrapper.eq("facility_id", facilityId)
+                    .eq("facility_type", FacilityTypeConstant.AMUSEMENT_TYPE);
+            facilityImageService.remove(deleteWrapper);
+
+            // 再批量添加图片
+            List<FacilityImage> imageList = new ArrayList<>();
+            for (String url : imageUrlList) {
+                FacilityImage image = new FacilityImage();
+                image.setFacilityId(facilityId);
+                image.setImageUrl(url);
+                image.setFacilityType(FacilityTypeConstant.AMUSEMENT_TYPE);
+                imageList.add(image);
+            }
+            facilityImageService.saveBatch(imageList);
+        }
+
+        return result;
+    }
+
+    /**
      * 参数校验
      */
     @Override
-    public void validParams(AmusementFacilityAddRequest amusementFacility, boolean add) {
+    public void validParams(AmusementFacility amusementFacility, boolean add) {
 
         String name = amusementFacility.getName();
         String introduction = amusementFacility.getIntroduction();
@@ -191,7 +246,6 @@ public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityM
         String instruction = amusementFacility.getInstruction();
         Integer heightLow = amusementFacility.getHeightLow();
         Integer heightUp = amusementFacility.getHeightUp();
-        List<String> imageUrlList = amusementFacility.getImageUrlList();
 
         if (amusementFacility == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -200,42 +254,39 @@ public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityM
         // 创建时，所有参数必须非空
         if (add) {
             if (StringUtils.isAnyBlank(name, introduction, longitude, latitude, type, crowdType, instruction) ||
-                    ObjectUtils.anyNull(perUserCount, expectTime, perUserCount, heightLow, heightUp, imageUrlList, startTime, closeTime)) {
+                    ObjectUtils.anyNull(perUserCount, expectTime, perUserCount, heightLow, heightUp, startTime, closeTime)) {
                 throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
             }
         }
 
         // 经度校验
-        if (!Pattern.matches(LONGITUDE_REG_EXPRESS, longitude) || !Pattern.matches(LATITUDE_REG_EXPRESS, latitude)) {
+        if (latitude != null && longitude != null && (!Pattern.matches(LONGITUDE_REG_EXPRESS, longitude) || !Pattern.matches(LATITUDE_REG_EXPRESS, latitude))) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "经纬度格式错误");
         }
 
         // 一次游玩人数和预计游玩时间校验
-        if (perUserCount <= 0 || perUserCount > 100) {
+        if (perUserCount != null && (perUserCount <= 0 || perUserCount > 100)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "一次游玩人数错误");
         }
-        if (expectTime <= 0 || expectTime > 100) {
+        if (expectTime != null && (expectTime <= 0 || expectTime > 100)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "预计游玩时间错误");
         }
 
         // type校验
-        if (!AmusementFacilityTypeEnum.existValidate(type)) {
+        if (type != null && !AmusementFacilityTypeEnum.existValidate(type)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "设施类型填写错误");
         }
 
         // crowingType校验
-        if (!CrowdTypeEnum.existValidate(crowdType)) {
+        if (crowdType != null && !CrowdTypeEnum.existValidate(crowdType)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "适合人群填写错误");
         }
 
         // 身高校验
-        if (heightLow < 0 || heightUp > 300 || heightLow >= heightUp) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "要求身高填写错误");
+        if (heightLow != null && heightUp != null) {
+            if (heightLow < 0 || heightUp > 300 || heightLow >= heightUp) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "要求身高填写错误");
+            }
         }
     }
-
 }
-
-
-
-
