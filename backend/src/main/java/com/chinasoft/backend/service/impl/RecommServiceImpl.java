@@ -1,10 +1,16 @@
 package com.chinasoft.backend.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.chinasoft.backend.common.ErrorCode;
+import com.chinasoft.backend.exception.BusinessException;
 import com.chinasoft.backend.mapper.*;
+import com.chinasoft.backend.model.entity.AmusementFacility;
 import com.chinasoft.backend.model.entity.RecommRoute;
 import com.chinasoft.backend.model.entity.Route;
+import com.chinasoft.backend.model.request.AddRouteRequest;
 import com.chinasoft.backend.model.request.AmusementFilterRequest;
+import com.chinasoft.backend.model.request.RecommendationRequest;
 import com.chinasoft.backend.model.vo.AmusementFacilityVO;
 import com.chinasoft.backend.model.vo.RouteVO;
 import com.chinasoft.backend.service.AmusementFacilityService;
@@ -14,6 +20,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author 皎皎
@@ -23,8 +31,13 @@ import java.util.*;
 @Service
 public class RecommServiceImpl implements RecommService {
 
+    private static final int MAX_ROUTE_NAME_LENGTH = 50;
+    private static final int MIN_ROUTE_NAME_LENGTH = 0;
     @Autowired
     private AmusementFacilityService amusementFacilityService;
+
+    @Autowired
+    private AmusementFacilityMapper amusementFacilityMapper;
 
     @Autowired
     FacilityImageMapper facilityImageMapper;
@@ -45,53 +58,46 @@ public class RecommServiceImpl implements RecommService {
     MapService mapService;
 
     @Override
-    public RouteVO getRecommendation(Integer routeId) {
+    public List<RouteVO> getRecommendation(RecommendationRequest recommendationRequest) {
+        QueryWrapper<Route> queryWrapper = new QueryWrapper<>();
 
-        // 查询推荐路线信息
-        Route route = routeMapper.selectById(routeId);
-
-        List<RecommRoute> recommRoutes = recommRouteMapper.selectList(Wrappers.<RecommRoute>query()
-                .eq("route_id", routeId)
-                .orderByDesc("priority"));
-
-        List<AmusementFacilityVO> swiperList = new ArrayList<>();
-        for (RecommRoute recommRoute : recommRoutes) {
-            // 根据facility_id查询设施信息
-//            AmusementFacility facility = amusementFacilityMapper.selectById(recommRoute.getFacilityId());
-            AmusementFilterRequest amusementFilterRequest = new AmusementFilterRequest();
-            amusementFilterRequest.setId(recommRoute.getFacilityId());
-
-            List<AmusementFacilityVO> facilities = amusementFacilityService.getAmusementFacility(amusementFilterRequest);
-            AmusementFacilityVO facility = facilities.get(0);
-
-            swiperList.add(facility);
-
-
-//            // 填入数据
-//            Swiper swiper = new Swiper();
-//            swiper.setName(facility.getName());
-//            swiper.setStartTime(facility.getStartTime());
-//            swiper.setCloseTime(facility.getCloseTime());
-
-            // 随机选择一张设施图片
-//            Integer facilityType = 0;
-//            List<FacilityImage> images = facilityImageMapper.selectList(Wrappers.<FacilityImage>query().eq("facility_type", facilityType)
-//                    .eq("facility_id", recommRoute.getFacilityId()));
-//
-//            Collections.shuffle(images);
-//            swiper.setImageUrl(images.get(0).getImageUrl());
-//
-//            swiperList.add(swiper);
+        if (recommendationRequest.getId() != null) {
+            queryWrapper.eq("id", recommendationRequest.getId());
         }
 
-        // 填入数据
-        RouteVO routeVO = new RouteVO();
-        routeVO.setId(route.getId());
-        routeVO.setName(route.getName());
-        routeVO.setImgUrl(route.getImgUrl());
-        routeVO.setSwiperList(swiperList);
+        if (recommendationRequest.getName() != null) {
+            queryWrapper.eq("name", recommendationRequest.getName());
+        }
 
-        return routeVO;
+        List<RouteVO> routeVOList = new ArrayList<>();
+        // 查询推荐路线信息
+        List<Route> routes = routeMapper.selectList(queryWrapper);
+
+        for(Route route : routes){
+            List<RecommRoute> recommRoutes = recommRouteMapper.selectList(Wrappers.<RecommRoute>query()
+                    .eq("route_id", route.getId())
+                    .orderByDesc("priority"));
+            List<AmusementFacilityVO> swiperList = new ArrayList<>();
+            for (RecommRoute recommRoute : recommRoutes) {
+                // 根据facility_id查询设施信息
+                AmusementFilterRequest amusementFilterRequest = new AmusementFilterRequest();
+                amusementFilterRequest.setId(recommRoute.getFacilityId());
+
+                List<AmusementFacilityVO> facilities = amusementFacilityService.getAmusementFacility(amusementFilterRequest);
+                AmusementFacilityVO facility = facilities.get(0);
+
+                swiperList.add(facility);
+        }
+            RouteVO routeVO = new RouteVO();
+            routeVO.setId(route.getId());
+            routeVO.setName(route.getName());
+            routeVO.setImgUrl(route.getImgUrl());
+            routeVO.setSwiperList(swiperList);
+
+            routeVOList.add(routeVO);
+
+        }
+        return routeVOList;
     }
 
     @Override
@@ -200,6 +206,56 @@ public class RecommServiceImpl implements RecommService {
         routeVO.setSwiperList(swiperList);
 
         return routeVO;
+    }
+
+    @Override
+    public List<RouteVO> addRoute(AddRouteRequest addRouteRequest) {
+        String name = addRouteRequest.getName();
+        String imgUrl = addRouteRequest.getImgUrl();
+        List<Integer> facilityIdList = addRouteRequest.getFacilityIdList();
+
+        // 校验参数有效性
+        if (name.length() > MAX_ROUTE_NAME_LENGTH || name.length() < MIN_ROUTE_NAME_LENGTH) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "路线名称长度不在允许范围内");
+        }
+        if (!isValidUrl(imgUrl)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "路线图片URL格式不正确");
+        }
+
+        // 校验途径设施列表中的设施是否存在  
+        for (Integer facilityId : facilityIdList) {
+            if (amusementFacilityMapper.selectById(facilityId) == null) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "添加设施不存在");
+            }
+        }
+
+        Route route = new Route();
+        route.setName(name);
+        route.setImgUrl(imgUrl);
+        routeMapper.insert(route);
+
+        Long routeId = route.getId();
+
+        for(Integer facilityId : facilityIdList){
+            RecommRoute recommRoute = new RecommRoute();
+            recommRoute.setRouteId(routeId);
+            recommRoute.setFacilityId(Long.valueOf(facilityId));
+            recommRoute.setPriority(facilityIdList.indexOf(facilityId)+1);
+            recommRouteMapper.insert(recommRoute);
+        }
+
+        RecommendationRequest recommendationRequest = new RecommendationRequest();
+        recommendationRequest.setId(routeId);
+
+        return getRecommendation(recommendationRequest);
+    }
+
+    private boolean isValidUrl(String imgUrl) {
+        String regex = "^(http|https)://([a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}$";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(imgUrl);
+        boolean isValid = matcher.matches();
+        return isValid;
     }
 
 
