@@ -229,8 +229,13 @@ public class RestaurantFacilityServiceImpl extends ServiceImpl<RestaurantFacilit
         }
 
         // type校验
-        if (type != null && !RestaurantFacilityTypeEnum.existValidate(type)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "设施类型填写错误");
+        if (type != null) {
+            String[] split = type.split("/");
+            for (String s : split) {
+                if (!RestaurantFacilityTypeEnum.existValidate(s)) {
+                    throw new BusinessException(ErrorCode.PARAMS_ERROR, "设施类型填写错误");
+                }
+            }
         }
 
     }

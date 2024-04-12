@@ -6,7 +6,6 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.chinasoft.backend.common.ErrorCode;
 import com.chinasoft.backend.exception.BusinessException;
 import com.chinasoft.backend.mapper.*;
-import com.chinasoft.backend.model.entity.AmusementFacility;
 import com.chinasoft.backend.model.entity.RecommRoute;
 import com.chinasoft.backend.model.entity.Route;
 import com.chinasoft.backend.model.entity.Subscribe;
@@ -23,8 +22,6 @@ import org.springframework.stereotype.Service;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author 皎皎
@@ -79,7 +76,7 @@ public class RecommServiceImpl implements RecommService {
         // 查询推荐路线信息
         List<Route> routes = routeMapper.selectList(queryWrapper);
 
-        for(Route route : routes){
+        for (Route route : routes) {
             List<RecommRoute> recommRoutes = recommRouteMapper.selectList(Wrappers.<RecommRoute>query()
                     .eq("route_id", route.getId())
                     .orderByAsc("priority"));
@@ -93,7 +90,7 @@ public class RecommServiceImpl implements RecommService {
                 AmusementFacilityVO facility = facilities.get(0);
 
                 swiperList.add(facility);
-        }
+            }
             RouteVO routeVO = new RouteVO();
             routeVO.setId(route.getId());
             routeVO.setName(route.getName());
@@ -226,9 +223,12 @@ public class RecommServiceImpl implements RecommService {
         }
 
         // 判断url格式是否合法
-        if (!(imgUrl.matches("^(http|https)://.*$"))) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "URL格式不正确");
+        if (imgUrl != null) {
+            if (!(imgUrl.matches("^(http|https)://.*$"))) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "URL格式不正确");
+            }
         }
+
 
         // 发起HTTP请求检查url是否可访问
         try {
@@ -253,25 +253,25 @@ public class RecommServiceImpl implements RecommService {
         // 校验插入数据是否重复
         List<RouteVO> allRouteVOList = getRecommendation(new RecommendationRequest());
 
-        for(RouteVO existingRouteVO : allRouteVOList){
+        for (RouteVO existingRouteVO : allRouteVOList) {
             String existingName = existingRouteVO.getName();
             String existingImgUrl = existingRouteVO.getImgUrl();
             List<AmusementFacilityVO> existingSwiperList = existingRouteVO.getSwiperList();
             List<Integer> existingFacilityIdList = new ArrayList<>();
 
-            for(AmusementFacilityVO amusementFacilityVO : existingSwiperList){
+            for (AmusementFacilityVO amusementFacilityVO : existingSwiperList) {
                 existingFacilityIdList.add(Math.toIntExact(amusementFacilityVO.getId()));
             }
 
-            if(name.equals(existingName)){
+            if (name.equals(existingName)) {
                 throw new BusinessException(ErrorCode.PARAMS_ERROR, "名称重复");
             }
 
-            if(imgUrl.equals(existingImgUrl)){
+            if (imgUrl.equals(existingImgUrl)) {
                 throw new BusinessException(ErrorCode.PARAMS_ERROR, "图片重复");
             }
 
-            if(facilityIdList.equals(existingFacilityIdList)){
+            if (facilityIdList.equals(existingFacilityIdList)) {
                 throw new BusinessException(ErrorCode.PARAMS_ERROR, "途径设施重复");
             }
         }
@@ -283,11 +283,11 @@ public class RecommServiceImpl implements RecommService {
 
         Long routeId = route.getId();
 
-        for(Integer facilityId : facilityIdList){
+        for (Integer facilityId : facilityIdList) {
             RecommRoute recommRoute = new RecommRoute();
             recommRoute.setRouteId(routeId);
             recommRoute.setFacilityId(Long.valueOf(facilityId));
-            recommRoute.setPriority(facilityIdList.indexOf(facilityId)+1);
+            recommRoute.setPriority(facilityIdList.indexOf(facilityId) + 1);
             recommRouteMapper.insert(recommRoute);
         }
 

@@ -190,7 +190,7 @@ public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityM
 
         AmusementFacility amusementFacility = new AmusementFacility();
         BeanUtils.copyProperties(amusementFacilityUpdateRequest, amusementFacility);
-        
+
         // 判断是否存在
         Long facilityId = amusementFacility.getId();
         AmusementFacility oldFacility = this.getById(facilityId);
@@ -273,13 +273,24 @@ public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityM
         }
 
         // type校验
-        if (type != null && !AmusementFacilityTypeEnum.existValidate(type)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "设施类型填写错误");
+        if (type != null) {
+            String[] split = type.split("/");
+            for (String s : split) {
+                if (!AmusementFacilityTypeEnum.existValidate(s)) {
+                    throw new BusinessException(ErrorCode.PARAMS_ERROR, "设施类型填写错误");
+                }
+            }
         }
 
+
         // crowingType校验
-        if (crowdType != null && !CrowdTypeEnum.existValidate(crowdType)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "适合人群填写错误");
+        if (crowdType != null) {
+            String[] split = crowdType.split("/");
+            for (String s : split) {
+                if (!CrowdTypeEnum.existValidate(s)) {
+                    throw new BusinessException(ErrorCode.PARAMS_ERROR, "适合人群填写错误");
+                }
+            }
         }
 
         // 身高校验
