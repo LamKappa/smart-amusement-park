@@ -328,15 +328,101 @@ public class RecommServiceImpl implements RecommService {
 
     @Override
     public List<RouteVO> updateRoute(UpdateRouteRequest updateRouteRequest) {
-        // 删除原来的路线
-        DeleteRouteRequest deleteRouteRequest = new DeleteRouteRequest();
-        deleteRouteRequest.setId( updateRouteRequest.getId());
-        deleteRoute(deleteRouteRequest);
+        Long routeId = updateRouteRequest.getId();
+        Route originalRoute = routeService.getById(routeId);
 
-        // 增加现在的路线
-        AddRouteRequest addRouteRequest = new AddRouteRequest();
-        BeanUtil.copyProperties(updateRouteRequest,addRouteRequest);
-        return addRoute(addRouteRequest);
+        // 校验待更新的路线是否存在
+        if (originalRoute == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "待更新的路线不存在");
+        }
+
+        String name =  updateRouteRequest.getName();
+        String imgUrl =  updateRouteRequest.getImgUrl();
+        List<Integer> facilityIdList =  updateRouteRequest.getFacilityIdList();
+
+        // 校验路线名称有效性
+        if (name.length() > MAX_ROUTE_NAME_LENGTH || name.length() < MIN_ROUTE_NAME_LENGTH) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "路线名称长度不在允许范围内");
+        }
+
+        // 判断url格式是否合法
+        if (!(imgUrl.matches("^(http|https)://.*$"))) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "URL格式不正确");
+        }
+
+        // 发起HTTP请求检查url是否可访问
+        try {
+            URL obj = new URL(imgUrl);
+            HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+            con.setRequestMethod("GET");
+            int responseCode = con.getResponseCode();
+            if (responseCode != HttpURLConnection.HTTP_OK) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "URL不可访问");
+            }
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "URL不可访问");
+        }
+
+        // 校验途径设施列表中的设施是否存在
+        for (Integer facilityId : facilityIdList) {
+            if (amusementFacilityMapper.selectById(facilityId) == null) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "添加设施不存在");
+            }
+        }
+
+        // 校验插入数据是否重复
+        List<RouteVO> allRouteVOList = getRecommendation(new RecommendationRequest());
+
+        for(RouteVO existingRouteVO : allRouteVOList){
+            String existingName = existingRouteVO.getName();
+            String existingImgUrl = existingRouteVO.getImgUrl();
+            List<AmusementFacilityVO> existingSwiperList = existingRouteVO.getSwiperList();
+            List<Integer> existingFacilityIdList = new ArrayList<>();
+
+            for(AmusementFacilityVO amusementFacilityVO : existingSwiperList){
+                existingFacilityIdList.add(Math.toIntExact(amusementFacilityVO.getId()));
+            }
+
+            if(name.equals(existingName) && !(name.equals(originalRoute.getName()))){
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "名称重复");
+            }
+
+            if(imgUrl.equals(existingImgUrl) && !(imgUrl.equals(originalRoute.getImgUrl()))){
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "图片重复");
+            }
+
+            if(facilityIdList.equals(existingFacilityIdList) && !(facilityIdList.equals(updateRouteRequest.getFacilityIdList()))){
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "途径设施重复");
+            }
+        }
+
+        Route updateRoute = new Route();
+        updateRoute.setId(routeId);
+        updateRoute.setName(name);
+        updateRoute.setImgUrl(imgUrl);
+        routeMapper.updateById(updateRoute);
+
+        // 删除原有的路线途径设施记录
+        QueryWrapper<RecommRoute> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("route_id", routeId);
+        recommRouteMapper.delete(queryWrapper);
+
+
+        // 增加现在的路线途径设施记录
+        for(Integer facilityId : facilityIdList){
+            RecommRoute recommRoute = new RecommRoute();
+            recommRoute.setRouteId(routeId);
+            recommRoute.setFacilityId(Long.valueOf(facilityId));
+            recommRoute.setPriority(facilityIdList.indexOf(facilityId)+1);
+            recommRouteMapper.insert(recommRoute);
+        }
+
+        RecommendationRequest recommendationRequest = new RecommendationRequest();
+        recommendationRequest.setId(routeId);
+
+        List<RouteVO> routeVOList = getRecommendation(recommendationRequest);
+
+        return routeVOList;
     }
 
 }
