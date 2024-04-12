@@ -116,7 +116,7 @@ public class MqttServiceImpl implements MqttService {
             ioTDataList.add(ioTData);
         }else if(facilityType == FacilityTypeConstant.GATE_TYPE){
             // 统计总游玩人数
-            if(ioTData.getDetection() == 1){
+            if(detection == 1){
                 totalCount++;
             }
         }
