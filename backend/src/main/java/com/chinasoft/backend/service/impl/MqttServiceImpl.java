@@ -69,7 +69,7 @@ public class MqttServiceImpl implements MqttService {
     final int THRESHOLD_LOW = 0;
     final int THRESHOLD_MEDIUM = 30;
     final int THRESHOLD_HIGH = 60;
-    int night_threshold_hour = 18; // 假设夜晚开始时间为18点
+    int night_threshold_hour = 17; // 假设夜晚开始时间为18点
 
     @Autowired
     AmusementFacilityService amusementFacilityService;
