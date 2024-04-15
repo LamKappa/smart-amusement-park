@@ -20,4 +20,6 @@ public interface MqttService {
     Integer getTotalCountFromRedis();
 
     List<FacilityHeadCountVO> getFacilityCount();
+
+    void monitor();
 }

@@ -1,11 +1,15 @@
 package com.chinasoft.backend.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.chinasoft.backend.config.mqtt.MqttProperties;
 import com.chinasoft.backend.constant.FacilityTypeConstant;
 import com.chinasoft.backend.mapper.AmusementFacilityMapper;
-import com.chinasoft.backend.mapper.FacilityHeadcountMapper;
+import com.chinasoft.backend.mapper.CrowdingLevelMapper;
 import com.chinasoft.backend.mapper.TotalHeadcountMapper;
 import com.chinasoft.backend.model.entity.*;
 import com.chinasoft.backend.model.vo.FacilityHeadCountVO;
+import com.chinasoft.backend.mqtt.sendclient.Send_Client1;
 import com.chinasoft.backend.service.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,6 +61,14 @@ public class MqttServiceImpl implements MqttService {
      */
     private Map<Integer, Integer> amusementFacilityHeadCountMap = new HashMap<Integer, Integer>();
 
+    private String getRedisKey(Integer facilityId) {
+        return "facility_head_count:" + facilityId;
+    }
+
+    // 定义阈值和时间
+    int expect_wait_time_threshold = 60; // 假设阈值为60分钟
+    int night_threshold_hour = 18; // 假设夜晚开始时间为18点
+
     @Autowired
     AmusementFacilityService amusementFacilityService;
 
@@ -81,9 +93,14 @@ public class MqttServiceImpl implements MqttService {
     @Autowired
     private RedisTemplate redisTemplate;
 
-    private String getRedisKey(Integer facilityId) {
-        return "facility_head_count:" + facilityId;
-    }
+    @Autowired
+    private Send_Client1 client1;
+
+    @Autowired
+    MqttProperties mqttProperties;
+
+    @Autowired
+    private CrowdingLevelMapper crowdingLevelMapper;
 
     /**
      * 暂存IoT的数据
@@ -406,7 +423,7 @@ public class MqttServiceImpl implements MqttService {
     @Override
     public List<FacilityHeadCountVO> getFacilityCount() {
         List<FacilityHeadCountVO> facilityHeadCountList = new ArrayList<>();
-        // 假设你有一个方法来获取所有设施的ID列表
+        // 获取所有设施的ID列表
         List<Integer> facilityIds = amusementFacilityMapper.selectAllFacilityIds();
 
         for (Integer facilityId : facilityIds) {
@@ -429,5 +446,57 @@ public class MqttServiceImpl implements MqttService {
         return facilityHeadCountList;
     }
 
+    @Override
+    public void monitor() {
+        // 获取当前时间
+        Calendar current_time = Calendar.getInstance();
+        int current_hour = current_time.get(Calendar.HOUR_OF_DAY);
 
+        // 获取所有设施的id列表
+        List<Integer> facilityIds = amusementFacilityMapper.selectAllFacilityIds();
+
+        // 存放设施id和最新排队时间
+        Map<Long, Integer> latestExpectWaitTimes = new HashMap<>();
+
+        // 遍历每个facility_id
+        for (Integer facilityId : facilityIds) {
+            QueryWrapper<CrowdingLevel> queryWrapper = Wrappers.<CrowdingLevel>query()
+                    .eq("facility_type", FacilityTypeConstant.AMUSEMENT_TYPE)
+                    .eq("facility_id", facilityId)
+                    .orderByDesc("create_time"); // 按照create_time降序排序
+
+            // 获取最新的记录
+            CrowdingLevel latestCrowdingLevel = crowdingLevelMapper.selectOne(queryWrapper);
+
+            if (latestCrowdingLevel != null) {
+                latestExpectWaitTimes.put(latestCrowdingLevel.getFacilityId(), latestCrowdingLevel.getExpectWaitTime());
+            }
+        }
+
+        // 遍历获取到的最新expect_wait_time
+        for (Map.Entry<Long, Integer> entry : latestExpectWaitTimes.entrySet()) {
+            Long facilityId = entry.getKey();
+            Integer expectWaitTime = entry.getValue();
+
+            // 判断拥挤度
+            int crowded = expectWaitTime >= expect_wait_time_threshold ? 1 : 0;
+
+            // 判断是否为夜晚
+            int isNight = current_hour >= night_threshold_hour ? 1 : 0;
+
+            // 构造向音乐设备发送的消息
+
+
+            // 构造向灯光设备发送的消息
+
+
+            // 发布消息
+            try {
+//                client1.publish(false, mqttProperties.getDefaultTopic(), String.valueOf(musicMessage));
+//                client1.publish(false, mqttProperties.getDefaultTopic(), String.valueOf(lightMessage));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
 }

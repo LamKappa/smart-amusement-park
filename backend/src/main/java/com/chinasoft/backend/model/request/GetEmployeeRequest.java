@@ -8,6 +8,11 @@ import lombok.Data;
 public class GetEmployeeRequest {
 
     /**
+     * 人员id
+     */
+    private Long id;
+
+    /**
      * 姓名
      */
     private String name;

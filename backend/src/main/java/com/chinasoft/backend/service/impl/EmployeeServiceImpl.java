@@ -92,12 +92,16 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee>
     public List<Employee> getEmployee(GetEmployeeRequest getEmployeeRequest) {
         QueryWrapper<Employee> queryWrapper = new QueryWrapper<>();
 
+        if (getEmployeeRequest.getId() != null) {
+            queryWrapper.eq("id", getEmployeeRequest.getId());
+        }
+
         if (getEmployeeRequest.getName() != null && !getEmployeeRequest.getName().isEmpty()) {
-            queryWrapper.eq("name", getEmployeeRequest.getName());
+            queryWrapper.like("name", getEmployeeRequest.getName());
         }
 
         if (getEmployeeRequest.getGender() != null && !getEmployeeRequest.getGender().isEmpty()) {
-            queryWrapper.eq("gender", getEmployeeRequest.getGender());
+            queryWrapper.like("gender", getEmployeeRequest.getGender());
         }
 
         List<Employee> employeeList = this.baseMapper.selectList(queryWrapper);

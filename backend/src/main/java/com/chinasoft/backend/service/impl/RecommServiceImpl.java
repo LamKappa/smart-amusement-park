@@ -71,7 +71,7 @@ public class RecommServiceImpl implements RecommService {
         }
 
         if (recommendationRequest.getName() != null) {
-            queryWrapper.eq("name", recommendationRequest.getName());
+            queryWrapper.like("name", recommendationRequest.getName());
         }
 
         List<RouteVO> routeVOList = new ArrayList<>();

@@ -19,10 +19,13 @@ public class HandleIoTDataTask {
     // @Scheduled(cron = "0/10 * * * * ? ")
     public void handleIoTDataTask() {
         log.info("定时任务开始执行：{}", new Date());
-
         mqttService.handleIoTData();
+    }
 
-
+    @Scheduled(cron = "0 0/5 * * * ? ")
+    public void monitorTask() {
+        log.info("定时任务4开始执行：{}", new Date());
+        mqttService.monitor();
     }
 
     @Scheduled(cron = "0 59 23 * * ?")
