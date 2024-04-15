@@ -45,6 +45,16 @@ public class RestaurantVandSVO {
     private String latitude;
 
     /**
+     * 每个人的预期用餐时间
+     */
+    private Integer expectTime;
+
+    /**
+     * 最大容纳人数
+     */
+    private Integer maxCapacity;
+
+    /**
      * 设施类型（中式快餐、西式快餐、面点、饮品、小吃）
      */
     private String type;

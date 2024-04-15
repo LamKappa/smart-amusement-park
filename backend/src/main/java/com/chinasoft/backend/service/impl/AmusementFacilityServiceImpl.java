@@ -69,7 +69,7 @@ public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityM
 
         // 检查name是否非空
         if (amusementFilterRequest.getName() != null && !amusementFilterRequest.getName().isEmpty()) {
-            queryWrapper.eq("name", amusementFilterRequest.getName());
+            queryWrapper.like("name", amusementFilterRequest.getName());
         }
 
         // 检查type是否非空

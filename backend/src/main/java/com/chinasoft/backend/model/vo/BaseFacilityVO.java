@@ -31,6 +31,16 @@ public class BaseFacilityVO {
     private String latitude;
 
     /**
+     * 每个人的预期时间
+     */
+    private Integer expectTime;
+
+    /**
+     * 最大容纳人数
+     */
+    private Integer maxCapacity;
+
+    /**
      * 开放开始时间
      */
     private Date startTime;

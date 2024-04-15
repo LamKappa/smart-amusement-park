@@ -64,12 +64,12 @@ public class RestaurantFacilityServiceImpl extends ServiceImpl<RestaurantFacilit
 
         // 检查name是否非空
         if (restaurantFilterRequest.getName() != null && !restaurantFilterRequest.getName().isEmpty()) {
-            queryWrapper.eq("name", restaurantFilterRequest.getName());
+            queryWrapper.like("name", restaurantFilterRequest.getName());
         }
 
         // 检查type是否非空
         if (restaurantFilterRequest.getType() != null && !restaurantFilterRequest.getType().isEmpty()) {
-            queryWrapper.like("type", restaurantFilterRequest.getType());
+            queryWrapper.eq("type", restaurantFilterRequest.getType());
         }
 
         // 搜索图片

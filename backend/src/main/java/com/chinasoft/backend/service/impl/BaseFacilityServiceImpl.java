@@ -63,7 +63,7 @@ public class BaseFacilityServiceImpl extends ServiceImpl<BaseFacilityMapper, Bas
 
         // 检查name是否非空
         if (baseFilterRequest.getName() != null && !baseFilterRequest.getName().isEmpty()) {
-            queryWrapper.eq("name", baseFilterRequest.getName());
+            queryWrapper.like("name", baseFilterRequest.getName());
         }
 
         // 搜索图片
