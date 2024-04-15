@@ -165,10 +165,10 @@ public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityM
         }
         long newFacilityId = amusementFacility.getId();
 
-        List<String> imageUrlList = amusementFacilityAddRequest.getImageUrlList();
-        if (CollectionUtil.isNotEmpty(imageUrlList)) {
+        List<String> imageUrls = amusementFacilityAddRequest.getImageUrls();
+        if (CollectionUtil.isNotEmpty(imageUrls)) {
             List<FacilityImage> imageList = new ArrayList<>();
-            for (String url : imageUrlList) {
+            for (String url : imageUrls) {
                 FacilityImage image = new FacilityImage();
                 image.setFacilityId(newFacilityId);
                 image.setImageUrl(url);
@@ -204,8 +204,8 @@ public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityM
         boolean result = this.updateById(amusementFacility);
 
         // 更新图片
-        List<String> imageUrlList = amusementFacilityUpdateRequest.getImageUrlList();
-        if (CollectionUtil.isNotEmpty(imageUrlList)) {
+        List<String> imageUrls = amusementFacilityUpdateRequest.getImageUrls();
+        if (CollectionUtil.isNotEmpty(imageUrls)) {
             // 先批量删除
             QueryWrapper<FacilityImage> deleteWrapper = new QueryWrapper<>();
             deleteWrapper.eq("facility_id", facilityId)
@@ -214,7 +214,7 @@ public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityM
 
             // 再批量添加图片
             List<FacilityImage> imageList = new ArrayList<>();
-            for (String url : imageUrlList) {
+            for (String url : imageUrls) {
                 FacilityImage image = new FacilityImage();
                 image.setFacilityId(facilityId);
                 image.setImageUrl(url);
@@ -265,7 +265,7 @@ public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityM
         }
 
         // 一次游玩人数和预计游玩时间校验
-        if (perUserCount != null && (perUserCount <= 0 || perUserCount > 100)) {
+        if (perUserCount != null && (perUserCount <= 0 || perUserCount > 200)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "一次游玩人数错误");
         }
         if (expectTime != null && (expectTime <= 0 || expectTime > 100)) {

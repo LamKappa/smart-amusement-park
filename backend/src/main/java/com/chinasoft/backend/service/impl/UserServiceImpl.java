@@ -105,20 +105,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户手机号格式错误");
         }
 
+        // 账户不能重复
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("phone", phone);
+        long count = userMapper.selectCount(queryWrapper);
+        if (count > 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "手机号重复");
+        }
+
         Boolean res = smsService.validCode(phone, verifyCode);
         if (!res) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "验证码错误");
         }
 
         synchronized (phone.intern()) {
-            // 账户不能重复
-            QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("phone", phone);
-            long count = userMapper.selectCount(queryWrapper);
-            if (count > 0) {
-                throw new BusinessException(ErrorCode.PARAMS_ERROR, "手机号重复");
-            }
-            // 3. 插入数据
+            // 插入数据
             User user = new User();
             user.setPhone(phone);
             user.setUsername("user" + RandomUtil.randomNumbers(5));
@@ -169,7 +170,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Override
     public User loginByPhone(String phone, String verifyCode, HttpServletRequest request) {
-        // 1. 校验
+        // 校验
         if (StringUtils.isAnyBlank(phone, verifyCode)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
         }

@@ -126,10 +126,10 @@ public class BaseFacilityServiceImpl extends ServiceImpl<BaseFacilityMapper, Bas
         }
         long newFacilityId = baseFacility.getId();
 
-        List<String> imageUrlList = baseFacilityAddRequest.getImageUrlList();
-        if (CollectionUtil.isNotEmpty(imageUrlList)) {
+        List<String> imageUrls = baseFacilityAddRequest.getImageUrls();
+        if (CollectionUtil.isNotEmpty(imageUrls)) {
             List<FacilityImage> imageList = new ArrayList<>();
-            for (String url : imageUrlList) {
+            for (String url : imageUrls) {
                 FacilityImage image = new FacilityImage();
                 image.setFacilityId(newFacilityId);
                 image.setImageUrl(url);
@@ -161,8 +161,8 @@ public class BaseFacilityServiceImpl extends ServiceImpl<BaseFacilityMapper, Bas
         boolean result = this.updateById(baseFacility);
 
         // 更新图片
-        List<String> imageUrlList = baseFacilityUpdateRequest.getImageUrlList();
-        if (CollectionUtil.isNotEmpty(imageUrlList)) {
+        List<String> imageUrls = baseFacilityUpdateRequest.getImageUrls();
+        if (CollectionUtil.isNotEmpty(imageUrls)) {
             // 先批量删除
             QueryWrapper<FacilityImage> deleteWrapper = new QueryWrapper<>();
             deleteWrapper.eq("facility_id", facilityId)
@@ -171,7 +171,7 @@ public class BaseFacilityServiceImpl extends ServiceImpl<BaseFacilityMapper, Bas
 
             // 再批量添加图片
             List<FacilityImage> imageList = new ArrayList<>();
-            for (String url : imageUrlList) {
+            for (String url : imageUrls) {
                 FacilityImage image = new FacilityImage();
                 image.setFacilityId(facilityId);
                 image.setImageUrl(url);

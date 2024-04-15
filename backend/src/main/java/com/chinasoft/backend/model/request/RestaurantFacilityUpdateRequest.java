@@ -63,5 +63,5 @@ public class RestaurantFacilityUpdateRequest {
     /**
      * 设施照片列表
      */
-    private List<String> imageUrlList;
+    private List<String> imageUrls;
 }

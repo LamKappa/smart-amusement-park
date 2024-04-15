@@ -22,20 +22,26 @@ public class HandleIoTDataTask {
         mqttService.handleIoTData();
     }
 
+    /**
+     * 检查音乐和灯光如何调节
+     */
     @Scheduled(cron = "0/6 * * * * ? ")
     public void monitorTask() {
         log.info("定时任务4开始执行：{}", new Date());
         mqttService.monitor();
     }
 
+    /**
+     * 统计总人数
+     */
     @Scheduled(cron = "0 59 23 * * ?")
-    public void handleTotalHeadTask(){
+    public void handleTotalHeadTask() {
         log.info("定时任务2开始执行：{}", new Date());
         mqttService.handleTotalHeadCount();
     }
 
     @Scheduled(cron = "0 59 23 * * ?")
-    public void handleFacilityHeadTask(){
+    public void handleFacilityHeadTask() {
         log.info("定时任务3开始执行：{}", new Date());
         mqttService.handleFacilityHeadCount();
     }

@@ -58,5 +58,5 @@ public class BaseFacilityUpdateRequest {
     /**
      * 设施照片列表
      */
-    private List<String> imageUrlList;
+    private List<String> imageUrls;
 }

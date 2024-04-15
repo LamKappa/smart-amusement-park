@@ -132,10 +132,10 @@ public class RestaurantFacilityServiceImpl extends ServiceImpl<RestaurantFacilit
         }
         long newFacilityId = restaurantFacility.getId();
 
-        List<String> imageUrlList = restaurantFacilityAddRequest.getImageUrlList();
-        if (CollectionUtil.isNotEmpty(imageUrlList)) {
+        List<String> imageUrls = restaurantFacilityAddRequest.getImageUrls();
+        if (CollectionUtil.isNotEmpty(imageUrls)) {
             List<FacilityImage> imageList = new ArrayList<>();
-            for (String url : imageUrlList) {
+            for (String url : imageUrls) {
                 FacilityImage image = new FacilityImage();
                 image.setFacilityId(newFacilityId);
                 image.setImageUrl(url);
@@ -167,8 +167,8 @@ public class RestaurantFacilityServiceImpl extends ServiceImpl<RestaurantFacilit
         boolean result = this.updateById(restaurantFacility);
 
         // 更新图片
-        List<String> imageUrlList = restaurantFacilityUpdateRequest.getImageUrlList();
-        if (CollectionUtil.isNotEmpty(imageUrlList)) {
+        List<String> imageUrls = restaurantFacilityUpdateRequest.getImageUrls();
+        if (CollectionUtil.isNotEmpty(imageUrls)) {
             // 先批量删除
             QueryWrapper<FacilityImage> deleteWrapper = new QueryWrapper<>();
             deleteWrapper.eq("facility_id", facilityId)
@@ -177,7 +177,7 @@ public class RestaurantFacilityServiceImpl extends ServiceImpl<RestaurantFacilit
 
             // 再批量添加图片
             List<FacilityImage> imageList = new ArrayList<>();
-            for (String url : imageUrlList) {
+            for (String url : imageUrls) {
                 FacilityImage image = new FacilityImage();
                 image.setFacilityId(facilityId);
                 image.setImageUrl(url);

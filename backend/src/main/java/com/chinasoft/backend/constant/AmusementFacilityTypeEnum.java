@@ -3,6 +3,7 @@ package com.chinasoft.backend.constant;
 public enum AmusementFacilityTypeEnum {
     // 轨道、失重、水上、室内、旋转、鬼屋
     GUI_DAO("轨道"),
+    GUO_SHAN_CHE("过山车"),
     SHI_ZHONG("失重"),
     SHUI_SHANG("水上"),
     SHI_NEI("室内"),

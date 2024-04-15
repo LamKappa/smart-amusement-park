@@ -48,7 +48,7 @@ public class BaseFacilityAddRequest {
     /**
      * 设施照片列表
      */
-    private List<String> imageUrlList;
+    private List<String> imageUrls;
 
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;

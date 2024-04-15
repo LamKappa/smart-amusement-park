@@ -89,5 +89,5 @@ public class AmusementFacilityUpdateRequest {
     /**
      * 图片列表
      */
-    private List<String> imageUrlList;
+    private List<String> imageUrls;
 }
