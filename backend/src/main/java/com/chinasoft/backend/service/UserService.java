@@ -37,4 +37,14 @@ public interface UserService extends IService<User> {
      * 用户信息修改
      */
     User userUpdate(UserUpdateRequest userUpdateRequest, HttpServletRequest request);
+
+    /**
+     * 通过手机注册（验证码校验）
+     */
+    Long registerByPhone(String phone, String verifyCode);
+
+    /**
+     * 通过手机注册（验证码校验）
+     */
+    User loginByPhone(String phone, String verifyCode, HttpServletRequest request);
 }

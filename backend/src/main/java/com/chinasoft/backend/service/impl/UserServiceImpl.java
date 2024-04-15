@@ -9,6 +9,7 @@ import com.chinasoft.backend.exception.BusinessException;
 import com.chinasoft.backend.mapper.UserMapper;
 import com.chinasoft.backend.model.entity.User;
 import com.chinasoft.backend.model.request.user.UserUpdateRequest;
+import com.chinasoft.backend.service.SmsService;
 import com.chinasoft.backend.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -28,12 +29,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         implements UserService {
 
     // private static final String DEFAULT_AVATAR_URL = "https://leimo-picgo.oss-cn-chengdu.aliyuncs.com/picgoimg/leimo.png";
-    private static final String DEFAULT_AVATAR_URL = "https://avatars.githubusercontent.com/u/88019289?v=4";
+    private static final String DEFAULT_AVATAR_URL = "https://smart-amusement-park.oss-cn-chengdu.aliyuncs.com/lamkappa.bmp";
 
     private static final String SALT = "chinasoft";
 
     @Autowired
     private UserMapper userMapper;
+
+    @Autowired
+    SmsService smsService;
 
     /**
      * 用户注册
@@ -92,6 +96,42 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     }
 
+    /**
+     * 通过手机号注册
+     */
+    @Override
+    public Long registerByPhone(String phone, String verifyCode) {
+        if (!Pattern.matches("^1[3-9]\\d{9}$", phone)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户手机号格式错误");
+        }
+
+        Boolean res = smsService.validCode(phone, verifyCode);
+        if (!res) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "验证码错误");
+        }
+
+        synchronized (phone.intern()) {
+            // 账户不能重复
+            QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("phone", phone);
+            long count = userMapper.selectCount(queryWrapper);
+            if (count > 0) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "手机号重复");
+            }
+            // 3. 插入数据
+            User user = new User();
+            user.setPhone(phone);
+            user.setUsername("user" + RandomUtil.randomNumbers(5));
+            user.setAvatarUrl(DEFAULT_AVATAR_URL);
+
+            boolean saveResult = this.save(user);
+            if (!saveResult) {
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "注册失败，数据库错误");
+            }
+            return user.getId();
+        }
+    }
+
 
     /**
      * 用户登录
@@ -123,6 +163,34 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 脱敏
         user.setPassword(null);
         // 3. 记录用户的登录态
+        request.getSession().setAttribute(UserConstant.USER_LOGIN_STATE, user);
+        return user;
+    }
+
+    @Override
+    public User loginByPhone(String phone, String verifyCode, HttpServletRequest request) {
+        // 1. 校验
+        if (StringUtils.isAnyBlank(phone, verifyCode)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+        }
+        if (!Pattern.matches("^1[3-9]\\d{9}$", phone)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户手机号格式错误");
+        }
+
+        // 查询用户是否存在
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("phone", phone);
+        User user = userMapper.selectOne(queryWrapper);
+
+        // 短信验证码校验
+        Boolean res = smsService.validCode(phone, verifyCode);
+        if (!res) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "验证码错误");
+        }
+
+        // 脱敏
+        user.setPassword(null);
+        // 记录用户的登录态
         request.getSession().setAttribute(UserConstant.USER_LOGIN_STATE, user);
         return user;
     }

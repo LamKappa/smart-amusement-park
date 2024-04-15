@@ -8,18 +8,24 @@ import com.chinasoft.backend.model.entity.User;
 import com.chinasoft.backend.model.request.user.UserLoginRequest;
 import com.chinasoft.backend.model.request.user.UserRegisterRequest;
 import com.chinasoft.backend.model.request.user.UserUpdateRequest;
+import com.chinasoft.backend.service.SmsService;
 import com.chinasoft.backend.service.UserService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/user")
 public class UserController {
     @Autowired
     UserService userService;
+
+    @Autowired
+    SmsService smsService;
 
     private static final String DEFAULT_AVATAR_URL = "https://leimo-picgo.oss-cn-chengdu.aliyuncs.com/picgoimg/leimo.png";
 
@@ -51,6 +57,25 @@ public class UserController {
     }
 
     /**
+     * 通过手机注册（验证码校验）
+     */
+    @PostMapping("/registerByPhone")
+    public BaseResponse<Long> registerByPhone(@RequestBody Map<String, Object> requestMap) {
+        Map<String, Object> map = new HashMap<>();
+        String phone = requestMap.get("phone").toString();// 获取注册手机号码
+        String verifyCode = requestMap.get("code").toString();// 获取手机验证码
+
+        if (StringUtils.isAnyBlank(phone, verifyCode)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+        }
+
+        Long userId = userService.registerByPhone(phone, verifyCode);
+
+        return ResultUtils.success(userId);
+    }
+
+
+    /**
      * 用户登录
      */
     @PostMapping("/login")
@@ -64,6 +89,25 @@ public class UserController {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
         }
         User user = userService.userLogin(phone, password, request);
+        return ResultUtils.success(user);
+    }
+
+
+    /**
+     * 通过手机登录（验证码校验）
+     */
+    @PostMapping("/loginByPhone")
+    public BaseResponse loginByPhone(@RequestBody Map<String, Object> requestMap, HttpServletRequest request) {
+        Map<String, Object> map = new HashMap<>();
+        String phone = requestMap.get("phone").toString();// 获取注册手机号码
+        String verifyCode = requestMap.get("code").toString();// 获取手机验证码
+
+        if (StringUtils.isAnyBlank(phone, verifyCode)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+        }
+
+        User user = userService.loginByPhone(phone, verifyCode, request);
+
         return ResultUtils.success(user);
     }
 
@@ -102,4 +146,6 @@ public class UserController {
 
         return ResultUtils.success(user);
     }
+
+
 }

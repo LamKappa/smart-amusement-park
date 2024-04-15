@@ -44,6 +44,5 @@ public class CommonController {
         } catch (IOException e) {
             return ResultUtils.error(ErrorCode.SYSTEM_ERROR, "文件上传失败");
         }
-
     }
 }

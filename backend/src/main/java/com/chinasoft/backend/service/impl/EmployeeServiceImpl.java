@@ -7,7 +7,6 @@ import com.chinasoft.backend.common.ErrorCode;
 import com.chinasoft.backend.constant.EmployeeConstant;
 import com.chinasoft.backend.exception.BusinessException;
 import com.chinasoft.backend.mapper.EmployeeMapper;
-import com.chinasoft.backend.model.entity.AmusementFacility;
 import com.chinasoft.backend.model.entity.Employee;
 import com.chinasoft.backend.model.request.AddEmployeeRequest;
 import com.chinasoft.backend.model.request.GetEmployeeRequest;
@@ -15,7 +14,6 @@ import com.chinasoft.backend.model.request.UpdateEmployeeRequest;
 import com.chinasoft.backend.service.EmployeeService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
@@ -38,7 +36,8 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee>
 
     private static final Integer EMPLOYEE = 0;
 
-    private static final String DEFAULT_AVATAR_URL = "https://c-ssl.duitang.com/uploads/blog/202010/24/20201024225642_80be5.png";
+    private static final String DEFAULT_AVATAR_URL = "https://smart-amusement-park.oss-cn-chengdu.aliyuncs.com/lamkappa.bmp";
+
     private static final int MIN_NAME_LENGTH = 0;
 
     private static final int MAX_NAME_LENGTH = 20;
@@ -103,7 +102,7 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee>
 
         List<Employee> employeeList = this.baseMapper.selectList(queryWrapper);
 
-        for(Employee employee : employeeList){
+        for (Employee employee : employeeList) {
             employee.setPassword(null);
         }
 
@@ -130,7 +129,7 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee>
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "手机号格式错误");
         }
 
-        if(age < 18 || age > 65){
+        if (age < 18 || age > 65) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "年龄输入错误");
         }
 
@@ -141,15 +140,16 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee>
 
         QueryWrapper<Employee> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("phone", phone);
-        if(this.baseMapper.selectOne(queryWrapper) != null){
+        if (this.baseMapper.selectOne(queryWrapper) != null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "手机号重复");
         }
 
 
         Employee employee = new Employee();
-        BeanUtil.copyProperties(addEmployeeRequest,employee);
-
-        employee.setAvatarUrl(DEFAULT_AVATAR_URL);
+        BeanUtil.copyProperties(addEmployeeRequest, employee);
+        if (employee.getAvatarUrl() == null) {
+            employee.setAvatarUrl(DEFAULT_AVATAR_URL);
+        }
         employee.setRole(EMPLOYEE);
 
         this.baseMapper.insert(employee);
@@ -171,7 +171,7 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee>
         }
 
         Employee originalEmployee = this.baseMapper.selectById(id);
-        if(originalEmployee == null){
+        if (originalEmployee == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "待更新的人员不存在");
         }
 
@@ -183,7 +183,7 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee>
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "手机号格式错误");
         }
 
-        if(age < 18 || age > 65){
+        if (age < 18 || age > 65) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "年龄输入错误");
         }
 
@@ -194,7 +194,7 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee>
 
         QueryWrapper<Employee> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("phone", phone);
-        if(this.baseMapper.selectOne(queryWrapper) != null && !(phone.equals(originalEmployee.getPhone()))){
+        if (this.baseMapper.selectOne(queryWrapper) != null && !(phone.equals(originalEmployee.getPhone()))) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "手机号重复");
         }
 
