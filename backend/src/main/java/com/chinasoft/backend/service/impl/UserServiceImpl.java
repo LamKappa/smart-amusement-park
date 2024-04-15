@@ -76,7 +76,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             queryWrapper.eq("phone", phone);
             long count = userMapper.selectCount(queryWrapper);
             if (count > 0) {
-                throw new BusinessException(ErrorCode.PARAMS_ERROR, "手机号重复");
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "该手机号已注册");
             }
             // 2. 加密
             String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
