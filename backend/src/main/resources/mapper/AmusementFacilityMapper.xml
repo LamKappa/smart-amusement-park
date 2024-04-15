@@ -34,4 +34,7 @@
         is_deleted,instruction,height_low,
         height_up
     </sql>
+    <select id="selectAllFacilityIds" resultType="java.lang.Integer">
+        SELECT id FROM amusement_facility
+    </select>
 </mapper>

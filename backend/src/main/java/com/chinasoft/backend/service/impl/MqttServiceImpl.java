@@ -9,10 +9,13 @@ import com.chinasoft.backend.model.vo.FacilityHeadCountVO;
 import com.chinasoft.backend.service.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -47,6 +50,7 @@ public class MqttServiceImpl implements MqttService {
      * 暂存游乐设施的总人数
      */
     private Integer totalCount = 0;
+    private static final String TOTAL_COUNT_KEY = "totalCount";
 
     /**
      * 暂存各个设施的游玩人数
@@ -74,6 +78,13 @@ public class MqttServiceImpl implements MqttService {
     @Autowired
     FacilityHeadcountService facilityHeadcountService;
 
+    @Autowired
+    private RedisTemplate redisTemplate;
+
+    private String getRedisKey(Integer facilityId) {
+        return "facility_head_count:" + facilityId;
+    }
+
     /**
      * 暂存IoT的数据
      */
@@ -96,12 +107,21 @@ public class MqttServiceImpl implements MqttService {
             List<IoTData> ioTDataList = amusementFacilityDataMap.get(facilityId);
             ioTDataList.add(ioTData);
 
-            // 更新facilityId在amusementFacilityHeadCountMap中的计数
-            if(deviceId == 0 && detection == 1){
-                int currentCount = amusementFacilityHeadCountMap.get(facilityId);
-                amusementFacilityHeadCountMap.put(facilityId, currentCount + 1);
+            if(deviceId == 0){
+                String key = getRedisKey(facilityId);
+                ValueOperations<String, Integer> operations = redisTemplate.opsForValue();
+                if (operations.get(key) == null) {
+                    operations.set(key, 0);
+                }
+                // 更新facilityId在amusementFacilityHeadCountMap中的计数
+                if(detection == 1){
+//                int currentCount = amusementFacilityHeadCountMap.get(facilityId);
+//                amusementFacilityHeadCountMap.put(facilityId, currentCount + 1);
+                    Integer currentCount = operations.get(key);
+                    currentCount++;
+                    operations.set(key, currentCount);
+                }
             }
-
         } else if (facilityType == FacilityTypeConstant.RESTAURANT_TYPE) {
             if (!restaurantFacilityDataMap.containsKey(facilityId)) {
                 restaurantFacilityDataMap.put(facilityId, new ArrayList<>());
@@ -116,8 +136,17 @@ public class MqttServiceImpl implements MqttService {
             ioTDataList.add(ioTData);
         }else if(facilityType == FacilityTypeConstant.GATE_TYPE){
             // 统计总游玩人数
-            if(detection == 1){
-                totalCount++;
+//            if(detection == 1){
+//                totalCount++;
+//            }
+            ValueOperations<String, Integer> operations = redisTemplate.opsForValue();
+            if (getTotalCountFromRedis() == null) {
+                operations.set(TOTAL_COUNT_KEY, 0);
+            }
+            if (detection == 1) {
+                Integer currentTotalCount = getTotalCountFromRedis();
+                currentTotalCount++;
+                operations.set(TOTAL_COUNT_KEY, currentTotalCount);
             }
         }
 
@@ -253,36 +282,86 @@ public class MqttServiceImpl implements MqttService {
     /**
      * 存储总游玩人数
      */
+//    public void handleTotalHeadCount(){
+//        TotalHeadcount totalHeadcount = new TotalHeadcount();
+//        totalHeadcount.setCount(totalCount);
+//        totalHeadcountMapper.insert(totalHeadcount);
+//        if(totalHeadcount.getId() > 0){
+//            totalCount = 0;
+//        }else{
+//            log.info("定时任务2执行失败：{}，统计值为：{}", new Date(), totalCount);
+//        }
+//    }
     public void handleTotalHeadCount(){
+        Integer totalCountFromRedis = getTotalCountFromRedis();
         TotalHeadcount totalHeadcount = new TotalHeadcount();
-        totalHeadcount.setCount(totalCount);
-        totalHeadcountMapper.insert(totalHeadcount);
-        if(totalHeadcount.getId() > 0){
-            totalCount = 0;
+        if (totalCountFromRedis == null){
+            totalHeadcount.setCount(0);
         }else{
-            log.info("定时任务2执行失败：{}，统计值为：{}", new Date(), totalCount);
+            totalHeadcount.setCount(totalCountFromRedis);
+        }
+        totalHeadcountMapper.insert(totalHeadcount);
+        if (totalHeadcount.getId() > 0) {
+            // 如果插入成功，将Redis中的totalCount重置为0
+            ValueOperations<String, Integer> operations = redisTemplate.opsForValue();
+            operations.set(TOTAL_COUNT_KEY, 0);
+        } else {
+            log.info("定时任务2执行失败：{}，统计值为：{}", new Date(), totalCountFromRedis);
         }
     }
 
     /**
      * 存储各个设施的游玩人数
      */
+//    public void handleFacilityHeadCount() {
+//        List<FacilityHeadcount> facilityHeadcountList = new ArrayList<>();
+//        for (Map.Entry<Integer, Integer> entry : amusementFacilityHeadCountMap.entrySet()) {
+//            Integer facilityId = entry.getKey();
+//            int headCount = entry.getValue();
+//
+//            FacilityHeadcount facilityHeadcount = new FacilityHeadcount();
+//            facilityHeadcount.setFacilityId(Long.valueOf(facilityId));
+//            facilityHeadcount.setCount(headCount);
+//
+//            facilityHeadcountList.add(facilityHeadcount);
+//        }
+//
+//        boolean isSuccess = facilityHeadcountService.saveBatch(facilityHeadcountList);
+//        if(isSuccess){
+//            amusementFacilityHeadCountMap = new HashMap<>();
+//        }else{
+//            log.info("定时任务3执行失败：{}", new Date());
+//        }
+//    }
+
     public void handleFacilityHeadCount() {
-        List<FacilityHeadcount> facilityHeadcountList = new ArrayList<>();
-        for (Map.Entry<Integer, Integer> entry : amusementFacilityHeadCountMap.entrySet()) {
-            Integer facilityId = entry.getKey();
-            int headCount = entry.getValue();
+        // 从数据库中获取所有设施ID
+        List<Integer> facilityIds = amusementFacilityMapper.selectAllFacilityIds();
 
-            FacilityHeadcount facilityHeadcount = new FacilityHeadcount();
-            facilityHeadcount.setFacilityId(Long.valueOf(facilityId));
-            facilityHeadcount.setCount(headCount);
+        // 从Redis中获取每个设施的计数
+        List<FacilityHeadcount> facilityHeadcountList = facilityIds.stream()
+                .map(facilityId -> {
+                    String key = getRedisKey(facilityId);
+                    Integer count = (Integer) redisTemplate.opsForValue().get(key);
+                    FacilityHeadcount facilityHeadcount = new FacilityHeadcount();
+                    facilityHeadcount.setFacilityId(Long.valueOf(facilityId));
 
-            facilityHeadcountList.add(facilityHeadcount);
-        }
+                    // 如果Redis中没有计数，count将为null，你可能需要处理这种情况
+                    if (count == null) {
+                        facilityHeadcount.setCount(0);
+                    }else{
+                        facilityHeadcount.setCount(count);
+                    }
+
+                    return facilityHeadcount;
+                })
+                .collect(Collectors.toList());
 
         boolean isSuccess = facilityHeadcountService.saveBatch(facilityHeadcountList);
         if(isSuccess){
-            amusementFacilityHeadCountMap = new HashMap<>();
+            for (Integer facilityId : facilityIds) {
+                redisTemplate.opsForValue().set(getRedisKey(facilityId), 0);
+            }
         }else{
             log.info("定时任务3执行失败：{}", new Date());
         }
@@ -292,28 +371,59 @@ public class MqttServiceImpl implements MqttService {
      * 返回总游玩人数
      */
     @Override
-    public Integer getTotalCount() {
-        return totalCount;
+//    public Integer getTotalCount() {
+//        return totalCount;
+//    }
+
+    public Integer getTotalCountFromRedis() {
+        ValueOperations<String, Integer> operations = redisTemplate.opsForValue();
+        return operations.get(TOTAL_COUNT_KEY);
     }
 
     /**
      * 返回总游玩人数
      */
+//    @Override
+//    public  List<FacilityHeadCountVO> getFacilityCount() {
+//        List<FacilityHeadCountVO> facilityHeadCountList = new ArrayList<>();
+//        for (Map.Entry<Integer, Integer> entry : amusementFacilityHeadCountMap.entrySet()) {
+//            Integer facilityId = entry.getKey();
+//            int headCount = entry.getValue();
+//
+//            AmusementFacility amusementFacility = amusementFacilityMapper.selectById(facilityId);
+//
+//            FacilityHeadCountVO facilityHeadCountVO = new FacilityHeadCountVO();
+//            facilityHeadCountVO.setFacilityId(Long.valueOf(facilityId));
+//            facilityHeadCountVO.setHeadCount(headCount);
+//            facilityHeadCountVO.setFacilityName(amusementFacility.getName());
+//
+//            facilityHeadCountList.add(facilityHeadCountVO);
+//        }
+//
+//        return facilityHeadCountList;
+//    }
+
     @Override
-    public  List<FacilityHeadCountVO> getFacilityCount() {
+    public List<FacilityHeadCountVO> getFacilityCount() {
         List<FacilityHeadCountVO> facilityHeadCountList = new ArrayList<>();
-        for (Map.Entry<Integer, Integer> entry : amusementFacilityHeadCountMap.entrySet()) {
-            Integer facilityId = entry.getKey();
-            int headCount = entry.getValue();
+        // 假设你有一个方法来获取所有设施的ID列表
+        List<Integer> facilityIds = amusementFacilityMapper.selectAllFacilityIds();
 
-            AmusementFacility amusementFacility = amusementFacilityMapper.selectById(facilityId);
+        for (Integer facilityId : facilityIds) {
+            String key = getRedisKey(facilityId);
+            ValueOperations<String, Integer> operations = redisTemplate.opsForValue();
+            Integer headCount = operations.get(key);
 
-            FacilityHeadCountVO facilityHeadCountVO = new FacilityHeadCountVO();
-            facilityHeadCountVO.setFacilityId(Long.valueOf(facilityId));
-            facilityHeadCountVO.setHeadCount(headCount);
-            facilityHeadCountVO.setFacilityName(amusementFacility.getName());
+            if (headCount != null && headCount != 0) {
+                AmusementFacility amusementFacility = amusementFacilityMapper.selectById(facilityId);
 
-            facilityHeadCountList.add(facilityHeadCountVO);
+                FacilityHeadCountVO facilityHeadCountVO = new FacilityHeadCountVO();
+                facilityHeadCountVO.setFacilityId(Long.valueOf(facilityId));
+                facilityHeadCountVO.setHeadCount(headCount);
+                facilityHeadCountVO.setFacilityName(amusementFacility.getName());
+
+                facilityHeadCountList.add(facilityHeadCountVO);
+            }
         }
 
         return facilityHeadCountList;

@@ -83,10 +83,10 @@ public class StatisticsController {
      * @return
      */
     @GetMapping("/headCount/total")
-    public BaseResponse<Integer> getTotalCount() {
+    public BaseResponse<Integer> getTotalCountFromRedis() {
 
         // 查询数据库
-        Integer data = mqttService.getTotalCount();
+        Integer data = mqttService.getTotalCountFromRedis();
 
         // 返回响应
         return ResultUtils.success(data);

@@ -4,6 +4,8 @@ import com.chinasoft.backend.model.entity.AmusementFacility;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 
+import java.util.List;
+
 /**
 * @author 皎皎
 * @description 针对表【amusement_facility】的数据库操作Mapper
@@ -12,7 +14,7 @@ import org.apache.ibatis.annotations.Mapper;
 */
 @Mapper
 public interface AmusementFacilityMapper extends BaseMapper<AmusementFacility> {
-
+    List<Integer> selectAllFacilityIds();
 }
 
 
