@@ -22,7 +22,7 @@ public class HandleIoTDataTask {
         mqttService.handleIoTData();
     }
 
-    @Scheduled(cron = "0 0/5 * * * ? ")
+    @Scheduled(cron = "0/6 * * * * ? ")
     public void monitorTask() {
         log.info("定时任务4开始执行：{}", new Date());
         mqttService.monitor();

@@ -66,7 +66,9 @@ public class MqttServiceImpl implements MqttService {
     }
 
     // 定义阈值和时间
-    int expect_wait_time_threshold = 60; // 假设阈值为60分钟
+    final int THRESHOLD_LOW = 0;
+    final int THRESHOLD_MEDIUM = 30;
+    final int THRESHOLD_HIGH = 60;
     int night_threshold_hour = 18; // 假设夜晚开始时间为18点
 
     @Autowired
@@ -466,7 +468,7 @@ public class MqttServiceImpl implements MqttService {
                     .orderByDesc("create_time"); // 按照create_time降序排序
 
             // 获取最新的记录
-            CrowdingLevel latestCrowdingLevel = crowdingLevelMapper.selectOne(queryWrapper);
+            CrowdingLevel latestCrowdingLevel = crowdingLevelMapper.selectList(queryWrapper).get(0);
 
             if (latestCrowdingLevel != null) {
                 latestExpectWaitTimes.put(latestCrowdingLevel.getFacilityId(), latestCrowdingLevel.getExpectWaitTime());
@@ -478,22 +480,39 @@ public class MqttServiceImpl implements MqttService {
             Long facilityId = entry.getKey();
             Integer expectWaitTime = entry.getValue();
 
-            // 判断拥挤度
-            int crowded = expectWaitTime >= expect_wait_time_threshold ? 1 : 0;
+            // 初始化消息值
+            Integer music = 0;
+            Integer light = 0;
 
-            // 判断是否为夜晚
-            int isNight = current_hour >= night_threshold_hour ? 1 : 0;
+            // 根据拥挤度设置music
+            if (expectWaitTime > THRESHOLD_LOW && expectWaitTime < THRESHOLD_MEDIUM) {
+                music = 1;
+            } else if (expectWaitTime >= THRESHOLD_MEDIUM && expectWaitTime < THRESHOLD_HIGH) {
+                music = 2;
+            } else if (expectWaitTime >= THRESHOLD_HIGH) {
+                music = 3;
+            }
 
-            // 构造向音乐设备发送的消息
+            // 如果是夜晚并且需要设置light
+            if (current_hour >= night_threshold_hour) {
+                // 根据拥挤度设置light
+                if (expectWaitTime > THRESHOLD_LOW && expectWaitTime < THRESHOLD_MEDIUM) {
+                    light = 1;
+                } else if (expectWaitTime >= THRESHOLD_MEDIUM && expectWaitTime < THRESHOLD_HIGH) {
+                    light = 2;
+                } else if (expectWaitTime >= THRESHOLD_HIGH) {
+                    light = 3;
+                }
+            }
 
-
-            // 构造向灯光设备发送的消息
-
+            // 设置MQTT主题
+            String musicTopic = "M/" + facilityId;
+            String lightTopic = "L/" + facilityId;
 
             // 发布消息
             try {
-//                client1.publish(false, mqttProperties.getDefaultTopic(), String.valueOf(musicMessage));
-//                client1.publish(false, mqttProperties.getDefaultTopic(), String.valueOf(lightMessage));
+                client1.publish(false, musicTopic, String.valueOf(music));
+                client1.publish(false, lightTopic, String.valueOf(light));
             } catch (Exception e) {
                 e.printStackTrace();
             }
