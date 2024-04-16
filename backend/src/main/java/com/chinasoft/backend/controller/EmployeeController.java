@@ -3,12 +3,8 @@ package com.chinasoft.backend.controller;
 import com.chinasoft.backend.common.BaseResponse;
 import com.chinasoft.backend.common.ErrorCode;
 import com.chinasoft.backend.common.ResultUtils;
-import com.chinasoft.backend.constant.FacilityTypeConstant;
 import com.chinasoft.backend.exception.BusinessException;
-import com.chinasoft.backend.model.entity.AmusementFacility;
-import com.chinasoft.backend.model.entity.BaseFacility;
 import com.chinasoft.backend.model.entity.Employee;
-import com.chinasoft.backend.model.entity.RestaurantFacility;
 import com.chinasoft.backend.model.request.*;
 import com.chinasoft.backend.service.EmployeeService;
 import org.apache.commons.lang3.ObjectUtils;
@@ -64,7 +60,7 @@ public class EmployeeController {
     }
 
     @PostMapping("/deleteEmployee")
-    public BaseResponse<Boolean> deleteEmployee(@RequestBody DeleteEmployeeRequest deleteEmployeeRequest){
+    public BaseResponse<Boolean> deleteEmployee(@RequestBody DeleteEmployeeRequest deleteEmployeeRequest) {
         Long employeeId = deleteEmployeeRequest.getId();
 
         if (ObjectUtils.anyNull(deleteEmployeeRequest, employeeId)) {
@@ -84,7 +80,7 @@ public class EmployeeController {
     }
 
     @PostMapping("/updateEmployee")
-    public BaseResponse<Employee> updateEmployee(@RequestBody UpdateEmployeeRequest updateEmployeeRequest){
+    public BaseResponse<Employee> updateEmployee(@RequestBody UpdateEmployeeRequest updateEmployeeRequest) {
         if (updateEmployeeRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }

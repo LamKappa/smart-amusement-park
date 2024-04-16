@@ -3,18 +3,15 @@ package com.chinasoft.backend.controller;
 import com.chinasoft.backend.common.BaseResponse;
 import com.chinasoft.backend.common.ErrorCode;
 import com.chinasoft.backend.common.ResultUtils;
-import com.chinasoft.backend.constant.FacilityTypeConstant;
 import com.chinasoft.backend.exception.BusinessException;
-import com.chinasoft.backend.model.entity.AmusementFacility;
-import com.chinasoft.backend.model.entity.BaseFacility;
-import com.chinasoft.backend.model.entity.RestaurantFacility;
 import com.chinasoft.backend.model.entity.Route;
-import com.chinasoft.backend.model.request.*;
+import com.chinasoft.backend.model.request.AddRouteRequest;
 import com.chinasoft.backend.model.request.DeleteRouteRequest;
+import com.chinasoft.backend.model.request.RecommendationRequest;
+import com.chinasoft.backend.model.request.UpdateRouteRequest;
 import com.chinasoft.backend.model.vo.RouteVO;
 import com.chinasoft.backend.service.RecommService;
 import com.chinasoft.backend.service.RouteService;
-import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.query.Param;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -112,7 +109,7 @@ public class RouteController {
      * 添加新路线
      */
     @PostMapping("/recommendation/addRoute")
-    public BaseResponse<List<RouteVO>> addRoute(@RequestBody AddRouteRequest addRouteRequest){
+    public BaseResponse<List<RouteVO>> addRoute(@RequestBody AddRouteRequest addRouteRequest) {
         if (addRouteRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -125,7 +122,7 @@ public class RouteController {
     }
 
     @PostMapping("/recommendation/deleteRoute")
-    public BaseResponse<Boolean> deleteRoute(@RequestBody DeleteRouteRequest deleteRouteRequest){
+    public BaseResponse<Boolean> deleteRoute(@RequestBody DeleteRouteRequest deleteRouteRequest) {
         if (deleteRouteRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
         }
@@ -138,7 +135,7 @@ public class RouteController {
     }
 
     @PostMapping("/recommendation/updateRoute")
-    public BaseResponse<List<RouteVO>> updateRoute(@RequestBody UpdateRouteRequest updateRouteRequest){
+    public BaseResponse<List<RouteVO>> updateRoute(@RequestBody UpdateRouteRequest updateRouteRequest) {
         if (updateRouteRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }

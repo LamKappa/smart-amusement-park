@@ -3,8 +3,8 @@ package com.chinasoft.backend.controller.statistics;
 import com.chinasoft.backend.common.BaseResponse;
 import com.chinasoft.backend.common.ResultUtils;
 import com.chinasoft.backend.model.entity.Route;
-import com.chinasoft.backend.model.vo.FacilityHeadCountVO;
 import com.chinasoft.backend.model.vo.CrowingTimeCountVO;
+import com.chinasoft.backend.model.vo.FacilityHeadCountVO;
 import com.chinasoft.backend.model.vo.FacilityVisitCountVO;
 import com.chinasoft.backend.model.vo.TotalHeadCountVO;
 import com.chinasoft.backend.service.*;
@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/statistics")
@@ -123,7 +122,6 @@ public class StatisticsController {
         // 返回响应
         return ResultUtils.success(data);
     }
-
 
 
 }

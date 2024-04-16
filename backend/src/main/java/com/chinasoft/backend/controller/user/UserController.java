@@ -45,14 +45,15 @@ public class UserController {
         String checkPassword = userRegisterRequest.getCheckPassword();
         String avatarUrl = userRegisterRequest.getAvatarUrl();
         String username = userRegisterRequest.getUsername();
+        String verifyCode = userRegisterRequest.getCode();
 
         // 校验是否为空
-        if (StringUtils.isAnyBlank(phone, userPassword, checkPassword)) {
+        if (StringUtils.isAnyBlank(phone, userPassword, checkPassword, verifyCode)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
         }
 
 
-        Long result = userService.userRegister(phone, userPassword, checkPassword, avatarUrl, username);
+        Long result = userService.userRegister(phone, userPassword, checkPassword, avatarUrl, username, verifyCode);
         return ResultUtils.success(result);
     }
 

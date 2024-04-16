@@ -82,6 +82,9 @@ public class MapServiceImpl implements MapService {
         // 需要所有导航的设施的id和姓名，以及经纬度和预期等待时间
         List<Facility> facilityInfoList = new ArrayList<>();
 
+        // 当前用户位置
+        PositionPoint currPositionPoint = new PositionPoint(userLongitude, userLatitude);
+
 
         // 根据设施id和设施type查询所有设施的经纬度和预期等待时间
         for (FacilityIdType facilityIdType : facilityIdTypeList) {
@@ -93,36 +96,47 @@ public class MapServiceImpl implements MapService {
             Facility facilityInfo = new Facility();
             facilityInfo.setId(facilityId);
             facilityInfo.setExpectWaitTime(expectWaitTime);
+
+            String longitude = "";
+            String latitude = "";
+            String name = "";
             // 获取设施的经纬度信息
             if (facilityType == FacilityTypeConstant.AMUSEMENT_TYPE) {
                 AmusementFacility facility = amusementFacilityService.getById(facilityId);
-                facilityInfo.setLongitude(facility.getLongitude());
-                facilityInfo.setLatitude(facility.getLatitude());
-                facilityInfo.setName(facility.getName());
+                longitude = facility.getLongitude();
+                latitude = facility.getLatitude();
+                name = facility.getName();
             } else if (facilityType == FacilityTypeConstant.RESTAURANT_TYPE) {
                 RestaurantFacility facility = restaurantFacilityService.getById(facilityId);
-                facilityInfo.setLongitude(facility.getLongitude());
-                facilityInfo.setLatitude(facility.getLatitude());
-                facilityInfo.setName(facility.getName());
+                longitude = facility.getLongitude();
+                latitude = facility.getLatitude();
+                name = facility.getName();
             } else if (facilityType == FacilityTypeConstant.BASE_TYPE) {
                 BaseFacility facility = baseFacilityService.getById(facilityId);
-                facilityInfo.setLongitude(facility.getLongitude());
-                facilityInfo.setLatitude(facility.getLatitude());
-                facilityInfo.setName(facility.getName());
+                longitude = facility.getLongitude();
+                latitude = facility.getLatitude();
+                name = facility.getName();
             }
+            facilityInfo.setLongitude(longitude);
+            facilityInfo.setLatitude(latitude);
+            facilityInfo.setName(name);
+
+            // 获取预计行走时间
+            Walk walkInfo = getTwoPointExpectWalkInfo(currPositionPoint, new PositionPoint(longitude, latitude));
+            facilityInfo.setExpectWalkTime(walkInfo.getExpectWalkTime());
+
             facilityInfoList.add(facilityInfo);
         }
 
 
-        // 通过预计等待时间进行从小到大排序
+        // 通过预计行走时间和预计等待时间进行从小到大排序
         Collections.sort(facilityInfoList, (a, b) -> {
-            return a.getExpectWaitTime() - b.getExpectWaitTime();
+            return (a.getExpectWaitTime() + a.getExpectWalkTime()) - (b.getExpectWaitTime() + b.getExpectWalkTime());
         });
 
         // 计算出最终的路径坐标点
         List<PositionPoint> resPositionPointList = new ArrayList<>();
 
-        PositionPoint currPositionPoint = new PositionPoint(userLongitude, userLatitude);
 
         // 总的预期走路时间
         Integer totalExpectWalkTime = 0;

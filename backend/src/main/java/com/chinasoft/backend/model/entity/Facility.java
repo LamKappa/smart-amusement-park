@@ -33,4 +33,9 @@ public class Facility {
      * 预期等待时间
      */
     private Integer expectWaitTime;
+
+    /**
+     * 走到当前建筑的预计行走时间
+     */
+    private Integer expectWalkTime;
 }
