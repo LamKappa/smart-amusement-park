@@ -69,7 +69,7 @@ public class RestaurantFacilityServiceImpl extends ServiceImpl<RestaurantFacilit
 
         // 检查type是否非空
         if (restaurantFilterRequest.getType() != null && !restaurantFilterRequest.getType().isEmpty()) {
-            queryWrapper.eq("type", restaurantFilterRequest.getType());
+            queryWrapper.like("type", restaurantFilterRequest.getType());
         }
 
         // 搜索图片

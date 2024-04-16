@@ -74,7 +74,7 @@ public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityM
 
         // 检查type是否非空
         if (amusementFilterRequest.getType() != null && !amusementFilterRequest.getType().isEmpty()) {
-            queryWrapper.eq("type", amusementFilterRequest.getType());
+            queryWrapper.like("type", amusementFilterRequest.getType());
         }
 
         // 检查height是否非空

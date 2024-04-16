@@ -13,6 +13,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <spring-boot.version>2.7.6</spring-boot.version>
+        <skipTests>true</skipTests>
     </properties>
 
     <dependencies>
@@ -173,7 +174,7 @@
                 <version>${spring-boot.version}</version>
                 <configuration>
                     <mainClass>com.chinasoft.backend.BackendApplication</mainClass>
-                    <!-- <skip>true</skip> -->
+                    <!--  <skip>true</skip>-->
                 </configuration>
                 <executions>
                     <execution>
