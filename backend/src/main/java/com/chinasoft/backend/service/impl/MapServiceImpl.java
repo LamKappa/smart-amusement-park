@@ -100,6 +100,7 @@ public class MapServiceImpl implements MapService {
             Facility facilityInfo = new Facility();
             facilityInfo.setId(facilityId);
             facilityInfo.setExpectWaitTime(expectWaitTime);
+            facilityInfo.setFacilityType(facilityType);
 
             String longitude = "";
             String latitude = "";
