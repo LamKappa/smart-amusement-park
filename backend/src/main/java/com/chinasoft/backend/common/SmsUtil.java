@@ -11,6 +11,11 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * 短信发送工具类
+ *
+ * @author 孟祥硕
+ */
 @AllArgsConstructor
 @Data
 @Slf4j

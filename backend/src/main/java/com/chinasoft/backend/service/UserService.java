@@ -7,7 +7,7 @@ import com.chinasoft.backend.model.request.user.UserUpdateRequest;
 import javax.servlet.http.HttpServletRequest;
 
 /**
- * @author 86178
+ * @author 孟祥硕
  * @description 针对表【user】的数据库操作Service
  * @createDate 2024-04-03 14:44:10
  */

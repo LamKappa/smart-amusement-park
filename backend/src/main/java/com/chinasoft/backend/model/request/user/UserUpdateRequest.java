@@ -2,6 +2,11 @@ package com.chinasoft.backend.model.request.user;
 
 import lombok.Data;
 
+/**
+ * 用户更新请求
+ *
+ * @author 孟祥硕
+ */
 @Data
 public class UserUpdateRequest {
 

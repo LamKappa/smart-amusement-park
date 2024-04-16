@@ -4,6 +4,11 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+/**
+ * Mqtt配置属性
+ *
+ * @author 孟祥硕
+ */
 @Component
 @ConfigurationProperties("mqtt")
 @Data

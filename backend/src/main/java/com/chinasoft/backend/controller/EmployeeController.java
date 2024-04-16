@@ -5,7 +5,7 @@ import com.chinasoft.backend.common.ErrorCode;
 import com.chinasoft.backend.common.ResultUtils;
 import com.chinasoft.backend.exception.BusinessException;
 import com.chinasoft.backend.model.entity.Employee;
-import com.chinasoft.backend.model.request.*;
+import com.chinasoft.backend.model.request.employee.*;
 import com.chinasoft.backend.service.EmployeeService;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -18,6 +18,11 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
+/**
+ * 员工接口
+ *
+ * @author 孟祥硕
+ */
 @RestController
 @RequestMapping("/employee")
 public class EmployeeController {

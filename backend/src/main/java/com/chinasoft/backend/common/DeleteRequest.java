@@ -7,7 +7,7 @@ import java.io.Serializable;
 /**
  * 删除请求
  *
- * @author mxs
+ * @author 孟祥硕
  */
 @Data
 public class DeleteRequest implements Serializable {

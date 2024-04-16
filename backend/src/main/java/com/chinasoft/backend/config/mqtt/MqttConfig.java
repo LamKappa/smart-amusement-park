@@ -6,6 +6,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Mqtt配置
+ *
+ * @author 孟祥硕
+ */
 @Configuration
 public class MqttConfig {
 

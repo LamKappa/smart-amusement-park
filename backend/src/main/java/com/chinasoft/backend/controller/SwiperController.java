@@ -10,6 +10,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * 轮播图接口
+ *
+ * @author 姜堂蕴之
+ */
 @RestController
 public class SwiperController {
 

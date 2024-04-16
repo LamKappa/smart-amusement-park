@@ -1,6 +1,6 @@
 package com.chinasoft.backend.model.vo;
 
-import com.chinasoft.backend.model.entity.Facility;
+import com.chinasoft.backend.model.entity.facility.Facility;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 

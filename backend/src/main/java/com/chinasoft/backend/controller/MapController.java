@@ -4,8 +4,8 @@ import com.chinasoft.backend.common.BaseResponse;
 import com.chinasoft.backend.common.ErrorCode;
 import com.chinasoft.backend.common.ResultUtils;
 import com.chinasoft.backend.exception.BusinessException;
-import com.chinasoft.backend.model.request.EENavigationRequest;
-import com.chinasoft.backend.model.request.NavigationRequest;
+import com.chinasoft.backend.model.request.map.MultipleNavigationRequest;
+import com.chinasoft.backend.model.request.map.SingleNavigationRequest;
 import com.chinasoft.backend.model.vo.NavVO;
 import com.chinasoft.backend.service.MapService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +14,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 地图接口
+ *
+ * @author 孟祥硕
+ */
 @RestController
 @RequestMapping("/map")
 public class MapController {
@@ -25,12 +30,12 @@ public class MapController {
      * 单个设施进行最优路径导航
      */
     @PostMapping("/sinFacilityNav")
-    public BaseResponse sinFacilityNav(@RequestBody EENavigationRequest eeNavigationRequest) {
-        if (eeNavigationRequest == null) {
+    public BaseResponse sinFacilityNav(@RequestBody SingleNavigationRequest singleNavigationRequest) {
+        if (singleNavigationRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
 
-        NavVO navVO = mapService.sinFacilityNav(eeNavigationRequest);
+        NavVO navVO = mapService.sinFacilityNav(singleNavigationRequest);
 
         return ResultUtils.success(navVO);
     }
@@ -39,12 +44,12 @@ public class MapController {
      * 多个设施进行最优路径导航
      */
     @PostMapping("/mulFacilityNav")
-    public BaseResponse mulFacilityNav(@RequestBody NavigationRequest navigationRequest) {
-        if (navigationRequest == null) {
+    public BaseResponse mulFacilityNav(@RequestBody MultipleNavigationRequest multipleNavigationRequest) {
+        if (multipleNavigationRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
 
-        NavVO navVO = mapService.mulFacilityNav(navigationRequest);
+        NavVO navVO = mapService.mulFacilityNav(multipleNavigationRequest);
 
         return ResultUtils.success(navVO);
     }

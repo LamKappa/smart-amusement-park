@@ -4,14 +4,14 @@ import com.chinasoft.backend.common.BaseResponse;
 import com.chinasoft.backend.common.ErrorCode;
 import com.chinasoft.backend.common.ResultUtils;
 import com.chinasoft.backend.exception.BusinessException;
-import com.chinasoft.backend.model.entity.Route;
-import com.chinasoft.backend.model.request.AddRouteRequest;
-import com.chinasoft.backend.model.request.DeleteRouteRequest;
-import com.chinasoft.backend.model.request.RecommendationRequest;
-import com.chinasoft.backend.model.request.UpdateRouteRequest;
+import com.chinasoft.backend.model.entity.route.Route;
+import com.chinasoft.backend.model.request.route.AddRouteRequest;
+import com.chinasoft.backend.model.request.route.DeleteRouteRequest;
+import com.chinasoft.backend.model.request.route.RouteRecommendationRequest;
+import com.chinasoft.backend.model.request.route.UpdateRouteRequest;
 import com.chinasoft.backend.model.vo.RouteVO;
-import com.chinasoft.backend.service.RecommService;
-import com.chinasoft.backend.service.RouteService;
+import com.chinasoft.backend.service.route.RecommendationRouteService;
+import com.chinasoft.backend.service.route.RouteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.query.Param;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,11 +21,16 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * 路线接口
+ *
+ * @author 姜堂蕴之
+ */
 @RestController
 public class RouteController {
 
     @Autowired
-    RecommService recommService;
+    RecommendationRouteService recommendationRouteService;
 
     @Autowired
     RouteService routeService;
@@ -34,14 +39,14 @@ public class RouteController {
      * 根据名称 简介 类型 查询各种设施
      */
     @PostMapping("/recommendation")
-    public BaseResponse<List<RouteVO>> getRecommendation(@RequestBody RecommendationRequest recommendationRequest) {
-        if (recommendationRequest == null) {
+    public BaseResponse<List<RouteVO>> getRecommendation(@RequestBody RouteRecommendationRequest routeRecommendationRequest) {
+        if (routeRecommendationRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
 
 
         // 查询数据库
-        List<RouteVO> data = recommService.getRecommendation(recommendationRequest);
+        List<RouteVO> data = recommendationRouteService.getRecommendation(routeRecommendationRequest);
 
         // 返回响应
         return ResultUtils.success(data);
@@ -73,7 +78,7 @@ public class RouteController {
     @GetMapping("/recommendation/sortByVisit")
     public BaseResponse<RouteVO> sortByVisit() {
         // 查询数据库
-        RouteVO data = recommService.sortByVisit();
+        RouteVO data = recommendationRouteService.sortByVisit();
 
         // 返回响应
         return ResultUtils.success(data);
@@ -87,7 +92,7 @@ public class RouteController {
     @GetMapping("/recommendation/sortBySubscribe")
     public BaseResponse<RouteVO> sortBySubscribe() {
         // 查询数据库
-        RouteVO data = recommService.sortBySubscribe();
+        RouteVO data = recommendationRouteService.sortBySubscribe();
 
         // 返回响应
         return ResultUtils.success(data);
@@ -99,7 +104,7 @@ public class RouteController {
     @GetMapping("/recommendation/sortCrowingLevel")
     public BaseResponse<RouteVO> sortCrowingLevel() {
         // 查询数据库
-        RouteVO data = recommService.sortCrowingLevel();
+        RouteVO data = recommendationRouteService.sortCrowingLevel();
 
         // 返回响应
         return ResultUtils.success(data);
@@ -115,7 +120,7 @@ public class RouteController {
         }
 
         // 查询数据库
-        List<RouteVO> data = recommService.addRoute(addRouteRequest);
+        List<RouteVO> data = recommendationRouteService.addRoute(addRouteRequest);
 
         // 返回响应
         return ResultUtils.success(data);
@@ -128,7 +133,7 @@ public class RouteController {
         }
 
         // 查询数据库
-        Boolean data = recommService.deleteRoute(deleteRouteRequest);
+        Boolean data = recommendationRouteService.deleteRoute(deleteRouteRequest);
 
         // 返回响应
         return ResultUtils.success(data);
@@ -141,7 +146,7 @@ public class RouteController {
         }
 
         // 查询数据库
-        List<RouteVO> data = recommService.updateRoute(updateRouteRequest);
+        List<RouteVO> data = recommendationRouteService.updateRoute(updateRouteRequest);
 
         // 返回响应
         return ResultUtils.success(data);

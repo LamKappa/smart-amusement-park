@@ -12,6 +12,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * 通用搜索接口
+ *
+ * @author 姜堂蕴之
+ */
 @RestController
 public class SearchController {
 

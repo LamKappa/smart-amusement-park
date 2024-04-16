@@ -8,9 +8,9 @@ import com.chinasoft.backend.constant.EmployeeConstant;
 import com.chinasoft.backend.exception.BusinessException;
 import com.chinasoft.backend.mapper.EmployeeMapper;
 import com.chinasoft.backend.model.entity.Employee;
-import com.chinasoft.backend.model.request.AddEmployeeRequest;
-import com.chinasoft.backend.model.request.GetEmployeeRequest;
-import com.chinasoft.backend.model.request.UpdateEmployeeRequest;
+import com.chinasoft.backend.model.request.employee.AddEmployeeRequest;
+import com.chinasoft.backend.model.request.employee.GetEmployeeRequest;
+import com.chinasoft.backend.model.request.employee.UpdateEmployeeRequest;
 import com.chinasoft.backend.service.EmployeeService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 /**
- * @author 86178
+ * @author 孟祥硕
  * @description 针对表【employee】的数据库操作Service实现
  * @createDate 2024-04-12 17:21:37
  */

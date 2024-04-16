@@ -2,12 +2,16 @@ package com.chinasoft.backend.controller.statistics;
 
 import com.chinasoft.backend.common.BaseResponse;
 import com.chinasoft.backend.common.ResultUtils;
-import com.chinasoft.backend.model.entity.Route;
-import com.chinasoft.backend.model.vo.CrowingTimeCountVO;
-import com.chinasoft.backend.model.vo.FacilityHeadCountVO;
-import com.chinasoft.backend.model.vo.FacilityVisitCountVO;
-import com.chinasoft.backend.model.vo.TotalHeadCountVO;
-import com.chinasoft.backend.service.*;
+import com.chinasoft.backend.model.entity.route.Route;
+import com.chinasoft.backend.model.vo.statistic.CrowingTimeCountVO;
+import com.chinasoft.backend.model.vo.statistic.FacilityHeadCountVO;
+import com.chinasoft.backend.model.vo.statistic.FacilityVisitCountVO;
+import com.chinasoft.backend.model.vo.statistic.TotalHeadCountVO;
+import com.chinasoft.backend.service.MqttService;
+import com.chinasoft.backend.service.facility.CrowdingLevelService;
+import com.chinasoft.backend.service.route.RouteService;
+import com.chinasoft.backend.service.statistic.TotalHeadcountService;
+import com.chinasoft.backend.service.visitsubscribe.VisitService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.query.Param;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,6 +20,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * 数据统计接口
+ *
+ * @author 孟祥硕
+ */
 @RestController
 @RequestMapping("/statistics")
 public class StatisticsController {

@@ -9,13 +9,17 @@ import com.chinasoft.backend.mapper.AmusementFacilityMapper;
 import com.chinasoft.backend.mapper.BaseFacilityMapper;
 import com.chinasoft.backend.mapper.CrowdingLevelMapper;
 import com.chinasoft.backend.mapper.RestaurantFacilityMapper;
-import com.chinasoft.backend.model.entity.*;
-import com.chinasoft.backend.model.request.EENavigationRequest;
-import com.chinasoft.backend.model.request.FacilityIdType;
-import com.chinasoft.backend.model.request.NavigationRequest;
+import com.chinasoft.backend.model.entity.Walk;
+import com.chinasoft.backend.model.entity.facility.*;
+import com.chinasoft.backend.model.request.map.MultipleNavigationRequest;
+import com.chinasoft.backend.model.request.map.SingleNavigationRequest;
 import com.chinasoft.backend.model.vo.NavVO;
 import com.chinasoft.backend.model.vo.PositionPoint;
-import com.chinasoft.backend.service.*;
+import com.chinasoft.backend.service.MapService;
+import com.chinasoft.backend.service.facility.AmusementFacilityService;
+import com.chinasoft.backend.service.facility.BaseFacilityService;
+import com.chinasoft.backend.service.facility.CrowdingLevelService;
+import com.chinasoft.backend.service.facility.RestaurantFacilityService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -69,7 +73,7 @@ public class MapServiceImpl implements MapService {
      * 多个设施进行最优路径导航
      */
     @Override
-    public NavVO mulFacilityNav(NavigationRequest navigationRequest) {
+    public NavVO mulFacilityNav(MultipleNavigationRequest navigationRequest) {
         String userLongitude = navigationRequest.getUserLongitude();
         String userLatitude = navigationRequest.getUserLatitude();
 
@@ -178,7 +182,7 @@ public class MapServiceImpl implements MapService {
      * 单个设施进行导航
      */
     @Override
-    public NavVO sinFacilityNav(EENavigationRequest eeNavigationRequest) {
+    public NavVO sinFacilityNav(SingleNavigationRequest eeNavigationRequest) {
         String userLongitude = eeNavigationRequest.getUserLongitude();
         String userLatitude = eeNavigationRequest.getUserLatitude();
         Long facilityId = eeNavigationRequest.getFacilityId();

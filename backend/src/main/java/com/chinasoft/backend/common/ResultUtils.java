@@ -3,7 +3,7 @@ package com.chinasoft.backend.common;
 /**
  * 返回工具类
  *
- * @author mxs
+ * @author 孟祥硕
  */
 public class ResultUtils {
 

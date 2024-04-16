@@ -1,5 +1,10 @@
 package com.chinasoft.backend.constant;
 
+/**
+ * 设施类型枚举类
+ *
+ * @author 孟祥硕
+ */
 public enum AmusementFacilityTypeEnum {
     // 轨道、失重、水上、室内、旋转、鬼屋
     GUI_DAO("轨道"),

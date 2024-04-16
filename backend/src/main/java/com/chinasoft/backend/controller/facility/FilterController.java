@@ -4,13 +4,13 @@ import com.chinasoft.backend.common.BaseResponse;
 import com.chinasoft.backend.common.ErrorCode;
 import com.chinasoft.backend.common.ResultUtils;
 import com.chinasoft.backend.exception.BusinessException;
-import com.chinasoft.backend.model.request.AmusementFilterRequest;
-import com.chinasoft.backend.model.request.BaseFilterRequest;
-import com.chinasoft.backend.model.request.RestaurantFilterRequest;
-import com.chinasoft.backend.model.vo.AmusementVandSVO;
-import com.chinasoft.backend.model.vo.BaseVandSVO;
-import com.chinasoft.backend.model.vo.RestaurantVandSVO;
-import com.chinasoft.backend.service.VisitAndSubscribeService;
+import com.chinasoft.backend.model.request.facility.AmusementFilterRequest;
+import com.chinasoft.backend.model.request.facility.BaseFilterRequest;
+import com.chinasoft.backend.model.request.facility.RestaurantFilterRequest;
+import com.chinasoft.backend.model.vo.visitsubscribe.AmusementVisitSubscribeVO;
+import com.chinasoft.backend.model.vo.visitsubscribe.BaseVisitSubscribeVO;
+import com.chinasoft.backend.model.vo.visitsubscribe.RestaurantVisitSubscribeVO;
+import com.chinasoft.backend.service.visitsubscribe.VisitAndSubscribeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,72 +19,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * 设施筛选接口
+ *
+ * @author 姜堂蕴之
+ */
 @RestController
 @RequestMapping("/filter")
 public class FilterController {
-
-//    @Autowired
-//    AmusementFacilityService amusementFacilityService;
-//
-//    @Autowired
-//    RestaurantFacilityService restaurantFacilityService;
-//
-//    @Autowired
-//    BaseFacilityService baseFacilityService;
-//
-//
-//    /*
-//    游乐设施筛选
-//     */
-//    @PostMapping("/amusement")
-//    public BaseResponse<List<AmusementFacilityVO>> filterAmusement(@RequestBody AmusementFilterRequest amusementFilterRequest) {
-//        // 异常处理
-//        if (amusementFilterRequest == null) {
-//            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-//        }
-//
-//        // 查询数据库
-//        List<AmusementFacilityVO> data = amusementFacilityService.getAmusementFacility(amusementFilterRequest);
-//
-//        // 返回响应
-//        return ResultUtils.success(data);
-//    }
-//
-//    /*
-//    餐厅设施筛选
-//     */
-//
-//    @PostMapping("/restaurant")
-//    public BaseResponse<List<RestaurantFacilityVO>> filterRestaurant(@RequestBody RestaurantFilterRequest restaurantFilterRequest) {
-//        // 异常处理
-//        if (restaurantFilterRequest == null) {
-//            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-//        }
-//
-//        // 查询数据库
-//        List<RestaurantFacilityVO> data = restaurantFacilityService.getRestaurantFacility(restaurantFilterRequest);
-//
-//        // 返回响应
-//        return ResultUtils.success(data);
-//    }
-//
-//    /*
-//   基础设施（卫生间）筛选
-//    */
-//
-//    @PostMapping("/base")
-//    public BaseResponse<List<BaseFacilityVO>> filterBase(@RequestBody BaseFilterRequest baseFilterRequest) {
-//        // 异常处理
-//        if (baseFilterRequest == null) {
-//            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-//        }
-//
-//        // 查询数据库
-//        List<BaseFacilityVO> data = baseFacilityService.getBaseFacility(baseFilterRequest);
-//
-//        // 返回响应
-//        return ResultUtils.success(data);
-//    }
 
     @Autowired
     VisitAndSubscribeService visitAndSubscribeService;
@@ -93,13 +35,13 @@ public class FilterController {
      * 展示游乐设施所有信息+打卡信息+订阅信息。
      */
     @PostMapping("/amusement")
-    public BaseResponse<List<AmusementVandSVO>> getAmusementVandS(@RequestBody AmusementFilterRequest amusementFilterRequest) {
+    public BaseResponse<List<AmusementVisitSubscribeVO>> getAmusementVandS(@RequestBody AmusementFilterRequest amusementFilterRequest) {
         if (amusementFilterRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
 
         // 查询数据库
-        List<AmusementVandSVO> data = visitAndSubscribeService.getAmusementVAndS(amusementFilterRequest);
+        List<AmusementVisitSubscribeVO> data = visitAndSubscribeService.getAmusementVisitSubscribe(amusementFilterRequest);
 
         // 返回响应
         return ResultUtils.success(data);
@@ -109,13 +51,13 @@ public class FilterController {
      * 展示餐厅设施所有信息+打卡信息+订阅信息。
      */
     @PostMapping("/restaurant")
-    public BaseResponse<List<RestaurantVandSVO>> getRestaurantVandS(@RequestBody RestaurantFilterRequest restaurantFilterRequest) {
+    public BaseResponse<List<RestaurantVisitSubscribeVO>> getRestaurantVandS(@RequestBody RestaurantFilterRequest restaurantFilterRequest) {
         if (restaurantFilterRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
 
         // 查询数据库
-        List<RestaurantVandSVO> data = visitAndSubscribeService.getRestaurantVAndS(restaurantFilterRequest);
+        List<RestaurantVisitSubscribeVO> data = visitAndSubscribeService.getRestaurantVisitSubscribe(restaurantFilterRequest);
 
         // 返回响应
         return ResultUtils.success(data);
@@ -125,13 +67,13 @@ public class FilterController {
      * 展示基础设施所有信息+打卡信息+订阅信息。
      */
     @PostMapping("/base")
-    public BaseResponse<List<BaseVandSVO>> getBaseVandS(@RequestBody BaseFilterRequest baseFilterRequest) {
+    public BaseResponse<List<BaseVisitSubscribeVO>> getBaseVandS(@RequestBody BaseFilterRequest baseFilterRequest) {
         if (baseFilterRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
 
         // 查询数据库
-        List<BaseVandSVO> data = visitAndSubscribeService.getBaseVAndS(baseFilterRequest);
+        List<BaseVisitSubscribeVO> data = visitAndSubscribeService.getBaseVisitSubscribe(baseFilterRequest);
 
         // 返回响应
         return ResultUtils.success(data);

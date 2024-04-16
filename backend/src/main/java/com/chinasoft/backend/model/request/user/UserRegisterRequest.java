@@ -2,6 +2,11 @@ package com.chinasoft.backend.model.request.user;
 
 import lombok.Data;
 
+/**
+ * 用户注册请求
+ *
+ * @author 孟祥硕
+ */
 @Data
 public class UserRegisterRequest {
     private static final long serialVersionUID = 3191241716373120793L;

@@ -3,7 +3,7 @@ package com.chinasoft.backend.common;
 /**
  * 错误码
  *
- * @author mxs
+ * @author 孟祥硕
  */
 public enum ErrorCode {
 

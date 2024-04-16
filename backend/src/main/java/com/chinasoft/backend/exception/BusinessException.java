@@ -6,7 +6,7 @@ import com.chinasoft.backend.common.ErrorCode;
 /**
  * 业务异常类
  *
- * @author mxs
+ * @author 孟祥硕
  */
 public class BusinessException extends RuntimeException {
 

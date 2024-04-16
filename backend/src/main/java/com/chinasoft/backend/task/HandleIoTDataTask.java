@@ -8,6 +8,11 @@ import org.springframework.stereotype.Component;
 
 import java.util.Date;
 
+/**
+ * 定时任务
+ *
+ * @authro 孟祥硕
+ */
 @Slf4j
 @Component
 public class HandleIoTDataTask {

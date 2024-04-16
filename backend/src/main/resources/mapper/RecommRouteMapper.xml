@@ -4,7 +4,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.chinasoft.backend.mapper.RecommRouteMapper">
 
-    <resultMap id="BaseResultMap" type="com.chinasoft.backend.model.entity.RecommRoute">
+    <resultMap id="BaseResultMap" type="com.chinasoft.backend.model.entity.route.RecommRoute">
             <id property="id" column="id" jdbcType="BIGINT"/>
             <result property="routeId" column="route_id" jdbcType="BIGINT"/>
             <result property="facilityId" column="facility_id" jdbcType="BIGINT"/>

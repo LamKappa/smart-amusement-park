@@ -10,6 +10,11 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayInputStream;
 
+/**
+ * alioss工具类
+ *
+ * @author 孟祥硕
+ */
 @Data
 @AllArgsConstructor
 @Slf4j

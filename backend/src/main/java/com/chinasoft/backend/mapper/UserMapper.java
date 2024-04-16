@@ -5,7 +5,7 @@ import com.chinasoft.backend.model.entity.User;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
- * @author 86178
+ * @author 孟祥硕
  * @description 针对表【user】的数据库操作Mapper
  * @createDate 2024-04-03 14:44:10
  * @Entity com.chinasoft.backend.model.entity.User

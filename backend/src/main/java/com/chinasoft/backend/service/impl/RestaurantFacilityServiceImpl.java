@@ -9,16 +9,16 @@ import com.chinasoft.backend.constant.RestaurantFacilityTypeEnum;
 import com.chinasoft.backend.exception.BusinessException;
 import com.chinasoft.backend.mapper.FacilityImageMapper;
 import com.chinasoft.backend.mapper.RestaurantFacilityMapper;
-import com.chinasoft.backend.model.entity.FacilityImage;
-import com.chinasoft.backend.model.entity.RestaurantFacility;
-import com.chinasoft.backend.model.request.FacilityIdType;
-import com.chinasoft.backend.model.request.RestaurantFacilityAddRequest;
-import com.chinasoft.backend.model.request.RestaurantFacilityUpdateRequest;
-import com.chinasoft.backend.model.request.RestaurantFilterRequest;
-import com.chinasoft.backend.model.vo.RestaurantFacilityVO;
-import com.chinasoft.backend.service.CrowdingLevelService;
-import com.chinasoft.backend.service.FacilityImageService;
-import com.chinasoft.backend.service.RestaurantFacilityService;
+import com.chinasoft.backend.model.entity.facility.FacilityIdType;
+import com.chinasoft.backend.model.entity.facility.FacilityImage;
+import com.chinasoft.backend.model.entity.facility.RestaurantFacility;
+import com.chinasoft.backend.model.request.facility.RestaurantFacilityAddRequest;
+import com.chinasoft.backend.model.request.facility.RestaurantFacilityUpdateRequest;
+import com.chinasoft.backend.model.request.facility.RestaurantFilterRequest;
+import com.chinasoft.backend.model.vo.facility.RestaurantFacilityVO;
+import com.chinasoft.backend.service.facility.CrowdingLevelService;
+import com.chinasoft.backend.service.facility.FacilityImageService;
+import com.chinasoft.backend.service.facility.RestaurantFacilityService;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
@@ -32,7 +32,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * @author 皎皎
+ * @author 姜堂蕴之
  * @description 针对表【restaurant_facility(餐饮设施表)】的数据库操作Service实现
  * @createDate 2024-04-05 09:53:39
  */

@@ -9,6 +9,8 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * druid监控界面设置
+ *
+ * @author 孟祥硕
  */
 @Configuration
 public class DruidConfiguration {

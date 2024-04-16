@@ -7,6 +7,11 @@ import org.springframework.session.web.http.DefaultCookieSerializer;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Session配置
+ *
+ * @author 孟祥硕
+ */
 // @Configuration
 // @EnableSpringHttpSession
 public class SessionConfig {

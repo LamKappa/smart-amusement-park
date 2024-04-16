@@ -1,5 +1,10 @@
 package com.chinasoft.backend.constant;
 
+/**
+ * 游乐设施适合人群枚举类
+ *
+ * @author 孟祥硕
+ */
 public enum CrowdTypeEnum {
     // 成人、老少皆宜、家长监护
     CHENG_REN("成人"),

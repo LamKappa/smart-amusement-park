@@ -6,6 +6,11 @@ import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.env.Environment;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
+/**
+ * Mqtt配置
+ *
+ * @author 孟祥硕
+ */
 public class MqttCondition implements Condition {
 
     @Override

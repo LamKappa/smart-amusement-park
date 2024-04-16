@@ -5,13 +5,13 @@ import com.chinasoft.backend.common.ErrorCode;
 import com.chinasoft.backend.common.ResultUtils;
 import com.chinasoft.backend.constant.FacilityTypeConstant;
 import com.chinasoft.backend.exception.BusinessException;
-import com.chinasoft.backend.model.entity.AmusementFacility;
-import com.chinasoft.backend.model.entity.BaseFacility;
-import com.chinasoft.backend.model.entity.RestaurantFacility;
-import com.chinasoft.backend.model.request.FacilityDeleteRequest;
-import com.chinasoft.backend.service.AmusementFacilityService;
-import com.chinasoft.backend.service.BaseFacilityService;
-import com.chinasoft.backend.service.RestaurantFacilityService;
+import com.chinasoft.backend.model.entity.facility.AmusementFacility;
+import com.chinasoft.backend.model.entity.facility.BaseFacility;
+import com.chinasoft.backend.model.entity.facility.RestaurantFacility;
+import com.chinasoft.backend.model.request.facility.FacilityDeleteRequest;
+import com.chinasoft.backend.service.facility.AmusementFacilityService;
+import com.chinasoft.backend.service.facility.BaseFacilityService;
+import com.chinasoft.backend.service.facility.RestaurantFacilityService;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,6 +19,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 通用设施接口
+ *
+ * @author 孟祥硕
+ */
 @RestController
 @RequestMapping("/facility")
 public class FacilityCommonController {

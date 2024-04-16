@@ -4,9 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.chinasoft.backend.constant.FacilityTypeConstant;
 import com.chinasoft.backend.mapper.AmusementFacilityMapper;
 import com.chinasoft.backend.mapper.FacilityImageMapper;
-import com.chinasoft.backend.model.entity.AmusementFacility;
-import com.chinasoft.backend.model.entity.FacilityImage;
 import com.chinasoft.backend.model.entity.Swiper;
+import com.chinasoft.backend.model.entity.facility.AmusementFacility;
+import com.chinasoft.backend.model.entity.facility.FacilityImage;
 import com.chinasoft.backend.service.SwiperService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * @author 皎皎
+ * @author 姜堂蕴之
  * @description 针对轮播图的数据库操作Service实现
  * @createDate 2024-04-07 16:24:00
  */

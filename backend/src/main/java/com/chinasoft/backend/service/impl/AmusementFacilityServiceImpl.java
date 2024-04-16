@@ -11,16 +11,16 @@ import com.chinasoft.backend.exception.BusinessException;
 import com.chinasoft.backend.mapper.AmusementFacilityMapper;
 import com.chinasoft.backend.mapper.CrowdingLevelMapper;
 import com.chinasoft.backend.mapper.FacilityImageMapper;
-import com.chinasoft.backend.model.entity.AmusementFacility;
-import com.chinasoft.backend.model.entity.FacilityImage;
-import com.chinasoft.backend.model.request.AmusementFacilityAddRequest;
-import com.chinasoft.backend.model.request.AmusementFacilityUpdateRequest;
-import com.chinasoft.backend.model.request.AmusementFilterRequest;
-import com.chinasoft.backend.model.request.FacilityIdType;
-import com.chinasoft.backend.model.vo.AmusementFacilityVO;
-import com.chinasoft.backend.service.AmusementFacilityService;
-import com.chinasoft.backend.service.CrowdingLevelService;
-import com.chinasoft.backend.service.FacilityImageService;
+import com.chinasoft.backend.model.entity.facility.AmusementFacility;
+import com.chinasoft.backend.model.entity.facility.FacilityIdType;
+import com.chinasoft.backend.model.entity.facility.FacilityImage;
+import com.chinasoft.backend.model.request.facility.AmusementFacilityAddRequest;
+import com.chinasoft.backend.model.request.facility.AmusementFacilityUpdateRequest;
+import com.chinasoft.backend.model.request.facility.AmusementFilterRequest;
+import com.chinasoft.backend.model.vo.facility.AmusementFacilityVO;
+import com.chinasoft.backend.service.facility.AmusementFacilityService;
+import com.chinasoft.backend.service.facility.CrowdingLevelService;
+import com.chinasoft.backend.service.facility.FacilityImageService;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * @author 皎皎
+ * @author 姜堂蕴之
  * @description 针对表【amusement_facility】的数据库操作Service实现
  * @createDate 2024-04-05 09:47:45
  */

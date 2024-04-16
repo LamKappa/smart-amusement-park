@@ -2,6 +2,11 @@ package com.chinasoft.backend.common;
 
 import java.util.Random;
 
+/**
+ * 生成验证码工具类
+ *
+ * @author 孟祥硕
+ */
 public class CodeUtil {
     // 使用到Algerian字体，系统里没有的话需要安装字体，字体只显示大写，去掉了1,0,i,o几个容易混淆的字符
     public static final String VERIFY_CODES = "1234567890";

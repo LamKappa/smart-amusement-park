@@ -18,6 +18,11 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 用户接口
+ *
+ * @author 孟祥硕
+ */
 @RestController
 @RequestMapping("/user")
 public class UserController {

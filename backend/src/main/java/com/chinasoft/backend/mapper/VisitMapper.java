@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author 皎皎
+ * @author 姜堂蕴之
  * @description 针对表【visit(用户打卡记录表)】的数据库操作Mapper
  * @createDate 2024-04-09 11:20:30
  * @Entity com.chinasoft.backend.model.entity.Visit

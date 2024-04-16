@@ -3,7 +3,7 @@ package com.chinasoft.backend.constant;
 /**
  * 用户常量
  *
- * @author mxs
+ * @author 孟祥硕
  */
 public interface EmployeeConstant {
 

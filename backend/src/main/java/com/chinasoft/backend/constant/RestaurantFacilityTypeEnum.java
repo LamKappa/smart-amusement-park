@@ -1,5 +1,10 @@
 package com.chinasoft.backend.constant;
 
+/**
+ * 餐厅类型枚举类
+ *
+ * @author 孟祥硕
+ */
 public enum RestaurantFacilityTypeEnum {
     // 中式快餐/面点/饮品/小吃/西式快餐
     ZHONG_SHI_KUAI_CAN("中式快餐"),

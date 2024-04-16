@@ -4,9 +4,9 @@ import com.chinasoft.backend.common.BaseResponse;
 import com.chinasoft.backend.common.ErrorCode;
 import com.chinasoft.backend.common.ResultUtils;
 import com.chinasoft.backend.exception.BusinessException;
-import com.chinasoft.backend.model.request.BaseFacilityAddRequest;
-import com.chinasoft.backend.model.request.BaseFacilityUpdateRequest;
-import com.chinasoft.backend.service.BaseFacilityService;
+import com.chinasoft.backend.model.request.facility.BaseFacilityAddRequest;
+import com.chinasoft.backend.model.request.facility.BaseFacilityUpdateRequest;
+import com.chinasoft.backend.service.facility.BaseFacilityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,6 +15,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 
+/**
+ * 接触设施接口
+ *
+ * @author 孟祥硕
+ */
 @RestController
 @RequestMapping("/baseFacility")
 public class BaseFacilityController {
