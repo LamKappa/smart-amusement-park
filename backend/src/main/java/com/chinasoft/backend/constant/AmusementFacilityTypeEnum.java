@@ -6,13 +6,16 @@ package com.chinasoft.backend.constant;
  * @author 孟祥硕
  */
 public enum AmusementFacilityTypeEnum {
-    // 轨道、失重、水上、室内、旋转、鬼屋
+    // 轨道、失重、水上、室内、旋转、鬼屋、剧场、垂直、高空
     GUI_DAO("轨道"),
     GUO_SHAN_CHE("过山车"),
     SHI_ZHONG("失重"),
     SHUI_SHANG("水上"),
     SHI_NEI("室内"),
     XUAN_ZHUAN("旋转"),
+    JU_CHANG("剧场"),
+    CHUI_ZHI("垂直"),
+    GAO_KONG("高空"),
     GUI_WU("鬼屋");
 
     private String type;
