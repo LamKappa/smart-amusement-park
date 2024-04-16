@@ -145,26 +145,36 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     public User userLogin(String phone, String password, HttpServletRequest request) {
         // 1. 校验
-        if (StringUtils.isAnyBlank(phone, password)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+        if (StringUtils.isAnyBlank(phone)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "手机号不能为空");
+        }
+        if (StringUtils.isAnyBlank(password)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码不能为空");
         }
         if (!Pattern.matches("^1[3-9]\\d{9}$", phone)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户手机号格式错误");
         }
-        if (password.length() < 8 || password.length() > 16) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户密码过短或过长");
-        }
+        // if (password.length() < 8 || password.length() > 16) {
+        //     throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户密码过短或过长");
+        // }
         // 2. 加密
         String encryptPassword = DigestUtils.md5DigestAsHex((SALT + password).getBytes());
-        // 查询用户是否存在
+        User user = new User();
+        // 查询用户手机号是否存在
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("phone", phone);
-        queryWrapper.eq("password", encryptPassword);
-        User user = userMapper.selectOne(queryWrapper);
+        user = userMapper.selectOne(queryWrapper);
         // 用户不存在
         if (user == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "该手机号尚未注册账号，请您先注册账号");
+        }
+
+        // 校验密码
+        queryWrapper.eq("password", encryptPassword);
+        user = userMapper.selectOne(queryWrapper);
+        if (user == null) {
             log.info("user login failed, userAccount cannot match userPassword");
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在或密码错误");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "您的账号或密码输入错误，请重新输入");
         }
         // 脱敏
         user.setPassword(null);
