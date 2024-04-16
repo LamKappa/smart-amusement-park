@@ -4,7 +4,6 @@ import com.chinasoft.backend.common.BaseResponse;
 import com.chinasoft.backend.common.ErrorCode;
 import com.chinasoft.backend.common.ResultUtils;
 import com.chinasoft.backend.exception.BusinessException;
-import com.chinasoft.backend.model.entity.Route;
 import com.chinasoft.backend.model.entity.Subscribe;
 import com.chinasoft.backend.model.entity.Visit;
 import com.chinasoft.backend.model.request.VisitAndSubscribeAddRequest;
@@ -15,12 +14,10 @@ import com.chinasoft.backend.service.VisitAndSubscribeService;
 import com.chinasoft.backend.service.VisitService;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Date;
 import java.util.List;
 
 @RestController
