@@ -126,14 +126,14 @@ public class MqttServiceImpl implements MqttService {
             List<IoTData> ioTDataList = amusementFacilityDataMap.get(facilityId);
             ioTDataList.add(ioTData);
 
-            if(deviceId == 0){
+            if (deviceId == 0) {
                 String key = getRedisKey(facilityId);
                 ValueOperations<String, Integer> operations = redisTemplate.opsForValue();
                 if (operations.get(key) == null) {
                     operations.set(key, 0);
                 }
                 // 更新facilityId在amusementFacilityHeadCountMap中的计数
-                if(detection == 1){
+                if (detection == 1) {
 //                int currentCount = amusementFacilityHeadCountMap.get(facilityId);
 //                amusementFacilityHeadCountMap.put(facilityId, currentCount + 1);
                     Integer currentCount = operations.get(key);
@@ -153,7 +153,7 @@ public class MqttServiceImpl implements MqttService {
             }
             List<IoTData> ioTDataList = baseFacilityDataMap.get(facilityId);
             ioTDataList.add(ioTData);
-        }else if(facilityType == FacilityTypeConstant.GATE_TYPE){
+        } else if (facilityType == FacilityTypeConstant.GATE_TYPE) {
             // 统计总游玩人数
 //            if(detection == 1){
 //                totalCount++;
@@ -311,12 +311,12 @@ public class MqttServiceImpl implements MqttService {
 //            log.info("定时任务2执行失败：{}，统计值为：{}", new Date(), totalCount);
 //        }
 //    }
-    public void handleTotalHeadCount(){
+    public void handleTotalHeadCount() {
         Integer totalCountFromRedis = getTotalCountFromRedis();
         TotalHeadcount totalHeadcount = new TotalHeadcount();
-        if (totalCountFromRedis == null){
+        if (totalCountFromRedis == null) {
             totalHeadcount.setCount(0);
-        }else{
+        } else {
             totalHeadcount.setCount(totalCountFromRedis);
         }
         totalHeadcountMapper.insert(totalHeadcount);
@@ -352,7 +352,6 @@ public class MqttServiceImpl implements MqttService {
 //            log.info("定时任务3执行失败：{}", new Date());
 //        }
 //    }
-
     public void handleFacilityHeadCount() {
         // 从数据库中获取所有设施ID
         List<Integer> facilityIds = amusementFacilityMapper.selectAllFacilityIds();
@@ -368,7 +367,7 @@ public class MqttServiceImpl implements MqttService {
                     // 如果Redis中没有计数，count将为null，你可能需要处理这种情况
                     if (count == null) {
                         facilityHeadcount.setCount(0);
-                    }else{
+                    } else {
                         facilityHeadcount.setCount(count);
                     }
 
@@ -377,11 +376,11 @@ public class MqttServiceImpl implements MqttService {
                 .collect(Collectors.toList());
 
         boolean isSuccess = facilityHeadcountService.saveBatch(facilityHeadcountList);
-        if(isSuccess){
+        if (isSuccess) {
             for (Integer facilityId : facilityIds) {
                 redisTemplate.opsForValue().set(getRedisKey(facilityId), 0);
             }
-        }else{
+        } else {
             log.info("定时任务3执行失败：{}", new Date());
         }
     }
@@ -421,7 +420,6 @@ public class MqttServiceImpl implements MqttService {
 //
 //        return facilityHeadCountList;
 //    }
-
     @Override
     public List<FacilityHeadCountVO> getFacilityCount() {
         List<FacilityHeadCountVO> facilityHeadCountList = new ArrayList<>();
@@ -468,7 +466,11 @@ public class MqttServiceImpl implements MqttService {
                     .orderByDesc("create_time"); // 按照create_time降序排序
 
             // 获取最新的记录
-            CrowdingLevel latestCrowdingLevel = crowdingLevelMapper.selectList(queryWrapper).get(0);
+            List<CrowdingLevel> crowdingLevelList = crowdingLevelMapper.selectList(queryWrapper);
+            CrowdingLevel latestCrowdingLevel = null;
+            if (!CollectionUtils.isEmpty(crowdingLevelList)) {
+                latestCrowdingLevel = crowdingLevelList.get(0);
+            }
 
             if (latestCrowdingLevel != null) {
                 latestExpectWaitTimes.put(latestCrowdingLevel.getFacilityId(), latestCrowdingLevel.getExpectWaitTime());

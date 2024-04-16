@@ -30,4 +30,9 @@ public class UserRegisterRequest {
      * 用户头像
      */
     private String avatarUrl;
+
+    /**
+     * 验证码
+     */
+    private String code;
 }

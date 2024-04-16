@@ -43,13 +43,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      * 用户注册
      */
     @Override
-    public Long userRegister(String phone, String userPassword, String checkPassword, String avatarUrl, String username) {
+    public Long userRegister(String phone, String userPassword, String checkPassword, String avatarUrl, String username, String verifyCode) {
         // 设置为默认头像和用户名
         if (StringUtils.isBlank(avatarUrl)) {
             avatarUrl = DEFAULT_AVATAR_URL;
         }
         if (StringUtils.isBlank(username)) {
             username = "user" + RandomUtil.randomNumbers(5);
+        }
+
+        Boolean res = smsService.validCode(phone, verifyCode);
+        if (!res) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "验证码错误");
         }
 
         // 校验
@@ -178,19 +183,27 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户手机号格式错误");
         }
 
+
+        // 短信验证码校验
+        Boolean res = smsService.validCode(phone, verifyCode);
+        if (!res) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "验证码错误");
+        }
+
         // 查询用户是否存在
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("phone", phone);
         User user = userMapper.selectOne(queryWrapper);
         // 用户不存在
         if (user == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在或密码错误");
-        }
+            // 用户不存在则自动注册
+            // throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在或密码错误");
+            user = new User();
+            user.setPhone(phone);
+            user.setUsername("user" + RandomUtil.randomNumbers(5));
+            user.setAvatarUrl(DEFAULT_AVATAR_URL);
 
-        // 短信验证码校验
-        Boolean res = smsService.validCode(phone, verifyCode);
-        if (!res) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "验证码错误");
+            boolean saveResult = this.save(user);
         }
 
         // 脱敏
