@@ -80,7 +80,7 @@ public class MqttServiceImpl implements MqttService {
     final int THRESHOLD_LOW = 0;
     final int THRESHOLD_MEDIUM = 30;
     final int THRESHOLD_HIGH = 60;
-    int night_threshold_hour = 17; // 假设夜晚开始时间为18点
+    int night_threshold_hour = 17; // 假设夜晚开始时间为17点
 
     @Autowired
     AmusementFacilityService amusementFacilityService;
@@ -458,7 +458,63 @@ public class MqttServiceImpl implements MqttService {
     }
 
     @Override
-    public void monitor() {
+    public void monitorMusic() {
+        // 获取所有设施的id列表
+        List<Integer> facilityIds = amusementFacilityMapper.selectAllFacilityIds();
+
+        // 存放设施id和最新排队时间
+        Map<Long, Integer> latestExpectWaitTimes = new HashMap<>();
+
+        // 遍历每个facility_id
+        for (Integer facilityId : facilityIds) {
+            QueryWrapper<CrowdingLevel> queryWrapper = Wrappers.<CrowdingLevel>query()
+                    .eq("facility_type", FacilityTypeConstant.AMUSEMENT_TYPE)
+                    .eq("facility_id", facilityId)
+                    .orderByDesc("create_time"); // 按照create_time降序排序
+
+            // 获取最新的记录
+            List<CrowdingLevel> crowdingLevelList = crowdingLevelMapper.selectList(queryWrapper);
+            CrowdingLevel latestCrowdingLevel = null;
+            if (!CollectionUtils.isEmpty(crowdingLevelList)) {
+                latestCrowdingLevel = crowdingLevelList.get(0);
+            }
+
+            if (latestCrowdingLevel != null) {
+                latestExpectWaitTimes.put(latestCrowdingLevel.getFacilityId(), latestCrowdingLevel.getExpectWaitTime());
+            }
+        }
+
+        // 遍历获取到的最新expect_wait_time
+        for (Map.Entry<Long, Integer> entry : latestExpectWaitTimes.entrySet()) {
+            Long facilityId = entry.getKey();
+            Integer expectWaitTime = entry.getValue();
+
+            // 初始化消息值
+            Integer music = 0;
+
+            // 根据拥挤度设置music
+            if (expectWaitTime > THRESHOLD_LOW && expectWaitTime < THRESHOLD_MEDIUM) {
+                music = 1;
+            } else if (expectWaitTime >= THRESHOLD_MEDIUM && expectWaitTime < THRESHOLD_HIGH) {
+                music = 2;
+            } else if (expectWaitTime >= THRESHOLD_HIGH) {
+                music = 3;
+            }
+
+            // 设置MQTT主题
+            String musicTopic = "M/" + facilityId;
+
+            // 发布消息
+            try {
+                client1.publish(false, musicTopic, String.valueOf(music));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
+    public void monitorLight() {
         // 获取当前时间
         Calendar current_time = Calendar.getInstance();
         int current_hour = current_time.get(Calendar.HOUR_OF_DAY);
@@ -494,17 +550,7 @@ public class MqttServiceImpl implements MqttService {
             Integer expectWaitTime = entry.getValue();
 
             // 初始化消息值
-            Integer music = 0;
             Integer light = 0;
-
-            // 根据拥挤度设置music
-            if (expectWaitTime > THRESHOLD_LOW && expectWaitTime < THRESHOLD_MEDIUM) {
-                music = 1;
-            } else if (expectWaitTime >= THRESHOLD_MEDIUM && expectWaitTime < THRESHOLD_HIGH) {
-                music = 2;
-            } else if (expectWaitTime >= THRESHOLD_HIGH) {
-                music = 3;
-            }
 
             // 如果是夜晚并且需要设置light
             if (current_hour >= night_threshold_hour) {
@@ -519,12 +565,10 @@ public class MqttServiceImpl implements MqttService {
             }
 
             // 设置MQTT主题
-            String musicTopic = "M/" + facilityId;
             String lightTopic = "L/" + facilityId;
 
             // 发布消息
             try {
-                client1.publish(false, musicTopic, String.valueOf(music));
                 client1.publish(false, lightTopic, String.valueOf(light));
             } catch (Exception e) {
                 e.printStackTrace();

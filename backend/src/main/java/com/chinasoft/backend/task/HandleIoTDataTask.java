@@ -28,13 +28,23 @@ public class HandleIoTDataTask {
     }
 
     /**
-     * 检查音乐和灯光如何调节
+     * 检查音乐如何调节
      */
-    @Scheduled(cron = "0 0/5 * * * ? ")
+    @Scheduled(cron = "0 0/30 * * * ? ")
     // @Scheduled(cron = "0/6 * * * * ? ")
-    public void monitorTask() {
-        log.info("检测音乐和灯光进行调节定时任务开始执行：{}", new Date());
-        mqttService.monitor();
+    public void monitorMusicTask() {
+        log.info("检测音乐进行调节定时任务开始执行：{}", new Date());
+        mqttService.monitorMusic();
+    }
+
+    /**
+     * 检查灯光如何调节
+     */
+    @Scheduled(cron = "0 0/10 * * * ? ")
+    // @Scheduled(cron = "0/6 * * * * ? ")
+    public void monitorLightTask() {
+        log.info("检测灯光进行调节定时任务开始执行：{}", new Date());
+        mqttService.monitorLight();
     }
 
     /**

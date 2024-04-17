@@ -26,5 +26,7 @@ public interface MqttService {
 
     List<FacilityHeadCountVO> getFacilityCount();
 
-    void monitor();
+    void monitorMusic();
+
+    void monitorLight();
 }

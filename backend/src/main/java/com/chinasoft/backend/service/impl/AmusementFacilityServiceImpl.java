@@ -177,6 +177,10 @@ public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityM
             }
             facilityImageService.saveBatch(imageList);
         }
+        StringBuffer text = new StringBuffer();
+        // 超过120个字符的情况下，换行缩进4个空格，点号和方法名称一起换行
+
+
 
         return newFacilityId;
     }
