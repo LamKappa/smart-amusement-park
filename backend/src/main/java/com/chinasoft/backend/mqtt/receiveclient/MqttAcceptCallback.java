@@ -53,9 +53,9 @@ public class MqttAcceptCallback implements MqttCallbackExtended {
     @Override
     public void messageArrived(String topic, MqttMessage mqttMessage) throws Exception {
         String s = new String(mqttMessage.getPayload());
-        logger.info("接收消息主题 : " + topic);
-        logger.info("接收消息Qos : " + mqttMessage.getQos());
-        logger.info("接收的消息内容 : " + s);
+        // logger.info("接收消息主题 : " + topic);
+        // logger.info("接收消息Qos : " + mqttMessage.getQos());
+        // logger.info("接收的消息内容 : " + s);
 
         // {'deviceId': 1, 'facilityId': 2, 'facilityType': 0, 'detection': 0}
         IoTData ioTData = JSONUtil.toBean(s, IoTData.class);
