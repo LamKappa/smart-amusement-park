@@ -20,8 +20,8 @@ public class HandleIoTDataTask {
     @Autowired
     MqttService mqttService;
 
-    @Scheduled(cron = "0 0/5 * * * ? ")
-    // @Scheduled(cron = "0/10 * * * * ? ")
+//    @Scheduled(cron = "0 0/5 * * * ? ")
+    @Scheduled(cron = "0/10 * * * * ? ")
     public void handleIoTDataTask() {
         log.info("处理硬件传输的拥挤度数据定时任务开始执行：{}", new Date());
         mqttService.handleIoTData();
@@ -30,7 +30,7 @@ public class HandleIoTDataTask {
     /**
      * 检查音乐如何调节
      */
-    @Scheduled(cron = "0 0/30 * * * ? ")
+    @Scheduled(cron = "0/6 * * * * ? ")
     // @Scheduled(cron = "0/6 * * * * ? ")
     public void monitorMusicTask() {
         log.info("检测音乐进行调节定时任务开始执行：{}", new Date());
@@ -40,7 +40,7 @@ public class HandleIoTDataTask {
     /**
      * 检查灯光如何调节
      */
-    @Scheduled(cron = "0 0/10 * * * ? ")
+    @Scheduled(cron = "0/6 * * * * ? ")
     // @Scheduled(cron = "0/6 * * * * ? ")
     public void monitorLightTask() {
         log.info("检测灯光进行调节定时任务开始执行：{}", new Date());

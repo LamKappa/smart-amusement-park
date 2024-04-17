@@ -553,15 +553,23 @@ public class MqttServiceImpl implements MqttService {
             Integer light = 0;
 
             // 如果是夜晚并且需要设置light
-            if (current_hour >= night_threshold_hour) {
-                // 根据拥挤度设置light
-                if (expectWaitTime > THRESHOLD_LOW && expectWaitTime < THRESHOLD_MEDIUM) {
-                    light = 1;
-                } else if (expectWaitTime >= THRESHOLD_MEDIUM && expectWaitTime < THRESHOLD_HIGH) {
-                    light = 2;
-                } else if (expectWaitTime >= THRESHOLD_HIGH) {
-                    light = 3;
-                }
+//            if (current_hour >= night_threshold_hour) {
+//                // 根据拥挤度设置light
+//                if (expectWaitTime > THRESHOLD_LOW && expectWaitTime < THRESHOLD_MEDIUM) {
+//                    light = 1;
+//                } else if (expectWaitTime >= THRESHOLD_MEDIUM && expectWaitTime < THRESHOLD_HIGH) {
+//                    light = 2;
+//                } else if (expectWaitTime >= THRESHOLD_HIGH) {
+//                    light = 3;
+//                }
+//            }
+            // 根据拥挤度设置light
+            if (expectWaitTime > THRESHOLD_LOW && expectWaitTime < THRESHOLD_MEDIUM) {
+                light = 1;
+            } else if (expectWaitTime >= THRESHOLD_MEDIUM && expectWaitTime < THRESHOLD_HIGH) {
+                light = 2;
+            } else if (expectWaitTime >= THRESHOLD_HIGH) {
+                light = 3;
             }
 
             // 设置MQTT主题
