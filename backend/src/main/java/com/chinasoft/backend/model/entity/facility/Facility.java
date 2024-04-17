@@ -30,7 +30,7 @@ public class Facility {
     private String longitude;
 
     /**
-     * 维度
+     * 纬度
      */
     private String latitude;
 

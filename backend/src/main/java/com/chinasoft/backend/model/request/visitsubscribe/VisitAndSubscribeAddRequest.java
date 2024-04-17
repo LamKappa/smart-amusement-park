@@ -10,8 +10,13 @@ import lombok.Data;
  */
 @Data
 public class VisitAndSubscribeAddRequest {
-
+    /**
+     * 用户ID
+     */
     private Long userId;
 
+    /**
+     * 设施ID+设施名称
+     */
     private FacilityIdType facility;
 }

@@ -9,6 +9,11 @@ import com.chinasoft.backend.service.SmsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+/**
+ * 验证码
+ *
+ * @author 孟祥硕
+ */
 @Service
 public class SmsServiceImpl implements SmsService {
 

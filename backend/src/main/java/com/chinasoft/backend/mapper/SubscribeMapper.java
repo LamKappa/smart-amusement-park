@@ -17,6 +17,11 @@ import java.util.Map;
 @Mapper
 public interface SubscribeMapper extends BaseMapper<Subscribe> {
 
+    /**
+     * 获取订阅次数排名前四的设施列表。
+     * 仅包含设施ID和订阅数字段。
+     * @return 订阅次数排名前四的设施列表
+     */
     @Select("SELECT facility_id, COUNT(*) as subscribeCount " +
             "FROM subscribe " +
             "WHERE facility_type = 0 " +

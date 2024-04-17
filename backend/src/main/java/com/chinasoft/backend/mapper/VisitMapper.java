@@ -18,9 +18,19 @@ import java.util.Map;
 @Mapper
 public interface VisitMapper extends BaseMapper<Visit> {
 
+    /**
+     * 获取各设施的打卡次数统计，以设施ID为键的映射。
+     * 键：设施ID
+     * 值：包含设施ID和打卡次数的键值对映射
+     */
     @MapKey("facilityId")
     Map<Long, Map<String, Long>> visitCount();
 
+    /**
+     * 获取打卡次数排名前四的设施列表。
+     * 仅包含设施ID和打卡次数字段。
+     * @return 打卡数排名前四的设施列表
+     */
     @Select("SELECT facility_id, COUNT(*) as visitCount " +
             "FROM visit " +
             "WHERE facility_type = 0 " +

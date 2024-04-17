@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * 轮播图接口
+ * 轮播信息接口
  *
  * @author 姜堂蕴之
  */
@@ -22,14 +22,16 @@ public class SwiperController {
     SwiperService swiperService;
 
     /**
-     * 根据名称 简介 类型 查询各种设施
+     * 获取所有游乐设施的轮播信息
+     *
+     * @return 包含轮播信息的BaseResponse对象
      */
     @GetMapping("/swiper")
     public BaseResponse<List<Swiper>> getSwiper() {
-        // 查询数据库
+        // 调用swiperService的getSwiper方法查询数据库，获取轮播信息列表
         List<Swiper> data = swiperService.getSwiper();
 
-        // 返回响应
+        // 使用ResultUtils工具类将查询结果封装为成功的BaseResponse对象，并返回
         return ResultUtils.success(data);
     }
 

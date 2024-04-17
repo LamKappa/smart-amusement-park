@@ -9,6 +9,12 @@ import lombok.Data;
  */
 @Data
 public class RouteRecommendationRequest {
+    /**
+     * 路线ID
+     */
     private Long id;
+    /**
+     * 路线名称
+     */
     private String name;
 }

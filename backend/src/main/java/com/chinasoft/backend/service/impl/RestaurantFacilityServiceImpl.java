@@ -9,6 +9,7 @@ import com.chinasoft.backend.constant.RestaurantFacilityTypeEnum;
 import com.chinasoft.backend.exception.BusinessException;
 import com.chinasoft.backend.mapper.FacilityImageMapper;
 import com.chinasoft.backend.mapper.RestaurantFacilityMapper;
+import com.chinasoft.backend.model.entity.facility.AmusementFacility;
 import com.chinasoft.backend.model.entity.facility.FacilityIdType;
 import com.chinasoft.backend.model.entity.facility.FacilityImage;
 import com.chinasoft.backend.model.entity.facility.RestaurantFacility;
@@ -32,9 +33,9 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * @author 姜堂蕴之
- * @description 针对表【restaurant_facility(餐饮设施表)】的数据库操作Service实现
- * @createDate 2024-04-05 09:53:39
+ * 针对表【restaurant_facility】的数据库操作Service实现
+ *
+ * @author 姜堂蕴之 孟祥硕
  */
 @Service
 public class RestaurantFacilityServiceImpl extends ServiceImpl<RestaurantFacilityMapper, RestaurantFacility>
@@ -52,68 +53,116 @@ public class RestaurantFacilityServiceImpl extends ServiceImpl<RestaurantFacilit
     private static final String LONGITUDE_REG_EXPRESS = "^(([1-9]\\d?)|(1[0-7]\\d))(\\.\\d{1,6})|180|0(\\.\\d{1,6})?$";
     private static final String LATITUDE_REG_EXPRESS = "^(([1-8]\\d?)|([1-8]\\d))(\\.\\d{1,6})|90|0(\\.\\d{1,6})?$";
 
-
+    /**
+     * 餐饮设施筛选
+     *
+     * @author 姜堂蕴之
+     */
     @Override
     public List<RestaurantFacilityVO> getRestaurantFacility(RestaurantFilterRequest restaurantFilterRequest) {
         QueryWrapper<RestaurantFacility> queryWrapper = new QueryWrapper<>();
 
-        // 检查id是否非空
+        // 加入设施id筛选条件
         if (restaurantFilterRequest.getId() != null) {
             queryWrapper.eq("id", restaurantFilterRequest.getId());
         }
 
-        // 检查name是否非空
+        // 加入设施名称筛选条件
         if (restaurantFilterRequest.getName() != null && !restaurantFilterRequest.getName().isEmpty()) {
             queryWrapper.like("name", restaurantFilterRequest.getName());
         }
 
-        // 检查type是否非空
+        // 加入餐饮类型筛选条件
         if (restaurantFilterRequest.getType() != null && !restaurantFilterRequest.getType().isEmpty()) {
             queryWrapper.like("type", restaurantFilterRequest.getType());
         }
 
-        // 搜索图片
+        // 获取设施基本信息
         List<RestaurantFacility> facilities = this.baseMapper.selectList(queryWrapper);
 
+        // 创建设施信息视图，为每个设施加入设施图片和预计等待时间
         List<RestaurantFacilityVO> facilityVOList = new ArrayList<>();
 
         for (RestaurantFacility facility : facilities) {
-
+            // 将设施基础信息复制进入设施信息视图
             RestaurantFacilityVO facilityVO = new RestaurantFacilityVO();
-
-            Integer facilityType = 1;
-
-            // 将facility的信息复制到VO对象
             BeanUtils.copyProperties(facility, facilityVO);
 
-            // 创建 QueryWrapper 实例
+            // 查询设施图片
             QueryWrapper<FacilityImage> queryWrapper2 = new QueryWrapper<>();
-
-            // 设置查询条件
             queryWrapper2.eq("facility_type", FacilityTypeConstant.RESTAURANT_TYPE)
                     .eq("facility_id", facility.getId());
-
             List<FacilityImage> facilityImages = facilityImageMapper.selectList(queryWrapper2);
-
-            // 提取 image_url 列表
             List<String> imageUrls = facilityImages.stream()
                     .map(FacilityImage::getImageUrl)
                     .collect(Collectors.toList());
 
-            // 将imageUrls放入VO对象
+            // 将设施图片放入设施信息视图中
             facilityVO.setImageUrls(imageUrls);
 
             // 查询预计等待时间
             Integer expectWaitTime = crowdingLevelService.getExpectWaitTimeByIdType(new FacilityIdType(facility.getId(), FacilityTypeConstant.RESTAURANT_TYPE));
             facilityVO.setExpectWaitTime(expectWaitTime);
 
-            // 将VO对象加入列表
+            // 将设施信息视图加入设施信息视图列表
             facilityVOList.add(facilityVO);
         }
 
         return facilityVOList;
     }
 
+    /**
+     * 餐饮设施查询
+     *
+     * @author 姜堂蕴之
+     */
+    @Override
+    public List<RestaurantFacilityVO> searchRestaurantFacility(String keyword) {
+        // 创建QueryWrapper对象用于构建查询条件
+        QueryWrapper<RestaurantFacility> queryWrapper = new QueryWrapper<>();
+
+        // 对关键字进行模糊查询
+        queryWrapper.like("name", keyword).or().like("type", keyword);
+
+        // 获取设施基本信息
+        List<RestaurantFacility> facilities = this.baseMapper.selectList(queryWrapper);
+
+        // 创建设施信息视图，为每个设施加入设施图片和预计等待时间
+        List<RestaurantFacilityVO> facilityVOList = new ArrayList<>();
+
+        for (RestaurantFacility facility : facilities) {
+            // 将设施基础信息复制进入设施信息视图
+            RestaurantFacilityVO facilityVO = new RestaurantFacilityVO();
+            BeanUtils.copyProperties(facility, facilityVO);
+
+            // 查询设施图片
+            QueryWrapper<FacilityImage> queryWrapper2 = new QueryWrapper<>();
+            queryWrapper2.eq("facility_type", FacilityTypeConstant.RESTAURANT_TYPE)
+                    .eq("facility_id", facility.getId());
+            List<FacilityImage> facilityImages = facilityImageMapper.selectList(queryWrapper2);
+            List<String> imageUrls = facilityImages.stream()
+                    .map(FacilityImage::getImageUrl)
+                    .collect(Collectors.toList());
+
+            // 将设施图片放入设施信息视图中
+            facilityVO.setImageUrls(imageUrls);
+
+            // 查询预计等待时间
+            Integer expectWaitTime = crowdingLevelService.getExpectWaitTimeByIdType(new FacilityIdType(facility.getId(), FacilityTypeConstant.RESTAURANT_TYPE));
+            facilityVO.setExpectWaitTime(expectWaitTime);
+
+            // 将设施信息视图加入设施信息视图列表
+            facilityVOList.add(facilityVO);
+        }
+
+        return facilityVOList;
+    }
+
+    /**
+     * 增加
+     *
+     * @author 孟祥硕
+     */
     @Override
     public long add(RestaurantFacilityAddRequest restaurantFacilityAddRequest) {
 
@@ -148,6 +197,11 @@ public class RestaurantFacilityServiceImpl extends ServiceImpl<RestaurantFacilit
         return newFacilityId;
     }
 
+    /**
+     * 修改
+     *
+     * @author 孟祥硕
+     */
     @Override
     public Boolean update(RestaurantFacilityUpdateRequest restaurantFacilityUpdateRequest) {
 
@@ -192,6 +246,8 @@ public class RestaurantFacilityServiceImpl extends ServiceImpl<RestaurantFacilit
 
     /**
      * 参数校验
+     *
+     * @author 孟祥硕
      */
     @Override
     public void validParams(RestaurantFacility restaurantFacility, boolean add) {

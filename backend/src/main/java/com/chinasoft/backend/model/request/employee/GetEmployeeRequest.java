@@ -11,7 +11,7 @@ import lombok.Data;
 public class GetEmployeeRequest {
 
     /**
-     * 人员id
+     * 人员ID
      */
     private Long id;
 

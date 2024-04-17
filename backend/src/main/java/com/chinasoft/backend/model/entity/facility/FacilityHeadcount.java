@@ -13,6 +13,7 @@ import java.util.Date;
  * 各个游玩设施人数统计表
  *
  * @TableName facility_headcount
+ * @author 姜堂蕴之
  */
 @TableName(value = "facility_headcount")
 @Data

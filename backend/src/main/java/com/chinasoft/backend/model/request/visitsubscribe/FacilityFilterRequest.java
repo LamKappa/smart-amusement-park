@@ -8,7 +8,7 @@ import lombok.Data;
  * @author 姜堂蕴之
  */
 @Data
-public class VisitAndSubscribeGetRequest {
+public class FacilityFilterRequest {
 
     private Long userId;
 

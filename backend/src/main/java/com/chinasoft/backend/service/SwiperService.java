@@ -5,12 +5,17 @@ import com.chinasoft.backend.model.entity.Swiper;
 import java.util.List;
 
 /**
+ * 针对轮播图的数据库操作Service
+ *
  * @author 姜堂蕴之
- * @description 针对轮播图的数据库操作Service
- * @createDate 2024-04-07 16:20:10
  */
 public interface SwiperService {
 
+    /**
+     * 获取所有游乐设施的轮播信息
+     *
+     * @return 包含轮播信息的BaseResponse对象
+     */
     List<Swiper> getSwiper();
 
 }

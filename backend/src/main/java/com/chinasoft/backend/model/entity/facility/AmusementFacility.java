@@ -8,39 +8,42 @@ import java.sql.Time;
 import java.util.Date;
 
 /**
+ * 游乐设施表
+ *
  * @TableName amusement_facility
+ * @author 姜堂蕴之
  */
 @TableName(value = "amusement_facility")
 @Data
 public class AmusementFacility implements Serializable {
     /**
-     *
+     * 设施ID
      */
     @TableId(type = IdType.AUTO)
     private Long id;
 
     /**
-     * 名称
+     * 设施名称
      */
     private String name;
 
     /**
-     * 介绍
+     * 设施简介
      */
     private String introduction;
 
     /**
-     * 经度
+     * 设施经度
      */
     private String longitude;
 
     /**
-     * 维度
+     * 设施纬度
      */
     private String latitude;
 
     /**
-     * 一次游玩的人数
+     * 平均一次游玩的人数
      */
     private Integer perUserCount;
 
@@ -50,12 +53,12 @@ public class AmusementFacility implements Serializable {
     private Integer expectTime;
 
     /**
-     * 项目类型 可多选（过山车、轨道、失重、水上、室内、旋转、鬼屋）
+     * 项目类型
      */
     private String type;
 
     /**
-     * 适合人群（成人、老少皆宜、家长监护）
+     * 适合人群
      */
     private String crowdType;
 
@@ -80,15 +83,14 @@ public class AmusementFacility implements Serializable {
     private String instruction;
 
     /**
-     * 身高下限
+     * 身高下限（以厘米为单位，无限制为0）
      */
     private Integer heightLow;
 
     /**
-     * 身高上限
+     * 身高上限（以厘米为单位，无限制为300）
      */
     private Integer heightUp;
-
 
     /**
      * 添加时间
@@ -105,7 +107,6 @@ public class AmusementFacility implements Serializable {
      */
     @TableLogic
     private Integer isDeleted;
-
 
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;

@@ -11,7 +11,16 @@ import java.util.List;
  */
 @Data
 public class AddRouteRequest {
+    /**
+     * 路线名称
+     */
     private String name;
+    /**
+     * 路线图片
+     */
     private String imgUrl;
+    /**
+     * 途径设施ID列表
+     */
     List<Integer> facilityIdList;
 }

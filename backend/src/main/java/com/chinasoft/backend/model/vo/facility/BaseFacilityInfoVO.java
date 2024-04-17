@@ -1,4 +1,4 @@
-package com.chinasoft.backend.model.vo.visitsubscribe;
+package com.chinasoft.backend.model.vo.facility;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -10,9 +10,14 @@ import lombok.Data;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * 基础设施信息视图
+ *
+ * @author 姜堂蕴之
+ */
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class BaseVisitSubscribeVO {
+public class BaseFacilityInfoVO {
     /**
      * 设施ID
      */

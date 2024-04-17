@@ -9,11 +9,33 @@ import lombok.Data;
  */
 @Data
 public class AmusementFilterRequest {
+    /**
+     * 游乐设施ID
+     */
     private Long id;
 
+    /**
+     * 用户ID
+     */
     private Long userId;
+
+    /**
+     * 设施名称
+     */
     private String name;
+
+    /**
+     * 项目类型
+     */
     private String type;
+
+    /**
+     * 用户身高
+     */
     private Integer height;
+
+    /**
+     * 适合人群
+     */
     private String crowd;
 }

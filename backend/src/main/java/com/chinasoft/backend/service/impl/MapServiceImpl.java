@@ -5,10 +5,7 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.chinasoft.backend.config.AmapProperties;
 import com.chinasoft.backend.constant.FacilityTypeConstant;
-import com.chinasoft.backend.mapper.AmusementFacilityMapper;
-import com.chinasoft.backend.mapper.BaseFacilityMapper;
-import com.chinasoft.backend.mapper.CrowdingLevelMapper;
-import com.chinasoft.backend.mapper.RestaurantFacilityMapper;
+import com.chinasoft.backend.exception.BusinessException;
 import com.chinasoft.backend.model.entity.Walk;
 import com.chinasoft.backend.model.entity.facility.*;
 import com.chinasoft.backend.model.request.map.MultipleNavigationRequest;
@@ -36,13 +33,7 @@ public class MapServiceImpl implements MapService {
     private AmapProperties amapProperties;
 
     @Autowired
-    private CrowdingLevelMapper crowdingLevelMapper;
-
-    @Autowired
     private CrowdingLevelService crowdingLevelService;
-
-    @Autowired
-    private AmusementFacilityMapper amusementFacilityMapper;
 
     @Autowired
     private AmusementFacilityService amusementFacilityService;
@@ -52,12 +43,6 @@ public class MapServiceImpl implements MapService {
 
     @Autowired
     private BaseFacilityService baseFacilityService;
-
-    @Autowired
-    private RestaurantFacilityMapper restaurantFacilityMapper;
-
-    @Autowired
-    private BaseFacilityMapper baseFacilityMapper;
 
     /**
      * 两点之间导航的请求URL
@@ -71,6 +56,8 @@ public class MapServiceImpl implements MapService {
 
     /**
      * 多个设施进行最优路径导航
+     *
+     * @author 孟祥硕
      */
     @Override
     public NavVO mulFacilityNav(MultipleNavigationRequest navigationRequest) {
@@ -180,37 +167,45 @@ public class MapServiceImpl implements MapService {
 
 
     /**
-     * 单个设施进行导航
+     * 单个设施最优路径导航
+     *
+     * @param singleNavigationRequest 包含导航请求的参数的请求体对象
+     * @return 包含最优路径导航信息的BaseResponse对象
+     * @throws BusinessException 当请求体为null时，抛出参数错误异常
+     * @author 姜堂蕴之
      */
     @Override
-    public NavVO sinFacilityNav(SingleNavigationRequest eeNavigationRequest) {
-        String userLongitude = eeNavigationRequest.getUserLongitude();
-        String userLatitude = eeNavigationRequest.getUserLatitude();
-        Long facilityId = eeNavigationRequest.getFacilityId();
-        Integer facilityType = eeNavigationRequest.getFacilityType();
+    public NavVO sinFacilityNav(SingleNavigationRequest singleNavigationRequest) {
+        // 获取请求参数
+        String userLongitude = singleNavigationRequest.getUserLongitude();
+        String userLatitude = singleNavigationRequest.getUserLatitude();
+        Long facilityId = singleNavigationRequest.getFacilityId();
+        Integer facilityType = singleNavigationRequest.getFacilityType();
 
+        // 构建设施ID和类型对象
         FacilityIdType facilityIdType = new FacilityIdType(facilityId, facilityType);
 
-
-        // 获取设施位置
+        // 初始化设施经纬度和预期等待时间
         String facilityLongitude = null;
         String facilityLatitude = null;
-
-        // 预期等待时间
         Integer expectWaitTime = 0;
 
+        // 获取设施的预期等待时间
         expectWaitTime = crowdingLevelService.getExpectWaitTimeByIdType(facilityIdType);
 
+        // 获取设施位置信息
         if (facilityType == FacilityTypeConstant.AMUSEMENT_TYPE) {
-            // 获取设施的经纬度
+            // 获取游乐设施的经纬度
             AmusementFacility facility = amusementFacilityService.getById(facilityId);
             facilityLongitude = facility.getLongitude();
             facilityLatitude = facility.getLatitude();
         } else if (facilityType == FacilityTypeConstant.RESTAURANT_TYPE) {
+            // 获取餐饮设施的经纬度
             RestaurantFacility facility = restaurantFacilityService.getById(facilityId);
             facilityLongitude = facility.getLongitude();
             facilityLatitude = facility.getLatitude();
         } else if (facilityType == FacilityTypeConstant.BASE_TYPE) {
+            // 获取基础设施的经纬度
             BaseFacility facility = baseFacilityService.getById(facilityId);
             facilityLongitude = facility.getLongitude();
             facilityLatitude = facility.getLatitude();
@@ -224,11 +219,12 @@ public class MapServiceImpl implements MapService {
         // 获取预计行走信息
         Walk walkInfo = getTwoPointExpectWalkInfo(sourcePositionPoint, targetPositionPoint);
 
+        // 格式化预计到达时间
         LocalDateTime expectArriveTime = walkInfo.getExpectArriveTime();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
         String formattedExpectArriveTime = expectArriveTime.toLocalTime().format(formatter);
 
-        // 将数据封装称NavVO
+        // 封装导航信息到NavVO对象
         NavVO navVO = new NavVO();
         navVO.setTotalWaitTime(expectWaitTime);
         navVO.setExpectWalkTime(walkInfo.getExpectWalkTime());
@@ -236,93 +232,120 @@ public class MapServiceImpl implements MapService {
         navVO.setExpectArriveTime(formattedExpectArriveTime);
         navVO.setPaths(resList);
 
-
         return navVO;
     }
 
     /**
      * 获得两个点之间的路径坐标点列表
+     *
+     * @author 姜堂蕴之
      */
     private List<PositionPoint> getTwoPointNav(PositionPoint sourcePoint, PositionPoint targetPoint) {
-        // 调用高德地图api
+        // 提取起点和终点的经纬度信息
         String sourceLongitude = sourcePoint.getLongitude();
         String sourceLatitude = sourcePoint.getLatitude();
         String targetLongitude = targetPoint.getLongitude();
         String targetLatitude = targetPoint.getLatitude();
-        HashMap<String, Object> paramMap = new HashMap<>();
-        paramMap.put("origin", sourceLongitude + "," + sourceLatitude);
-        paramMap.put("destination", targetLongitude + "," + targetLatitude);
-        paramMap.put("key", amapProperties.getKey());
 
+        // 创建参数Map，用于构建高德地图API请求
+        HashMap<String, Object> paramMap = new HashMap<>();
+        paramMap.put("origin", sourceLongitude + "," + sourceLatitude);  // 设置起点坐标
+        paramMap.put("destination", targetLongitude + "," + targetLatitude); // 设置终点坐标
+        paramMap.put("key", amapProperties.getKey()); // 设置高德地图API密钥
+
+        // 调用HttpUtil的get方法发起请求，获取高德地图API返回的导航结果
         String result = HttpUtil.get(WALKING_NAV_REQUEST_URL, paramMap);
 
-        // 处理高德api数据
+        // 解析高德地图API返回的JSON数据
         JSONObject resObj = JSONUtil.parseObj(result);
+
+        // 提取导航步骤信息
         List<Map> steps = (List<Map>) resObj.getByPath("route.paths.0.steps");
+
+        // 创建用于存储导航路径点的列表
         List<PositionPoint> dataList = new ArrayList<>();
 
-
-        // 遍历steps
+        // 遍历导航步骤中的每个点
         for (Map map : steps) {
+            // 获取步骤中的折线点字符串
             String polyline = (String) map.get("polyline");
 
+            // 将折线点字符串按分号分割成多个点
             String[] points = polyline.split(";");
+
+            // 遍历每个点
             for (String point : points) {
+                // 将点按逗号分割成经纬度
                 String[] position = point.split(",");
                 String longitude = position[0];
                 String latitude = position[1];
 
+                // 创建位置点对象
                 PositionPoint positionPoint = new PositionPoint();
                 positionPoint.setLatitude(latitude);
                 positionPoint.setLongitude(longitude);
 
-                // 将坐标点添加到列表中
+                // 将位置点添加到列表中
                 dataList.add(positionPoint);
             }
         }
 
+        // 返回导航路径点列表
         return dataList;
     }
 
 
     /**
      * 获得两个点之间的预期行走信息
+     *
+     * @author 姜堂蕴之
      */
     private Walk getTwoPointExpectWalkInfo(PositionPoint sourcePoint, PositionPoint targetPoint) {
-        // 调用高德地图api
+        // 提取起点和终点的经纬度信息
         String sourceLongitude = sourcePoint.getLongitude();
         String sourceLatitude = sourcePoint.getLatitude();
         String targetLongitude = targetPoint.getLongitude();
         String targetLatitude = targetPoint.getLatitude();
-        HashMap<String, Object> paramMap = new HashMap<>();
-        paramMap.put("origins", sourceLongitude + "," + sourceLatitude);
-        paramMap.put("destination", targetLongitude + "," + targetLatitude);
-        paramMap.put("key", amapProperties.getKey());
-        paramMap.put("type", 3);
 
+        // 创建参数Map，用于构建高德地图API请求
+        HashMap<String, Object> paramMap = new HashMap<>();
+        paramMap.put("origins", sourceLongitude + "," + sourceLatitude); // 设置起点坐标
+        paramMap.put("destination", targetLongitude + "," + targetLatitude); // 设置终点坐标
+        paramMap.put("key", amapProperties.getKey()); // 设置高德地图API密钥
+        paramMap.put("type", 3); // 设置类型为步行
+
+        // 初始化预计步行时间和预计步行距离
         Integer expectWalkTime = 0;
         Integer expectWalkDistance = 0;
+
+        // 获取当前时间
         LocalDateTime currentTime = LocalDateTime.now();
 
+        // 调用HttpUtil的get方法发起请求，获取高德地图API返回的步行距离和时间信息
         String result = HttpUtil.get(DISTANCE_REQUEST_URL, paramMap);
 
+        // 解析高德地图API返回的JSON数据
         JSONObject resObj = JSONUtil.parseObj(result);
         List<Map> results = (List<Map>) resObj.get("results");
 
+        // 遍历结果列表，累加步行时间和步行距离
         for (Map map : results) {
-            Integer duration = Integer.parseInt((String) map.get("duration"));
-            Integer distance = Integer.parseInt((String) map.get("distance"));
-            expectWalkTime += duration / 60;
-            expectWalkDistance += distance;
+            Integer duration = Integer.parseInt((String) map.get("duration")); // 提取步行时间（单位：秒）
+            Integer distance = Integer.parseInt((String) map.get("distance")); // 提取步行距离（单位：米）
+            expectWalkTime += duration / 60; // 将步行时间转换为分钟并累加
+            expectWalkDistance += distance; // 累加步行距离
         }
 
+        // 计算预计到达时间（当前时间加上预计步行时间）
         LocalDateTime expectArriveTime = currentTime.plusMinutes(expectWalkTime);
 
+        // 创建Walk对象并设置预计步行信息
         Walk walk = new Walk();
-        walk.setExpectWalkTime(expectWalkTime);
-        walk.setExpectWalkDistance(expectWalkDistance);
-        walk.setExpectArriveTime(expectArriveTime);
+        walk.setExpectWalkTime(expectWalkTime); // 设置预计步行时间（单位：分钟）
+        walk.setExpectWalkDistance(expectWalkDistance); // 设置预计步行距离（单位：米）
+        walk.setExpectArriveTime(expectArriveTime); // 设置预计到达时间
 
+        // 返回包含期望步行信息的Walk对象
         return walk;
     }
 }

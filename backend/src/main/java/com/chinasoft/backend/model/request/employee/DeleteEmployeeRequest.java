@@ -10,6 +10,9 @@ import lombok.Data;
 @Data
 public class DeleteEmployeeRequest {
 
+    /**
+     * 员工ID
+     */
     private Long id;
 
 }

@@ -9,7 +9,9 @@ import lombok.Data;
  */
 @Data
 public class DeleteRouteRequest {
-
+    /**
+     * 路线ID
+     */
     private Long id;
 
 }

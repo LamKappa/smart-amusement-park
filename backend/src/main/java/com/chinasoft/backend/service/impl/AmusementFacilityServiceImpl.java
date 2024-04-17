@@ -11,9 +11,7 @@ import com.chinasoft.backend.exception.BusinessException;
 import com.chinasoft.backend.mapper.AmusementFacilityMapper;
 import com.chinasoft.backend.mapper.CrowdingLevelMapper;
 import com.chinasoft.backend.mapper.FacilityImageMapper;
-import com.chinasoft.backend.model.entity.facility.AmusementFacility;
-import com.chinasoft.backend.model.entity.facility.FacilityIdType;
-import com.chinasoft.backend.model.entity.facility.FacilityImage;
+import com.chinasoft.backend.model.entity.facility.*;
 import com.chinasoft.backend.model.request.facility.AmusementFacilityAddRequest;
 import com.chinasoft.backend.model.request.facility.AmusementFacilityUpdateRequest;
 import com.chinasoft.backend.model.request.facility.AmusementFilterRequest;
@@ -34,14 +32,13 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * @author 姜堂蕴之
- * @description 针对表【amusement_facility】的数据库操作Service实现
- * @createDate 2024-04-05 09:47:45
+ * 针对表【amusement_facility】的数据库操作Service实现
+ *
+ * @author 姜堂蕴之 孟祥硕
  */
 @Service
 public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityMapper, AmusementFacility>
         implements AmusementFacilityService {
-
 
     @Autowired
     FacilityImageMapper facilityImageMapper;
@@ -59,64 +56,62 @@ public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityM
     private static final String LATITUDE_REG_EXPRESS = "^(([1-8]\\d?)|([1-8]\\d))(\\.\\d{1,6})|90|0(\\.\\d{1,6})?$";
 
 
+    /**
+     * 游乐设施筛选
+     *
+     * @author 姜堂蕴之
+     */
     @Override
     public List<AmusementFacilityVO> getAmusementFacility(AmusementFilterRequest amusementFilterRequest) {
         QueryWrapper<AmusementFacility> queryWrapper = new QueryWrapper<>();
 
+        // 加入设施id筛选条件
         if (amusementFilterRequest.getId() != null) {
             queryWrapper.eq("id", amusementFilterRequest.getId());
         }
 
-        // 检查name是否非空
+        // 加入设施名称筛选条件
         if (amusementFilterRequest.getName() != null && !amusementFilterRequest.getName().isEmpty()) {
             queryWrapper.like("name", amusementFilterRequest.getName());
         }
 
-        // 检查type是否非空
+        // 加入项目类型筛选条件
         if (amusementFilterRequest.getType() != null && !amusementFilterRequest.getType().isEmpty()) {
             queryWrapper.like("type", amusementFilterRequest.getType());
         }
 
-        // 检查height是否非空
+        // 加入用户身高筛选条件
         if (amusementFilterRequest.getHeight() != null) {
             queryWrapper.le("height_low", amusementFilterRequest.getHeight()) // height_low <= height
                     .ge("height_up", amusementFilterRequest.getHeight()); // height_up >= height
         }
 
-        // 检查crowd是否非空
+        // 加入适合人群筛选条件
         if (amusementFilterRequest.getCrowd() != null && !amusementFilterRequest.getCrowd().isEmpty()) {
             queryWrapper.like("crowd_type", amusementFilterRequest.getCrowd());
         }
 
-        // 搜索图片
+        // 获取设施基本信息
         List<AmusementFacility> facilities = this.baseMapper.selectList(queryWrapper);
 
+        // 创建设施信息视图，为每个设施加入设施图片和预计等待时间
         List<AmusementFacilityVO> facilityVOList = new ArrayList<>();
 
         for (AmusementFacility facility : facilities) {
-
+            // 将设施基础信息复制进入设施信息视图
             AmusementFacilityVO facilityVO = new AmusementFacilityVO();
-
-            Integer facilityType = 0;
-
-            // 将facility的信息复制到VO对象
             BeanUtils.copyProperties(facility, facilityVO);
 
-            // 创建 QueryWrapper 实例
+            // 查询设施图片
             QueryWrapper<FacilityImage> queryWrapper2 = new QueryWrapper<>();
-
-            // 设置查询条件
             queryWrapper2.eq("facility_type", FacilityTypeConstant.AMUSEMENT_TYPE)
                     .eq("facility_id", facility.getId());
-
             List<FacilityImage> facilityImages = facilityImageMapper.selectList(queryWrapper2);
-
-            // 提取 image_url 列表
             List<String> imageUrls = facilityImages.stream()
                     .map(FacilityImage::getImageUrl)
                     .collect(Collectors.toList());
 
-            // 将imageUrls放入VO对象
+            // 将设施图片放入设施信息视图中
             facilityVO.setImageUrls(imageUrls);
 
             // 查询预计等待时间
@@ -124,10 +119,10 @@ public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityM
             if (expectWaitTime != 0) {
                 facilityVO.setExpectWaitTime(expectWaitTime);
             } else {
-                // 默认值
+                // 设置默认值
                 facilityVO.setExpectWaitTime(facilityVO.getExpectTime());
             }
-            // 将VO对象加入列表
+            // 将设施信息视图加入设施信息视图列表
             facilityVOList.add(facilityVO);
         }
 
@@ -135,7 +130,62 @@ public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityM
     }
 
     /**
+     * 游乐设施查询
+     *
+     * @author 姜堂蕴之
+     */
+    @Override
+    public List<AmusementFacilityVO> searchAmusementFacility(String keyword) {
+        // 创建QueryWrapper对象用于构建查询条件
+        QueryWrapper<AmusementFacility> queryWrapper = new QueryWrapper<>();
+
+        // 对关键字进行模糊查询
+        queryWrapper.like("name", keyword).or().like("type", keyword);
+
+        // 获取设施基本信息
+        List<AmusementFacility> facilities = this.baseMapper.selectList(queryWrapper);
+
+        // 创建设施信息视图，为每个设施加入设施图片和预计等待时间
+        List<AmusementFacilityVO> facilityVOList = new ArrayList<>();
+
+        for (AmusementFacility facility : facilities) {
+            // 将设施基础信息复制进入设施信息视图
+            AmusementFacilityVO facilityVO = new AmusementFacilityVO();
+            BeanUtils.copyProperties(facility, facilityVO);
+
+            // 查询设施图片
+            QueryWrapper<FacilityImage> queryWrapper2 = new QueryWrapper<>();
+            queryWrapper2.eq("facility_type", FacilityTypeConstant.AMUSEMENT_TYPE)
+                    .eq("facility_id", facility.getId());
+            List<FacilityImage> facilityImages = facilityImageMapper.selectList(queryWrapper2);
+            List<String> imageUrls = facilityImages.stream()
+                    .map(FacilityImage::getImageUrl)
+                    .collect(Collectors.toList());
+
+            // 将设施图片放入设施信息视图中
+            facilityVO.setImageUrls(imageUrls);
+
+            // 查询预计等待时间
+            Integer expectWaitTime = crowdingLevelService.getExpectWaitTimeByIdType(new FacilityIdType(facility.getId(), FacilityTypeConstant.AMUSEMENT_TYPE));
+            if (expectWaitTime != 0) {
+                facilityVO.setExpectWaitTime(expectWaitTime);
+            } else {
+                // 设置默认值
+                facilityVO.setExpectWaitTime(facilityVO.getExpectTime());
+            }
+
+            // 将设施信息视图加入设施信息视图列表
+            facilityVOList.add(facilityVO);
+        }
+
+        // 返回设施信息视图列表
+        return facilityVOList;
+    }
+
+    /**
      * 增加
+     *
+     * @author 孟祥硕
      */
     @Override
     public long add(AmusementFacilityAddRequest amusementFacilityAddRequest) {
@@ -188,6 +238,8 @@ public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityM
 
     /**
      * 修改
+     *
+     * @author 孟祥硕
      */
     @Override
     public Boolean update(AmusementFacilityUpdateRequest amusementFacilityUpdateRequest) {
@@ -233,6 +285,8 @@ public class AmusementFacilityServiceImpl extends ServiceImpl<AmusementFacilityM
 
     /**
      * 参数校验
+     *
+     * @author 孟祥硕
      */
     @Override
     public void validParams(AmusementFacility amusementFacility, boolean add) {

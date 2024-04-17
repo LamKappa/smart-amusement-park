@@ -6,6 +6,11 @@ import lombok.Data;
 
 import java.util.List;
 
+/**
+ * 导航数据视图
+ *
+ * @author 孟祥硕
+ */
 @Data
 // 进行Json转换时候，不转换为null的字段
 @JsonInclude(JsonInclude.Include.NON_NULL)

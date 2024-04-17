@@ -12,5 +12,11 @@ import java.util.List;
  * @createDate 2024-04-10 17:56:36
  */
 public interface TotalHeadcountService extends IService<TotalHeadcount> {
+    /**
+     * 按日期返回日期当天的游玩总人数
+     *
+     * @return BaseResponse<List<TotalHeadCountVO>> 包含按日期排列的游玩总人数列表的响应对象
+     * @author 姜堂蕴之
+     */
     List<TotalHeadCountVO> getTotalCountArrangeByDate();
 }

@@ -24,6 +24,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 针对表【visit(用户打卡记录表)】的数据库操作Service实现
+ *
+ * @author 孟祥硕 姜堂蕴之
+ */
 @Service
 public class VisitServiceImpl extends ServiceImpl<VisitMapper, Visit>
         implements VisitService {
@@ -47,12 +52,22 @@ public class VisitServiceImpl extends ServiceImpl<VisitMapper, Visit>
     private AmusementFacilityService amusementFacilityService;
 
 
+    /**
+     * 添加用户打卡记录
+     *
+     * @param visitAndSubscribeAddRequest 包含用户id、设施id和设施类别的打卡请求对象
+     * @return 包含新增打卡记录的Visit对象的BaseResponse响应
+     * @throws BusinessException 如果请求对象为null，则抛出参数错误的业务异常
+     * @author 姜堂蕴之
+     */
     @Override
     public Visit addVisit(VisitAndSubscribeAddRequest visitAndSubscribeAddRequest) {
+        // 获取请求信息
         Long userId = Long.valueOf(visitAndSubscribeAddRequest.getUserId());
         Long facilityId = Long.valueOf(visitAndSubscribeAddRequest.getFacility().getFacilityId());
         Integer facilityType = visitAndSubscribeAddRequest.getFacility().getFacilityType();
 
+        // 检查参数非空
         if (ObjectUtils.anyNull(userId, facilityId, facilityType)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
         }
@@ -97,7 +112,7 @@ public class VisitServiceImpl extends ServiceImpl<VisitMapper, Visit>
         }
 
 
-        // 不无异常则正常插入
+        // 无异常则正常插入
         Visit visit = new Visit();
         visit.setUserId(userId);
         visit.setFacilityId(facilityId);
@@ -105,11 +120,14 @@ public class VisitServiceImpl extends ServiceImpl<VisitMapper, Visit>
 
         this.baseMapper.insert(visit);
 
+        // 返回插入数据
         return this.baseMapper.selectOne(Wrappers.<Visit>query().eq("id", visit.getId()));
     }
 
     /**
      * 统计每个设施的打卡次数
+     *
+     * @author 孟祥硕
      */
     @Override
     public List<FacilityVisitCountVO> visitCount() {

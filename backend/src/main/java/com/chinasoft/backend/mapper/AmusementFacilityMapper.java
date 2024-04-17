@@ -14,6 +14,10 @@ import java.util.List;
  */
 @Mapper
 public interface AmusementFacilityMapper extends BaseMapper<AmusementFacility> {
+    /**
+     * 获取所有游乐设施的ID列表。
+     * @return 游乐设施的ID列表
+     */
     List<Integer> selectAllFacilityIds();
 }
 

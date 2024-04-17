@@ -4,6 +4,11 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 坐标点
+ *
+ * @author 孟祥硕
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

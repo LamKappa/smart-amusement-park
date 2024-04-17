@@ -11,6 +11,7 @@ import com.chinasoft.backend.mapper.FacilityImageMapper;
 import com.chinasoft.backend.model.entity.facility.BaseFacility;
 import com.chinasoft.backend.model.entity.facility.FacilityIdType;
 import com.chinasoft.backend.model.entity.facility.FacilityImage;
+import com.chinasoft.backend.model.entity.facility.RestaurantFacility;
 import com.chinasoft.backend.model.request.facility.BaseFacilityAddRequest;
 import com.chinasoft.backend.model.request.facility.BaseFacilityUpdateRequest;
 import com.chinasoft.backend.model.request.facility.BaseFilterRequest;
@@ -31,9 +32,9 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * @author 姜堂蕴之
- * @description 针对表【base_facility(基础设施表)】的数据库操作Service实现
- * @createDate 2024-04-05 09:51:44
+ * 针对表【base_facility】的数据库操作Service实现
+ *
+ * @author 姜堂蕴之 孟祥硕
  */
 @Service
 public class BaseFacilityServiceImpl extends ServiceImpl<BaseFacilityMapper, BaseFacility>
@@ -52,62 +53,111 @@ public class BaseFacilityServiceImpl extends ServiceImpl<BaseFacilityMapper, Bas
     private static final String LATITUDE_REG_EXPRESS = "^(([1-8]\\d?)|([1-8]\\d))(\\.\\d{1,6})|90|0(\\.\\d{1,6})?$";
 
 
+    /**
+     * 基础设施筛选
+     *
+     * @author 姜堂蕴之
+     */
     @Override
     public List<BaseFacilityVO> getBaseFacility(BaseFilterRequest baseFilterRequest) {
         QueryWrapper<BaseFacility> queryWrapper = new QueryWrapper<>();
 
-        // 检查id是否非空
+        // 加入设施id筛选条件
         if (baseFilterRequest.getId() != null) {
             queryWrapper.eq("id", baseFilterRequest.getId());
         }
 
-        // 检查name是否非空
+        // 加入设施名称筛选条件
         if (baseFilterRequest.getName() != null && !baseFilterRequest.getName().isEmpty()) {
             queryWrapper.like("name", baseFilterRequest.getName());
         }
 
-        // 搜索图片
+        // 获取设施基本信息
         List<BaseFacility> facilities = this.baseMapper.selectList(queryWrapper);
 
+        // 创建设施信息视图，为每个设施加入设施图片和预计等待时间
         List<BaseFacilityVO> facilityVOList = new ArrayList<>();
 
         for (BaseFacility facility : facilities) {
-
+            // 将设施基础信息复制进入设施信息视图
             BaseFacilityVO facilityVO = new BaseFacilityVO();
-
-            Integer facilityType = 2;
-
-            // 将facility的信息复制到VO对象
             BeanUtils.copyProperties(facility, facilityVO);
 
-            // 创建 QueryWrapper 实例
+            // 查询设施图片
             QueryWrapper<FacilityImage> queryWrapper2 = new QueryWrapper<>();
-
-            // 设置查询条件
             queryWrapper2.eq("facility_type", FacilityTypeConstant.BASE_TYPE)
                     .eq("facility_id", facility.getId());
-
             List<FacilityImage> facilityImages = facilityImageMapper.selectList(queryWrapper2);
-
-            // 提取 image_url 列表
             List<String> imageUrls = facilityImages.stream()
                     .map(FacilityImage::getImageUrl)
                     .collect(Collectors.toList());
 
-            // 将imageUrls放入VO对象
+            // 将设施图片放入设施信息视图中
             facilityVO.setImageUrls(imageUrls);
 
             // 查询预计等待时间
             Integer expectWaitTime = crowdingLevelService.getExpectWaitTimeByIdType(new FacilityIdType(facility.getId(), FacilityTypeConstant.BASE_TYPE));
             facilityVO.setExpectWaitTime(expectWaitTime);
 
-            // 将VO对象加入列表
+            // 将设施信息视图加入设施信息视图列表
             facilityVOList.add(facilityVO);
         }
 
         return facilityVOList;
     }
 
+    /**
+     * 基础设施查询
+     *
+     * @author 姜堂蕴之
+     */
+    @Override
+    public List<BaseFacilityVO> searchBaseFacility(String keyword) {
+        // 创建QueryWrapper对象用于构建查询条件
+        QueryWrapper<BaseFacility> queryWrapper = new QueryWrapper<>();
+
+        // 对关键字进行模糊查询
+        queryWrapper.like("name", keyword);
+
+        // 获取设施基本信息
+        List<BaseFacility> facilities = this.baseMapper.selectList(queryWrapper);
+
+        // 创建设施信息视图，为每个设施加入设施图片和预计等待时间
+        List<BaseFacilityVO> facilityVOList = new ArrayList<>();
+
+        for (BaseFacility facility : facilities) {
+            // 将设施基础信息复制进入设施信息视图
+            BaseFacilityVO facilityVO = new BaseFacilityVO();
+            BeanUtils.copyProperties(facility, facilityVO);
+
+            // 查询设施图片
+            QueryWrapper<FacilityImage> queryWrapper2 = new QueryWrapper<>();
+            queryWrapper2.eq("facility_type", FacilityTypeConstant.BASE_TYPE)
+                    .eq("facility_id", facility.getId());
+            List<FacilityImage> facilityImages = facilityImageMapper.selectList(queryWrapper2);
+            List<String> imageUrls = facilityImages.stream()
+                    .map(FacilityImage::getImageUrl)
+                    .collect(Collectors.toList());
+
+            // 将设施图片放入设施信息视图中
+            facilityVO.setImageUrls(imageUrls);
+
+            // 查询预计等待时间
+            Integer expectWaitTime = crowdingLevelService.getExpectWaitTimeByIdType(new FacilityIdType(facility.getId(), FacilityTypeConstant.BASE_TYPE));
+            facilityVO.setExpectWaitTime(expectWaitTime);
+
+            // 将设施信息视图加入设施信息视图列表
+            facilityVOList.add(facilityVO);
+        }
+
+        return facilityVOList;
+    }
+
+    /**
+     * 增加
+     *
+     * @author 孟祥硕
+     */
     @Override
     public long add(BaseFacilityAddRequest baseFacilityAddRequest) {
 
@@ -142,6 +192,11 @@ public class BaseFacilityServiceImpl extends ServiceImpl<BaseFacilityMapper, Bas
         return newFacilityId;
     }
 
+    /**
+     * 修改
+     *
+     * @author 孟祥硕
+     */
     @Override
     public Boolean update(BaseFacilityUpdateRequest baseFacilityUpdateRequest) {
 
@@ -186,6 +241,8 @@ public class BaseFacilityServiceImpl extends ServiceImpl<BaseFacilityMapper, Bas
 
     /**
      * 参数校验
+     *
+     * @author 孟祥硕
      */
     @Override
     public void validParams(BaseFacility baseFacility, boolean add) {

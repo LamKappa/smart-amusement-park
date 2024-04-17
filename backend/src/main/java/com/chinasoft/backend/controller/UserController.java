@@ -1,4 +1,4 @@
-package com.chinasoft.backend.controller.user;
+package com.chinasoft.backend.controller;
 
 import com.chinasoft.backend.common.BaseResponse;
 import com.chinasoft.backend.common.ErrorCode;

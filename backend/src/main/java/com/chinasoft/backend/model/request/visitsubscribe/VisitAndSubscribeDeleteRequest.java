@@ -9,7 +9,9 @@ import lombok.Data;
  */
 @Data
 public class VisitAndSubscribeDeleteRequest {
-
+    /**
+     * 记录ID
+     */
     private Long id;
 
 }

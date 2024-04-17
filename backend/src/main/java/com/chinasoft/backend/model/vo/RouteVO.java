@@ -8,6 +8,11 @@ import lombok.Data;
 
 import java.util.List;
 
+/**
+ * 路线视图
+ *
+ * @author 姜堂蕴之
+ */
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class RouteVO {

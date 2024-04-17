@@ -7,6 +7,11 @@ import org.springframework.stereotype.Service;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Redis相关操作
+ *
+ * @author 孟祥硕
+ */
 @Service
 public class RedisServiceImpl implements RedisService {
     @Autowired

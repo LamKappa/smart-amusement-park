@@ -11,6 +11,7 @@ import java.util.Date;
  * 基础设施表
  *
  * @TableName base_facility
+ * @author 姜堂蕴之
  */
 @TableName(value = "base_facility")
 @Data
@@ -27,27 +28,27 @@ public class BaseFacility implements Serializable {
     private String name;
 
     /**
-     * 纬度
+     * 设施经度
      */
     private String longitude;
 
     /**
-     * 经度
+     * 设施纬度
      */
     private String latitude;
 
     /**
-     * 开放开始时间
+     * 开始时间
      */
     private Time startTime;
 
     /**
-     * 开放结束时间
+     * 结束时间
      */
     private Time closeTime;
 
     /**
-     * 每个人的预期时间
+     * 一人使用时长
      */
     private Integer expectTime;
 
@@ -57,7 +58,7 @@ public class BaseFacility implements Serializable {
     private Integer maxCapacity;
 
     /**
-     * 状态（0-正常，1-异常）
+     * 设施状态（0-正常，1-异常）
      */
     private Integer status;
 

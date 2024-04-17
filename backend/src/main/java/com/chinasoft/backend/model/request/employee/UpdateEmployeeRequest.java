@@ -3,9 +3,9 @@ package com.chinasoft.backend.model.request.employee;
 import lombok.Data;
 
 /**
- * 员工更改
+ * 员工更改请求
  *
- * @author 孟祥硕
+ * @author 姜堂蕴之
  */
 @Data
 public class UpdateEmployeeRequest {

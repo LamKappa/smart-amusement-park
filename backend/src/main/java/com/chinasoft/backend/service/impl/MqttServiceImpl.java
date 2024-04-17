@@ -3,6 +3,7 @@ package com.chinasoft.backend.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.chinasoft.backend.config.mqtt.MqttProperties;
+import com.chinasoft.backend.constant.CrowdingLevelConstant;
 import com.chinasoft.backend.constant.FacilityTypeConstant;
 import com.chinasoft.backend.mapper.AmusementFacilityMapper;
 import com.chinasoft.backend.mapper.CrowdingLevelMapper;
@@ -32,6 +33,11 @@ import org.springframework.util.CollectionUtils;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * MQTT相关Service实现
+ *
+ * @author 孟祥硕 姜堂蕴之
+ */
 @Service
 @Slf4j
 public class MqttServiceImpl implements MqttService {
@@ -62,25 +68,31 @@ public class MqttServiceImpl implements MqttService {
     private static final Double PER_PERSON_LENGTH = 0.25;
 
     /**
-     * 暂存游乐设施的总人数
+     * 游乐设施总人数在Redis中的对应Key值
      */
-    private Integer totalCount = 0;
     private static final String TOTAL_COUNT_KEY = "totalCount";
 
     /**
-     * 暂存各个设施的游玩人数
+     * 基于拥挤度的音乐、灯光调节阈值
      */
-    private Map<Integer, Integer> amusementFacilityHeadCountMap = new HashMap<Integer, Integer>();
-
-    private String getRedisKey(Integer facilityId) {
-        return "facility_head_count:" + facilityId;
-    }
-
-    // 定义阈值和时间
     final int THRESHOLD_LOW = 0;
     final int THRESHOLD_MEDIUM = 30;
     final int THRESHOLD_HIGH = 60;
-    int night_threshold_hour = 17; // 假设夜晚开始时间为17点
+
+    /**
+     * 预设的灯光开启时间点
+     */
+    int night_threshold_hour = 17;
+
+    /**
+     * MQTT音乐调节主题前缀
+     */
+    public static final String MUSIC_TOPIC_PREFIX = "M/";
+
+    /**
+     * MQTT灯光调节主题前缀
+     */
+    public static final String LIGHT_TOPIC_PREFIX = "L/";
 
     @Autowired
     AmusementFacilityService amusementFacilityService;
@@ -115,75 +127,89 @@ public class MqttServiceImpl implements MqttService {
     @Autowired
     private CrowdingLevelMapper crowdingLevelMapper;
 
+
+    /**
+     * 根据设施ID生成Redis中的统一Key值
+     */
+    private String getRedisKey(Integer facilityId) {
+        return "facility_head_count:" + facilityId;
+    }
+
     /**
      * 暂存IoT的数据
+     *
+     * @author 孟祥硕 姜堂蕴之
      */
     @Override
     public void saveIoTData(IoTData ioTData) {
-        // Map<Integer, List<IoTData>> map = IoTDataMapContext.getMap();
-
+        // 读取硬件传输数据
         Integer deviceId = ioTData.getDeviceId();
         Integer facilityId = ioTData.getFacilityId();
         Integer facilityType = ioTData.getFacilityType();
         Integer detection = ioTData.getDetection();
 
-        if (facilityType == FacilityTypeConstant.AMUSEMENT_TYPE) {
+        if (facilityType == FacilityTypeConstant.AMUSEMENT_TYPE) { // 如果是游乐设施
+            // 初始化游乐设施数据列表
             if (!amusementFacilityDataMap.containsKey(facilityId)) {
                 amusementFacilityDataMap.put(facilityId, new ArrayList<>());
             }
-            if (!amusementFacilityHeadCountMap.containsKey(facilityId)) {
-                amusementFacilityHeadCountMap.put(facilityId, 0);
-            }
+
+            // 存储拥挤度数据
             List<IoTData> ioTDataList = amusementFacilityDataMap.get(facilityId);
             ioTDataList.add(ioTData);
 
-            if (deviceId == 0) {
+            if (deviceId == 0) { // 如果数据传输硬件设备为大门处传感器
+                // 获取Redis键值
                 String key = getRedisKey(facilityId);
                 ValueOperations<String, Integer> operations = redisTemplate.opsForValue();
                 if (operations.get(key) == null) {
+                    // 若Redis中不存在该键值，则初始化为0
                     operations.set(key, 0);
                 }
-                // 更新facilityId在amusementFacilityHeadCountMap中的计数
+                // 更新Redis中的计数
                 if (detection == 1) {
-//                int currentCount = amusementFacilityHeadCountMap.get(facilityId);
-//                amusementFacilityHeadCountMap.put(facilityId, currentCount + 1);
+                    // 如果检测到人员进入，则增加计数
                     Integer currentCount = operations.get(key);
                     currentCount++;
                     operations.set(key, currentCount);
                 }
             }
-        } else if (facilityType == FacilityTypeConstant.RESTAURANT_TYPE) {
+        } else if (facilityType == FacilityTypeConstant.RESTAURANT_TYPE) { // 如果是餐饮设施
+            // 初始化餐饮设施数据列表
             if (!restaurantFacilityDataMap.containsKey(facilityId)) {
                 restaurantFacilityDataMap.put(facilityId, new ArrayList<>());
             }
+            // 存储餐饮设施数据
             List<IoTData> ioTDataList = restaurantFacilityDataMap.get(facilityId);
             ioTDataList.add(ioTData);
-        } else if (facilityType == FacilityTypeConstant.BASE_TYPE) {
+        } else if (facilityType == FacilityTypeConstant.BASE_TYPE) { // 如果是基础设施
+            // 初始化基础设施数据列表
             if (!baseFacilityDataMap.containsKey(facilityId)) {
                 baseFacilityDataMap.put(facilityId, new ArrayList<>());
             }
+            // 存储基础设施数据
             List<IoTData> ioTDataList = baseFacilityDataMap.get(facilityId);
             ioTDataList.add(ioTData);
-        } else if (facilityType == FacilityTypeConstant.GATE_TYPE) {
-            // 统计总游玩人数
-//            if(detection == 1){
-//                totalCount++;
-//            }
+        } else if (facilityType == FacilityTypeConstant.GATE_TYPE) { // 如果是游乐园大门
             ValueOperations<String, Integer> operations = redisTemplate.opsForValue();
             if (getTotalCountFromRedis() == null) {
+                // 若Redis中不存在总计数键值，则初始化为0
                 operations.set(TOTAL_COUNT_KEY, 0);
             }
             if (detection == 1) {
+                // 如果检测到人员进入，则增加总计数
                 Integer currentTotalCount = getTotalCountFromRedis();
                 currentTotalCount++;
                 operations.set(TOTAL_COUNT_KEY, currentTotalCount);
             }
         }
-
     }
+
 
     /**
      * 每五分钟处理一次暂存的IoT数据
+     *
+     * @author 孟祥硕
      */
     @Override
     public void handleIoTData() {
@@ -219,6 +245,8 @@ public class MqttServiceImpl implements MqttService {
 
     /**
      * 根据不同的设施获取预期等待时间对象的列表
+     *
+     * @author 孟祥硕
      */
     private List<CrowdingLevel> getCrowdingLevelList(Map<Integer, List<IoTData>> map, Integer facilityType) {
 
@@ -311,58 +339,44 @@ public class MqttServiceImpl implements MqttService {
 
     /**
      * 存储总游玩人数
+     * 存储成功后将Redis中的计数重置为0
+     *
+     * @author 姜堂蕴之
      */
-//    public void handleTotalHeadCount(){
-//        TotalHeadcount totalHeadcount = new TotalHeadcount();
-//        totalHeadcount.setCount(totalCount);
-//        totalHeadcountMapper.insert(totalHeadcount);
-//        if(totalHeadcount.getId() > 0){
-//            totalCount = 0;
-//        }else{
-//            log.info("定时任务2执行失败：{}，统计值为：{}", new Date(), totalCount);
-//        }
-//    }
     public void handleTotalHeadCount() {
+        // 从Redis中获取总游玩人数
         Integer totalCountFromRedis = getTotalCountFromRedis();
+
+        // 创建新的TotalHeadcount对象
         TotalHeadcount totalHeadcount = new TotalHeadcount();
+
+        // 判断从Redis中获取的总游玩人数是否为空
         if (totalCountFromRedis == null) {
             totalHeadcount.setCount(0);
         } else {
             totalHeadcount.setCount(totalCountFromRedis);
         }
+
+        // 将总游玩人数信息插入数据库
         totalHeadcountMapper.insert(totalHeadcount);
+
+        // 判断插入是否成功
         if (totalHeadcount.getId() > 0) {
-            // 如果插入成功，将Redis中的totalCount重置为0
+
             ValueOperations<String, Integer> operations = redisTemplate.opsForValue();
+            // 将Redis中的totalCount重置为0
             operations.set(TOTAL_COUNT_KEY, 0);
         } else {
-            log.info("定时任务2执行失败：{}，统计值为：{}", new Date(), totalCountFromRedis);
+            log.info("记录总人数定时任务执行失败：{}", new Date());
         }
     }
 
     /**
      * 存储各个设施的游玩人数
+     * 存储成功后将Redis中的计数重置为0
+     *
+     * @author 姜堂蕴之
      */
-//    public void handleFacilityHeadCount() {
-//        List<FacilityHeadcount> facilityHeadcountList = new ArrayList<>();
-//        for (Map.Entry<Integer, Integer> entry : amusementFacilityHeadCountMap.entrySet()) {
-//            Integer facilityId = entry.getKey();
-//            int headCount = entry.getValue();
-//
-//            FacilityHeadcount facilityHeadcount = new FacilityHeadcount();
-//            facilityHeadcount.setFacilityId(Long.valueOf(facilityId));
-//            facilityHeadcount.setCount(headCount);
-//
-//            facilityHeadcountList.add(facilityHeadcount);
-//        }
-//
-//        boolean isSuccess = facilityHeadcountService.saveBatch(facilityHeadcountList);
-//        if(isSuccess){
-//            amusementFacilityHeadCountMap = new HashMap<>();
-//        }else{
-//            log.info("定时任务3执行失败：{}", new Date());
-//        }
-//    }
     public void handleFacilityHeadCount() {
         // 从数据库中获取所有设施ID
         List<Integer> facilityIds = amusementFacilityMapper.selectAllFacilityIds();
@@ -375,7 +389,7 @@ public class MqttServiceImpl implements MqttService {
                     FacilityHeadcount facilityHeadcount = new FacilityHeadcount();
                     facilityHeadcount.setFacilityId(Long.valueOf(facilityId));
 
-                    // 如果Redis中没有计数，count将为null，你可能需要处理这种情况
+                    // 如果Redis中没有计数，count设置为0
                     if (count == null) {
                         facilityHeadcount.setCount(0);
                     } else {
@@ -386,65 +400,56 @@ public class MqttServiceImpl implements MqttService {
                 })
                 .collect(Collectors.toList());
 
+        // 将各个设施游玩人数数据存储入数据库
         boolean isSuccess = facilityHeadcountService.saveBatch(facilityHeadcountList);
+
+        // 判断插入是否成功
         if (isSuccess) {
             for (Integer facilityId : facilityIds) {
                 redisTemplate.opsForValue().set(getRedisKey(facilityId), 0);
             }
         } else {
-            log.info("定时任务3执行失败：{}", new Date());
+            log.info("记录各设施游玩人数定时任务执行失败：{}", new Date());
         }
     }
 
     /**
-     * 返回总游玩人数
+     * 返回当前总游玩人数
+     *
+     * @author 姜堂蕴之
      */
     @Override
-//    public Integer getTotalCount() {
-//        return totalCount;
-//    }
-
     public Integer getTotalCountFromRedis() {
         ValueOperations<String, Integer> operations = redisTemplate.opsForValue();
         return operations.get(TOTAL_COUNT_KEY);
     }
 
     /**
-     * 返回总游玩人数
+     * 返回当前各个设施游玩人数
+     *
+     * @author 姜堂蕴之
      */
-//    @Override
-//    public  List<FacilityHeadCountVO> getFacilityCount() {
-//        List<FacilityHeadCountVO> facilityHeadCountList = new ArrayList<>();
-//        for (Map.Entry<Integer, Integer> entry : amusementFacilityHeadCountMap.entrySet()) {
-//            Integer facilityId = entry.getKey();
-//            int headCount = entry.getValue();
-//
-//            AmusementFacility amusementFacility = amusementFacilityMapper.selectById(facilityId);
-//
-//            FacilityHeadCountVO facilityHeadCountVO = new FacilityHeadCountVO();
-//            facilityHeadCountVO.setFacilityId(Long.valueOf(facilityId));
-//            facilityHeadCountVO.setHeadCount(headCount);
-//            facilityHeadCountVO.setFacilityName(amusementFacility.getName());
-//
-//            facilityHeadCountList.add(facilityHeadCountVO);
-//        }
-//
-//        return facilityHeadCountList;
-//    }
     @Override
     public List<FacilityHeadCountVO> getFacilityCount() {
+        // 初始化一个设施游玩人数VO列表
         List<FacilityHeadCountVO> facilityHeadCountList = new ArrayList<>();
+
         // 获取所有设施的ID列表
         List<Integer> facilityIds = amusementFacilityMapper.selectAllFacilityIds();
 
+        // 遍历每个设施的ID
         for (Integer facilityId : facilityIds) {
+            // 根据设施ID生成Redis中的key
             String key = getRedisKey(facilityId);
+
+            // 从Redis中获取该设施的游玩人数
             ValueOperations<String, Integer> operations = redisTemplate.opsForValue();
             Integer headCount = operations.get(key);
 
+            // 判断游玩人数非空且不为0
             if (headCount != null && headCount != 0) {
+                //  将该设施的基础信息添加至返回列表中
                 AmusementFacility amusementFacility = amusementFacilityMapper.selectById(facilityId);
-
                 FacilityHeadCountVO facilityHeadCountVO = new FacilityHeadCountVO();
                 facilityHeadCountVO.setFacilityId(Long.valueOf(facilityId));
                 facilityHeadCountVO.setHeadCount(headCount);
@@ -454,57 +459,70 @@ public class MqttServiceImpl implements MqttService {
             }
         }
 
+        // 返回设施游玩人数VO列表
         return facilityHeadCountList;
     }
 
+    /**
+     * 监控音乐播放器
+     * 通过检测设施的最新排队时间，为设施选择适当的音乐播放模式。
+     * 音乐播放模式说明：
+     *  - 拥挤度1档（0-30）：激情音乐，适用于低拥挤度的设施排队区域。
+     *  - 拥挤度2档（30-60）：轻快音乐，适用于中等拥挤度的设施排队区域。
+     *  - 拥挤度3档（60以上）：舒缓音乐，适用于高拥挤度的设施排队区域。
+     *
+     * @author 姜堂蕴之
+     */
     @Override
     public void monitorMusic() {
-        // 获取所有设施的id列表
+        // 获取所有设施的ID列表
         List<Integer> facilityIds = amusementFacilityMapper.selectAllFacilityIds();
 
-        // 存放设施id和最新排队时间
+        // 存放设施ID和最新排队时间的映射关系
         Map<Long, Integer> latestExpectWaitTimes = new HashMap<>();
 
-        // 遍历每个facility_id
+        // 遍历每个设施ID
         for (Integer facilityId : facilityIds) {
+            // 构建查询条件
             QueryWrapper<CrowdingLevel> queryWrapper = Wrappers.<CrowdingLevel>query()
                     .eq("facility_type", FacilityTypeConstant.AMUSEMENT_TYPE)
                     .eq("facility_id", facilityId)
                     .orderByDesc("create_time"); // 按照create_time降序排序
 
-            // 获取最新的记录
+            // 获取最新的拥挤度记录
             List<CrowdingLevel> crowdingLevelList = crowdingLevelMapper.selectList(queryWrapper);
             CrowdingLevel latestCrowdingLevel = null;
             if (!CollectionUtils.isEmpty(crowdingLevelList)) {
                 latestCrowdingLevel = crowdingLevelList.get(0);
             }
 
+            // 存储最新的排队时间
             if (latestCrowdingLevel != null) {
                 latestExpectWaitTimes.put(latestCrowdingLevel.getFacilityId(), latestCrowdingLevel.getExpectWaitTime());
             }
         }
 
-        // 遍历获取到的最新expect_wait_time
+        // 遍历获取到的最新排队时间
         for (Map.Entry<Long, Integer> entry : latestExpectWaitTimes.entrySet()) {
             Long facilityId = entry.getKey();
             Integer expectWaitTime = entry.getValue();
 
-            // 初始化消息值
+            // 初始化音乐模式
             Integer music = 0;
 
-            // 根据拥挤度设置music
+            // 根据排队时间设置音乐模式
             if (expectWaitTime > THRESHOLD_LOW && expectWaitTime < THRESHOLD_MEDIUM) {
-                music = 1;
+                music = CrowdingLevelConstant.LOW; // 1档
             } else if (expectWaitTime >= THRESHOLD_MEDIUM && expectWaitTime < THRESHOLD_HIGH) {
-                music = 2;
+                music = CrowdingLevelConstant.MEDIUM; // 2档
             } else if (expectWaitTime >= THRESHOLD_HIGH) {
-                music = 3;
+                music = CrowdingLevelConstant.HIGHT; // 3档
             }
 
             // 设置MQTT主题
-            String musicTopic = "M/" + facilityId;
+            String musicTopic = MUSIC_TOPIC_PREFIX + facilityId;
 
-            // 发布消息
+            // 发布音乐模式消息
             try {
                 client1.publish(false, musicTopic, String.valueOf(music));
             } catch (Exception e) {
@@ -513,69 +531,74 @@ public class MqttServiceImpl implements MqttService {
         }
     }
 
+
+    /**
+     * 监控灯光控制器
+     * 通过检测设施的最新排队时间，为设施选择适当的灯光模式（灯光只在夜晚进行控制）。
+     * 灯光模式说明：
+     *  - 拥挤度1档（0-30）：柔和灯光，适用于低拥挤度的设施排队区域。
+     *  - 拥挤度2档（30-60）：适中灯光，适用于中等拥挤度的设施排队区域。
+     *  - 拥挤度3档（60以上）：明亮灯光，适用于高拥挤度的设施排队区域。
+     *
+     * @author 姜堂蕴之
+     */
     @Override
     public void monitorLight() {
         // 获取当前时间
         Calendar current_time = Calendar.getInstance();
         int current_hour = current_time.get(Calendar.HOUR_OF_DAY);
 
-        // 获取所有设施的id列表
+        // 获取所有设施的ID列表
         List<Integer> facilityIds = amusementFacilityMapper.selectAllFacilityIds();
 
-        // 存放设施id和最新排队时间
+        // 存放设施ID和最新排队时间的映射关系
         Map<Long, Integer> latestExpectWaitTimes = new HashMap<>();
 
-        // 遍历每个facility_id
+        // 遍历每个设施ID
         for (Integer facilityId : facilityIds) {
+            // 构建查询条件
             QueryWrapper<CrowdingLevel> queryWrapper = Wrappers.<CrowdingLevel>query()
                     .eq("facility_type", FacilityTypeConstant.AMUSEMENT_TYPE)
                     .eq("facility_id", facilityId)
                     .orderByDesc("create_time"); // 按照create_time降序排序
 
-            // 获取最新的记录
+            // 获取最新的拥挤度记录
             List<CrowdingLevel> crowdingLevelList = crowdingLevelMapper.selectList(queryWrapper);
             CrowdingLevel latestCrowdingLevel = null;
             if (!CollectionUtils.isEmpty(crowdingLevelList)) {
                 latestCrowdingLevel = crowdingLevelList.get(0);
             }
 
+            // 存储最新的排队时间
             if (latestCrowdingLevel != null) {
                 latestExpectWaitTimes.put(latestCrowdingLevel.getFacilityId(), latestCrowdingLevel.getExpectWaitTime());
             }
         }
 
-        // 遍历获取到的最新expect_wait_time
+        // 遍历获取到的最新排队时间
         for (Map.Entry<Long, Integer> entry : latestExpectWaitTimes.entrySet()) {
             Long facilityId = entry.getKey();
             Integer expectWaitTime = entry.getValue();
 
-            // 初始化消息值
+            // 初始化灯光模式
             Integer light = 0;
 
-            // 如果是夜晚并且需要设置light
-//            if (current_hour >= night_threshold_hour) {
-//                // 根据拥挤度设置light
-//                if (expectWaitTime > THRESHOLD_LOW && expectWaitTime < THRESHOLD_MEDIUM) {
-//                    light = 1;
-//                } else if (expectWaitTime >= THRESHOLD_MEDIUM && expectWaitTime < THRESHOLD_HIGH) {
-//                    light = 2;
-//                } else if (expectWaitTime >= THRESHOLD_HIGH) {
-//                    light = 3;
-//                }
-//            }
-            // 根据拥挤度设置light
+            // 为了便于项目展示，此处省略时间判断
+//            if (current_hour >= night_threshold_hour)
+
+            // 根据排队时间设置音乐模式
             if (expectWaitTime > THRESHOLD_LOW && expectWaitTime < THRESHOLD_MEDIUM) {
-                light = 1;
+                light = CrowdingLevelConstant.LOW; // 1档
             } else if (expectWaitTime >= THRESHOLD_MEDIUM && expectWaitTime < THRESHOLD_HIGH) {
-                light = 2;
+                light = CrowdingLevelConstant.MEDIUM; // 2档
             } else if (expectWaitTime >= THRESHOLD_HIGH) {
-                light = 3;
+                light = CrowdingLevelConstant.HIGHT; // 3档
             }
 
             // 设置MQTT主题
-            String lightTopic = "L/" + facilityId;
+            String lightTopic = LIGHT_TOPIC_PREFIX + facilityId;
 
-            // 发布消息
+            // 发布灯光模式消息
             try {
                 client1.publish(false, lightTopic, String.valueOf(light));
             } catch (Exception e) {

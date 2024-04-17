@@ -1,4 +1,4 @@
-package com.chinasoft.backend.controller.statistics;
+package com.chinasoft.backend.controller;
 
 import com.chinasoft.backend.common.BaseResponse;
 import com.chinasoft.backend.common.ResultUtils;
@@ -13,7 +13,6 @@ import com.chinasoft.backend.service.route.RouteService;
 import com.chinasoft.backend.service.statistic.TotalHeadcountService;
 import com.chinasoft.backend.service.visitsubscribe.VisitService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.repository.query.Param;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,7 +22,7 @@ import java.util.List;
 /**
  * 数据统计接口
  *
- * @author 孟祥硕
+ * @author 孟祥硕 姜堂蕴之
  */
 @RestController
 @RequestMapping("/statistics")
@@ -46,6 +45,8 @@ public class StatisticsController {
 
     /**
      * 统计推荐路线使用次数
+     *
+     * @author 孟祥硕
      */
     @GetMapping("/route/useCount")
     public BaseResponse<List<Route>> useCount() {
@@ -63,6 +64,8 @@ public class StatisticsController {
 
     /**
      * 统计每个设施的打卡次数
+     *
+     * @author 孟祥硕
      */
     @GetMapping("/visit/count")
     public BaseResponse<List<FacilityVisitCountVO>> visitCount() {
@@ -74,6 +77,8 @@ public class StatisticsController {
 
     /**
      * 以小时为单位统计当日的拥挤度（预期等待时间）
+     *
+     * @author 孟祥硕
      */
     @GetMapping("/crowingTimeCount")
     public BaseResponse<List<CrowingTimeCountVO>> crowingTimeCount() {
@@ -87,50 +92,45 @@ public class StatisticsController {
     /**
      * 返回当前的今日游玩总人数
      *
-     * @param
-     * @return
+     * @return BaseResponse<Integer> 包含今日游玩总人数的响应对象
+     * @author 姜堂蕴之
      */
     @GetMapping("/headCount/total")
     public BaseResponse<Integer> getTotalCountFromRedis() {
-
-        // 查询数据库
+        // 从Redis中查询数据库获取今日游玩总人数
         Integer data = mqttService.getTotalCountFromRedis();
 
-        // 返回响应
+        // 将查询结果封装为成功的响应对象并返回
         return ResultUtils.success(data);
     }
 
     /**
      * 按日期返回日期当天的游玩总人数
      *
-     * @param
-     * @return
+     * @return BaseResponse<List<TotalHeadCountVO>> 包含按日期排列的游玩总人数列表的响应对象
+     * @author 姜堂蕴之
      */
     @GetMapping("/headCount/totalArrangeByDate")
     public BaseResponse<List<TotalHeadCountVO>> getTotalCountArrangeByDate() {
-
-        // 查询数据库
+        // 查询数据库获取按日期排列的游玩总人数列表
         List<TotalHeadCountVO> data = totalHeadcountService.getTotalCountArrangeByDate();
-
-        // 返回响应
+        
+        // 将查询结果封装为成功的响应对象并返回
         return ResultUtils.success(data);
     }
 
     /**
-     * 按设施id返回当前的今日游玩总人数
+     * 按设施id返回该设施的今日游玩总人数
      *
-     * @param
-     * @return
+     * @return BaseResponse<List<FacilityHeadCountVO>> 包含按设施ID排列的游玩总人数列表的响应对象
+     * @author 姜堂蕴之
      */
     @GetMapping("/headCount/facility")
-    public BaseResponse<List<FacilityHeadCountVO>> getFacilityCount(@Param("facilityId") Integer facilityId) {
-
-        // 查询数据库
+    public BaseResponse<List<FacilityHeadCountVO>> getFacilityCount() {
+        // 根据传入的设施ID查询数据库获取该设施的游玩总人数列表
         List<FacilityHeadCountVO> data = mqttService.getFacilityCount();
 
-        // 返回响应
+        // 将查询结果封装为成功的响应对象并返回
         return ResultUtils.success(data);
     }
-
-
 }

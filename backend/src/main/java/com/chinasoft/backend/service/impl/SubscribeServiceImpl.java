@@ -39,12 +39,21 @@ public class SubscribeServiceImpl extends ServiceImpl<SubscribeMapper, Subscribe
     @Autowired
     private BaseFacilityMapper baseFacilityMapper;
 
+    /**
+     * 根据用户手机号、设施id和设施类别进行订阅操作
+     *
+     * @param visitAndSubscribeAddRequest 包含用户手机号、设施id和设施类别的订阅请求对象
+     * @return 包含新增订阅信息的Subscribe对象的BaseResponse响应
+     * @throws BusinessException 如果请求对象为null，则抛出参数错误的业务异常
+     */
     @Override
     public Subscribe addSubscribe(VisitAndSubscribeAddRequest visitAndSubscribeAddRequest) {
+        // 获取请求信息
         Long userId = Long.valueOf(visitAndSubscribeAddRequest.getUserId());
         Long facilityId = Long.valueOf(visitAndSubscribeAddRequest.getFacility().getFacilityId());
         Integer facilityType = visitAndSubscribeAddRequest.getFacility().getFacilityType();
 
+        // 检查参数非空
         if (ObjectUtils.anyNull(userId, facilityId, facilityType)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
         }
@@ -96,6 +105,7 @@ public class SubscribeServiceImpl extends ServiceImpl<SubscribeMapper, Subscribe
 
         this.baseMapper.insert(subscribe);
 
+        // 返回插入数据
         return this.baseMapper.selectOne(Wrappers.<Subscribe>query().eq("id", subscribe.getId()));
     }
 }
