@@ -30,6 +30,9 @@ public class EmployeeController {
     @Autowired
     private EmployeeService employeeService;
 
+    /**
+     * 登录
+     */
     @PostMapping("/login")
     public BaseResponse adminLogin(@RequestBody AdminLoginRequest userLoginRequest, HttpServletRequest request) {
         if (userLoginRequest == null) {
@@ -44,6 +47,9 @@ public class EmployeeController {
         return ResultUtils.success(user);
     }
 
+    /**
+     * 查询员工
+     */
     @PostMapping("/getEmployee")
     public BaseResponse<List<Employee>> getEmployee(@RequestBody GetEmployeeRequest getEmployeeRequest) {
         if (getEmployeeRequest == null) {
@@ -54,6 +60,9 @@ public class EmployeeController {
         return ResultUtils.success(employeeList);
     }
 
+    /**
+     * 添加员工
+     */
     @PostMapping("/addEmployee")
     public BaseResponse<Employee> addEmployee(@RequestBody AddEmployeeRequest addEmployeeRequest) {
         if (addEmployeeRequest == null) {
@@ -64,6 +73,9 @@ public class EmployeeController {
         return ResultUtils.success(employee);
     }
 
+    /**
+     * 删除员工
+     */
     @PostMapping("/deleteEmployee")
     public BaseResponse<Boolean> deleteEmployee(@RequestBody DeleteEmployeeRequest deleteEmployeeRequest) {
         Long employeeId = deleteEmployeeRequest.getId();
@@ -84,6 +96,9 @@ public class EmployeeController {
         return ResultUtils.success(res);
     }
 
+    /**
+     * 更新员工
+     */
     @PostMapping("/updateEmployee")
     public BaseResponse<Employee> updateEmployee(@RequestBody UpdateEmployeeRequest updateEmployeeRequest) {
         if (updateEmployeeRequest == null) {
