@@ -1,6 +1,6 @@
 package com.chinasoft.backend.config.mqtt;
 
-import com.chinasoft.backend.mqtt.receiveclient.MqttAcceptClient;
+import com.chinasoft.backend.service.mqtt.receiveclient.MqttAcceptClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;

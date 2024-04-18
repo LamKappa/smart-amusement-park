@@ -7,6 +7,11 @@ import lombok.Data;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * 基础设施信息视图
+ *
+ * @author 姜堂蕴之
+ */
 @Data
 public class RestaurantFacilityVO {
     /**

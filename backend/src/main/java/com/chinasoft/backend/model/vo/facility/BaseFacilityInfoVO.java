@@ -11,7 +11,7 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * 基础设施信息视图
+ * 基础设施信息视图（加入打卡订阅）
  *
  * @author 姜堂蕴之
  */

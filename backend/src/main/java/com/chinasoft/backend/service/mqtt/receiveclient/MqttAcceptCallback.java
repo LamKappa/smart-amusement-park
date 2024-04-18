@@ -1,4 +1,4 @@
-package com.chinasoft.backend.mqtt.receiveclient;
+package com.chinasoft.backend.service.mqtt.receiveclient;
 
 import cn.hutool.json.JSONUtil;
 import com.chinasoft.backend.config.mqtt.MqttProperties;
@@ -15,6 +15,10 @@ import org.springframework.stereotype.Component;
 
 import java.io.UnsupportedEncodingException;
 
+/**
+ * MQTT 接收者
+ * @author 孟祥硕
+ */
 @Component
 public class MqttAcceptCallback implements MqttCallbackExtended {
 

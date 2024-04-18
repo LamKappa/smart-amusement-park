@@ -8,7 +8,10 @@ import java.io.Serializable;
 import java.util.Date;
 
 /**
+ * 用户表
+ *
  * @TableName user
+ * @author 孟祥硕
  */
 @TableName(value = "user")
 @Data

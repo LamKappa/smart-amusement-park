@@ -10,7 +10,7 @@ import com.chinasoft.backend.model.entity.Visit;
 import com.chinasoft.backend.model.request.facility.AmusementFilterRequest;
 import com.chinasoft.backend.model.request.facility.BaseFilterRequest;
 import com.chinasoft.backend.model.request.facility.RestaurantFilterRequest;
-import com.chinasoft.backend.model.request.visitsubscribe.FacilityFilterRequest;
+import com.chinasoft.backend.model.request.facility.FacilityFilterRequest;
 import com.chinasoft.backend.model.vo.facility.*;
 import com.chinasoft.backend.service.facility.AmusementFacilityService;
 import com.chinasoft.backend.service.facility.BaseFacilityService;

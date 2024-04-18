@@ -11,6 +11,7 @@ import java.util.Date;
  * 餐饮设施表
  *
  * @TableName restaurant_facility
+ * @author 姜堂蕴之
  */
 @TableName(value = "restaurant_facility")
 @Data

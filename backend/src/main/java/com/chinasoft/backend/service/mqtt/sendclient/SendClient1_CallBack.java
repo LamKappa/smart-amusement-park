@@ -1,4 +1,4 @@
-package com.chinasoft.backend.mqtt.sendclient;
+package com.chinasoft.backend.service.mqtt.sendclient;
 
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
@@ -9,6 +9,10 @@ import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 
+/**
+ * MQTT 发送者
+ * @author 姜堂蕴之
+ */
 @Component
 @Slf4j
 public class SendClient1_CallBack implements MqttCallbackExtended {

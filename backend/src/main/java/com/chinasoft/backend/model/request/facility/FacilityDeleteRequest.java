@@ -9,8 +9,13 @@ import lombok.Data;
  */
 @Data
 public class FacilityDeleteRequest {
-
+    /**
+     * 设施ID
+     */
     private Long facilityId;
 
+    /**
+     * 设施类型
+     */
     private Integer facilityType;
 }

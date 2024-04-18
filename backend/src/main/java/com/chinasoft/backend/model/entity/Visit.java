@@ -8,7 +8,9 @@ import lombok.Data;
 
 /**
  * 用户打卡记录表
+ *
  * @TableName visit
+ * @author 姜堂蕴之
  */
 @TableName(value ="visit")
 @Data

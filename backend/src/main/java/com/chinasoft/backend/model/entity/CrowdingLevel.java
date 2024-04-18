@@ -10,6 +10,7 @@ import java.util.Date;
  * 拥挤度表
  *
  * @TableName crowding_level
+ * @author 孟祥硕
  */
 @TableName(value = "crowding_level")
 @Data

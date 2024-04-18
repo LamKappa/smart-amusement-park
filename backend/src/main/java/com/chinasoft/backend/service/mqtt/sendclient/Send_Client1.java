@@ -1,4 +1,4 @@
-package com.chinasoft.backend.mqtt.sendclient;
+package com.chinasoft.backend.service.mqtt.sendclient;
 
 import com.chinasoft.backend.config.mqtt.MqttProperties;
 import org.eclipse.paho.client.mqttv3.*;
@@ -10,6 +10,10 @@ import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
+/**
+ * MQTT 发送者
+ * @author 姜堂蕴之
+ */
 @Component
 public class Send_Client1 {
 

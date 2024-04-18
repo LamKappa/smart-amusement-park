@@ -1,4 +1,4 @@
-package com.chinasoft.backend.mqtt.receiveclient;
+package com.chinasoft.backend.service.mqtt.receiveclient;
 
 import com.chinasoft.backend.config.mqtt.MqttProperties;
 import lombok.extern.slf4j.Slf4j;
@@ -9,6 +9,10 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+/**
+ * MQTT 接收者
+ * @author 孟祥硕
+ */
 @Component
 @Slf4j
 public class MqttAcceptClient {

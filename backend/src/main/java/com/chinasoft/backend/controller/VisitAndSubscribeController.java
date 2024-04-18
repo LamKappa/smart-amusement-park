@@ -6,7 +6,7 @@ import com.chinasoft.backend.common.ResultUtils;
 import com.chinasoft.backend.exception.BusinessException;
 import com.chinasoft.backend.model.entity.Subscribe;
 import com.chinasoft.backend.model.entity.Visit;
-import com.chinasoft.backend.model.request.visitsubscribe.FacilityFilterRequest;
+import com.chinasoft.backend.model.request.facility.FacilityFilterRequest;
 import com.chinasoft.backend.model.request.visitsubscribe.VisitAndSubscribeAddRequest;
 import com.chinasoft.backend.model.request.visitsubscribe.VisitAndSubscribeDeleteRequest;
 import com.chinasoft.backend.service.facility.FilterService;

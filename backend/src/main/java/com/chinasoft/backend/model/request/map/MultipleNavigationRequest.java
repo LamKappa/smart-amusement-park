@@ -12,10 +12,18 @@ import java.util.List;
  */
 @Data
 public class MultipleNavigationRequest {
-
+    /**
+     * 用户经度
+     */
     private String userLongitude;
 
+    /**
+     * 用户纬度
+     */
     private String userLatitude;
 
+    /**
+     * 设施列表
+     */
     private List<FacilityIdType> facilities;
 }

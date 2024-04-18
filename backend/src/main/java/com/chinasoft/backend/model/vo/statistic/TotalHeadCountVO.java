@@ -5,6 +5,11 @@ import lombok.Data;
 
 import java.sql.Date;
 
+/**
+ * 游玩人数信息视图
+ *
+ * @author 姜堂蕴之
+ */
 @Data
 public class TotalHeadCountVO {
 

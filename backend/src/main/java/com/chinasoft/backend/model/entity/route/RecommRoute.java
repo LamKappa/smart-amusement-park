@@ -10,6 +10,7 @@ import java.util.Date;
  * 推荐路线表
  *
  * @TableName recomm_route
+ * @author 姜堂蕴之
  */
 @TableName(value = "recomm_route")
 @Data

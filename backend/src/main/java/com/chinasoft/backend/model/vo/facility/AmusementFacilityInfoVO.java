@@ -11,7 +11,7 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * 游乐设施信息视图
+ * 游乐设施信息视图（加入打卡订阅）
  *
  * @author 姜堂蕴之
  */

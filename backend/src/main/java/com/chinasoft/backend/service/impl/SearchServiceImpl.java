@@ -1,7 +1,6 @@
 package com.chinasoft.backend.service.impl;
 
 import com.chinasoft.backend.exception.BusinessException;
-import com.chinasoft.backend.model.request.visitsubscribe.FacilityFilterRequest;
 import com.chinasoft.backend.model.vo.facility.AmusementFacilityVO;
 import com.chinasoft.backend.model.vo.facility.BaseFacilityVO;
 import com.chinasoft.backend.model.vo.facility.RestaurantFacilityVO;

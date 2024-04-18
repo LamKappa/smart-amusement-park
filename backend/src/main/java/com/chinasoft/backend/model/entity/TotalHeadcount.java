@@ -10,7 +10,9 @@ import lombok.Data;
 
 /**
  * 总人数统计表
+ *
  * @TableName total_headcount
+ * @author 姜堂蕴之
  */
 @TableName(value ="total_headcount")
 @Data

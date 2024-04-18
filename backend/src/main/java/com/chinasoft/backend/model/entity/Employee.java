@@ -9,8 +9,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
 /**
- * 
+ * 员工表
+ *
  * @TableName employee
+ * @author 姜堂蕴之
  */
 @TableName(value ="employee")
 @Data

@@ -4,6 +4,9 @@ import lombok.Data;
 
 import java.util.List;
 
+/**
+ * @author 孟祥硕
+ */
 @Data
 public class CrowingTimeCountVO {
 

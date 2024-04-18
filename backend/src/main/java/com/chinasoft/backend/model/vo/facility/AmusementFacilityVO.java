@@ -7,31 +7,36 @@ import lombok.Data;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * 游乐设施信息视图
+ *
+ * @author 姜堂蕴之
+ */
 @Data
 public class AmusementFacilityVO {
     /**
-     *
+     * 设施ID
      */
     @TableId(type = IdType.AUTO)
     private Long id;
 
     /**
-     * 名称
+     * 设施名称
      */
     private String name;
 
     /**
-     * 介绍
+     * 设施介绍
      */
     private String introduction;
 
     /**
-     * 纬度
+     * 设施经度
      */
     private String longitude;
 
     /**
-     * 经度
+     * 设施纬度
      */
     private String latitude;
 
@@ -46,12 +51,12 @@ public class AmusementFacilityVO {
     private Integer expectTime;
 
     /**
-     * 项目类型 可多选（过山车、轨道、失重、水上、室内、旋转、鬼屋）
+     * 项目类型
      */
     private String type;
 
     /**
-     * 适合人群（成人、老少皆宜、家长监护）
+     * 适合人群
      */
     private String crowdType;
 

@@ -8,7 +8,9 @@ import lombok.Data;
 
 /**
  * 用户订阅记录表
+ *
  * @TableName subscribe
+ * @author 姜堂蕴之
  */
 @TableName(value ="subscribe")
 @Data

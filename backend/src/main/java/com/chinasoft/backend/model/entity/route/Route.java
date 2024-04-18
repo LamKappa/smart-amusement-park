@@ -11,6 +11,7 @@ import java.util.Date;
  * 路线表
  *
  * @TableName route
+ * @author 姜堂蕴之
  */
 @TableName(value = "route")
 @Data
