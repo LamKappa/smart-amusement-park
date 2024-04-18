@@ -36,6 +36,6 @@
     </sql>
     <select id="selectAllFacilityIds" resultType="java.lang.Integer">
         SELECT id
-        FROM amusement_facility
+        FROM amusement_facility WHERE is_deleted = 0
     </select>
 </mapper>

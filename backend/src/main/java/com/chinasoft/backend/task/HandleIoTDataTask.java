@@ -26,7 +26,7 @@ public class HandleIoTDataTask {
      * @author 孟祥硕
      */
 //    @Scheduled(cron = "0 0/5 * * * ? ")
-//    @Scheduled(cron = "0/10 * * * * ? ")
+    @Scheduled(cron = "0/10 * * * * ? ")
     public void handleIoTDataTask() {
         log.info("处理硬件传输的拥挤度数据定时任务开始执行：{}", new Date());
         mqttService.handleIoTData();
@@ -37,7 +37,7 @@ public class HandleIoTDataTask {
      *
      * @author 姜堂蕴之
      */
-//    @Scheduled(cron = "0/6 * * * * ? ")
+    @Scheduled(cron = "0/6 * * * * ? ")
     public void monitorMusicTask() {
         log.info("检测音乐进行调节定时任务开始执行：{}", new Date());
         mqttService.monitorMusic();
@@ -48,7 +48,7 @@ public class HandleIoTDataTask {
      *
      * @author 姜堂蕴之
      */
-//    @Scheduled(cron = "0/6 * * * * ? ")
+    @Scheduled(cron = "0/6 * * * * ? ")
     public void monitorLightTask() {
         log.info("检测灯光进行调节定时任务开始执行：{}", new Date());
         mqttService.monitorLight();
@@ -59,7 +59,7 @@ public class HandleIoTDataTask {
      *
      * @author 姜堂蕴之
      */
-//    @Scheduled(cron = "0 59 23 * * ?")
+    @Scheduled(cron = "0 59 23 * * ?")
     public void handleTotalHeadTask() {
         log.info("记录总人数定时任务开始执行：{}", new Date());
         mqttService.handleTotalHeadCount();
@@ -71,7 +71,7 @@ public class HandleIoTDataTask {
      *
      * @author 姜堂蕴之
      */
-//    @Scheduled(cron = "0 59 23 * * ?")
+    @Scheduled(cron = "0 59 23 * * ?")
     public void handleFacilityHeadTask() {
         log.info("记录各设施游玩人数定时任务开始执行：{}", new Date());
         mqttService.handleFacilityHeadCount();

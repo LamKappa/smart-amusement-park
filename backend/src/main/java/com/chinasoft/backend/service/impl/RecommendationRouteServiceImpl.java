@@ -177,7 +177,7 @@ public class RecommendationRouteServiceImpl implements RecommendationRouteServic
             swiperList.add(amusementFacilityVO);
         }
 
-        // 选取第一个设施的第一个图片作为封面
+        // 选取第一个设施的第一个图片作为封面（后续可换成默认封面）
         String imgUrl = swiperList.get(0).getImageUrls().get(0);
 
         // 填入数据
@@ -222,7 +222,7 @@ public class RecommendationRouteServiceImpl implements RecommendationRouteServic
             swiperList.add(amusementFacilityVO);
         }
 
-        // 选取第一个设施的第一个图片作为封面
+        // 选取第一个设施的第一个图片作为封面（后续可换成默认封面）
         String imgUrl = swiperList.get(0).getImageUrls().get(0);
 
         // 填入数据
