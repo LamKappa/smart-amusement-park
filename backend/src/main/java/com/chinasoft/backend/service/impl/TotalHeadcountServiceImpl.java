@@ -14,9 +14,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * 针对表【total_headcount(总人数统计表)】的数据库操作Service实现
+ *
  * @author 姜堂蕴之
- * @description 针对表【total_headcount(总人数统计表)】的数据库操作Service实现
- * @createDate 2024-04-10 17:56:36
  */
 @Service
 public class TotalHeadcountServiceImpl extends ServiceImpl<TotalHeadcountMapper, TotalHeadcount>

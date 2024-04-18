@@ -13,12 +13,12 @@ import java.time.LocalDateTime;
 @Data
 public class Walk implements Serializable {
     /**
-     * 预计行走时间
+     * 预计行走时间（以分钟为单位）
      */
     private Integer expectWalkTime;
 
     /**
-     * 预计行走路程
+     * 预计行走路程（以米为单位）
      */
     private Integer expectWalkDistance;
 

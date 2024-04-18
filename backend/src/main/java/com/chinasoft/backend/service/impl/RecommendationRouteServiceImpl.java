@@ -27,7 +27,8 @@ import java.net.URL;
 import java.util.*;
 
 /**
- * @description 针对轮播图的数据库操作Service实现
+ * 针对轮播图的数据库操作Service实现
+ *
  * @author 姜堂蕴之
  */
 @Service
@@ -81,13 +82,6 @@ public class RecommendationRouteServiceImpl implements RecommendationRouteServic
      * @return 包含推荐路线的BaseResponse对象
      * @throws BusinessException 如果请求体为空，则抛出参数错误异常
      * @author 姜堂蕴之
-     */
-    @Override
-    /**
-     * 查询路线
-     *
-     * @param routeRecommendationRequest 包含推荐请求信息的对象
-     * @return 包含推荐路线信息的RouteVO对象列表
      */
     public List<RouteVO> getRecommendation(RouteRecommendationRequest routeRecommendationRequest) {
         // 创建查询包装器，用于构建查询条件

@@ -11,8 +11,8 @@ import org.springframework.stereotype.Component;
 import java.util.UUID;
 
 /**
- * MQTT 发送者
- * @author 姜堂蕴之
+ * MQTT发送
+ * @author 孟祥硕 姜堂蕴之
  */
 @Component
 public class Send_Client1 {

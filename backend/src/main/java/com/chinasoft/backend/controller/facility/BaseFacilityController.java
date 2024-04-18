@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
 
 /**
- * 接触设施接口
+ * 基础设施接口
  *
  * @author 孟祥硕
  */

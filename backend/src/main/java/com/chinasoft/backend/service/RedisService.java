@@ -1,6 +1,8 @@
 package com.chinasoft.backend.service;
 
 /**
+ * Redis相关操作
+ *
  * @author 孟祥硕
  */
 public interface RedisService {

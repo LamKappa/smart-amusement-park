@@ -25,9 +25,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
+ * 针对表【crowding_level(拥挤度表)】的数据库操作Service实现
+ *
  * @author 孟祥硕
- * @description 针对表【crowding_level(拥挤度表)】的数据库操作Service实现
- * @createDate 2024-04-07 16:11:50
  */
 @Service
 public class CrowdingLevelServiceImpl extends ServiceImpl<CrowdingLevelMapper, CrowdingLevel>

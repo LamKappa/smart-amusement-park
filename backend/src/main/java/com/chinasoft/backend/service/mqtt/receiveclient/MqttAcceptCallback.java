@@ -16,8 +16,9 @@ import org.springframework.stereotype.Component;
 import java.io.UnsupportedEncodingException;
 
 /**
- * MQTT 接收者
- * @author 孟祥硕
+ * MQTT接收
+ *
+ * @author 孟祥硕 姜堂蕴之
  */
 @Component
 public class MqttAcceptCallback implements MqttCallbackExtended {

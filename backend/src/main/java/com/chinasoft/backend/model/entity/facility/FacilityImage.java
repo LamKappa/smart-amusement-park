@@ -15,13 +15,13 @@ import java.util.Date;
 @Data
 public class FacilityImage implements Serializable {
     /**
-     *
+     * 主键ID
      */
     @TableId(type = IdType.AUTO)
     private Long id;
 
     /**
-     * 设施id
+     * 设施ID
      */
     private Long facilityId;
 
@@ -36,12 +36,12 @@ public class FacilityImage implements Serializable {
     private String imageUrl;
 
     /**
-     *
+     * 创建时间
      */
     private Date createTime;
 
     /**
-     *
+     * 更新时间
      */
     private Date updateTime;
 

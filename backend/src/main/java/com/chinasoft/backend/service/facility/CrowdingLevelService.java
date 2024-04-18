@@ -8,13 +8,18 @@ import com.chinasoft.backend.model.vo.statistic.CrowingTimeCountVO;
 import java.util.List;
 
 /**
+ * 针对表【crowding_level(拥挤度表)】的数据库操作Service
+ *
  * @author 孟祥硕
- * @description 针对表【crowding_level(拥挤度表)】的数据库操作Service
- * @createDate 2024-04-07 16:11:50
  */
 public interface CrowdingLevelService extends IService<CrowdingLevel> {
-
+    /**
+     * 根据设施ID和设施类型获取预计等待实践
+     */
     Integer getExpectWaitTimeByIdType(FacilityIdType facilityIdType);
 
+    /**
+     * 以小时为单位统计当日的拥挤度
+     */
     List<CrowingTimeCountVO> crowingTimeCount();
 }

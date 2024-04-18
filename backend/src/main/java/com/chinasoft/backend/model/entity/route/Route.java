@@ -18,7 +18,7 @@ import java.util.Date;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Route implements Serializable {
     /**
-     *
+     * 路线ID
      */
     @TableId(type = IdType.AUTO)
     private Long id;

@@ -7,9 +7,9 @@ import com.chinasoft.backend.model.vo.statistic.TotalHeadCountVO;
 import java.util.List;
 
 /**
+ * 针对表【total_headcount(总人数统计表)】的数据库操作Service
+ *
  * @author 姜堂蕴之
- * @description 针对表【total_headcount(总人数统计表)】的数据库操作Service
- * @createDate 2024-04-10 17:56:36
  */
 public interface TotalHeadcountService extends IService<TotalHeadcount> {
     /**

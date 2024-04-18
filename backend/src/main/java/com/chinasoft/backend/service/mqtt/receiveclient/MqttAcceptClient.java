@@ -10,8 +10,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
- * MQTT 接收者
- * @author 孟祥硕
+ * MQTT接收
+ *
+ * @author 孟祥硕 姜堂蕴之
  */
 @Component
 @Slf4j

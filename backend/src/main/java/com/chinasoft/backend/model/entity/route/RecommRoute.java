@@ -16,18 +16,18 @@ import java.util.Date;
 @Data
 public class RecommRoute implements Serializable {
     /**
-     *
+     * 主键ID
      */
     @TableId(type = IdType.AUTO)
     private Long id;
 
     /**
-     * 路线id
+     * 路线ID
      */
     private Long routeId;
 
     /**
-     * 设施id
+     * 设施ID
      */
     private Long facilityId;
 

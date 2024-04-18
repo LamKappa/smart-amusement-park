@@ -33,27 +33,27 @@ public class RestaurantFacility implements Serializable {
     private String introduction;
 
     /**
-     * 纬度
+     * 设施经度
      */
     private String longitude;
 
     /**
-     * 经度
+     * 设施纬度
      */
     private String latitude;
 
     /**
-     * 设施类型（中式快餐、西式快餐、面点、饮品、小吃）
+     * 餐饮类型
      */
     private String type;
 
     /**
-     * 开放开始时间
+     * 开始时间
      */
     private Time startTime;
 
     /**
-     * 开放结束时间
+     * 结束时间
      */
     private Time closeTime;
 

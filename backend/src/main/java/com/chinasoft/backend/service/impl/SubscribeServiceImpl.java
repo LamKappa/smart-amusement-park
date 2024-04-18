@@ -19,9 +19,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
+ * 针对表【subscribe(用户订阅记录表)】的数据库操作Service实现
+ *
  * @author 姜堂蕴之
- * @description 针对表【subscribe(用户订阅记录表)】的数据库操作Service实现
- * @createDate 2024-04-09 11:20:51
  */
 @Service
 public class SubscribeServiceImpl extends ServiceImpl<SubscribeMapper, Subscribe>

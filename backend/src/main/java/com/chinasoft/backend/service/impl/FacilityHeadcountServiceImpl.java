@@ -7,9 +7,9 @@ import com.chinasoft.backend.service.statistic.FacilityHeadcountService;
 import org.springframework.stereotype.Service;
 
 /**
+ * 针对表【facility_headcount(各个游玩设施人数统计表)】的数据库操作Service实现
+ *
  * @author 姜堂蕴之
- * @description 针对表【facility_headcount(各个游玩设施人数统计表)】的数据库操作Service实现
- * @createDate 2024-04-11 14:13:04
  */
 @Service
 public class FacilityHeadcountServiceImpl extends ServiceImpl<FacilityHeadcountMapper, FacilityHeadcount>

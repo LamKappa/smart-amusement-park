@@ -16,7 +16,7 @@ import java.util.List;
 public class AmusementFacilityUpdateRequest {
 
     /**
-     *
+     * 设施ID
      */
     @TableId(type = IdType.AUTO)
     private Long id;

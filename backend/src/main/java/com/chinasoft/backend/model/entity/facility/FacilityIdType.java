@@ -13,9 +13,14 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class FacilityIdType {
-
+    /**
+     * 设施ID
+     */
     private Long facilityId;
 
+    /**
+     * 设施类型
+     */
     private Integer facilityType;
 
 }
